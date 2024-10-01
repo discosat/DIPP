@@ -15,6 +15,7 @@
 #include "vmem_ring_buffer.h"
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
+#include <dtp/dtp.h>
 
 void *vmem_server_task(void *param)
 {
@@ -28,6 +29,13 @@ void *router_task(void *param)
 	{
 		csp_route_work();
 	}
+	return NULL;
+}
+
+void *dtp_server_task(void *param)
+{
+	bool keep_running = true;
+	dtp_server_main(&keep_running);
 	return NULL;
 }
 
@@ -144,6 +152,9 @@ int main(int argc, char *argv[])
 
 	static pthread_t vmem_server_handle;
 	pthread_create(&vmem_server_handle, NULL, &vmem_server_task, NULL);
+
+	static pthread_t dtp_server_handle;
+	pthread_create(&dtp_server_handle, NULL, &dtp_server_task, NULL);
 
 	while (1)
 	{

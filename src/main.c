@@ -16,6 +16,7 @@
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
 #include <dtp/dtp.h>
+#include "vmem_dtp_server.h"
 
 void *vmem_server_task(void *param)
 {
@@ -146,6 +147,13 @@ int main(int argc, char *argv[])
 
 	vmem_file_init(&vmem_storage);
 	vmem_ring_init(&vmem_images);
+
+	const char first[] = "Hello, World!";
+	vmem_ring_write(&vmem_images, 0, first, sizeof(first));
+	const char second[] = "How are you?";
+	vmem_ring_write(&vmem_images, 0, second, sizeof(second));
+	const char third[] = "third message";
+	vmem_ring_write(&vmem_images, 0, third, sizeof(third));
 
 	static pthread_t router_handle;
 	pthread_create(&router_handle, NULL, &router_task, NULL);

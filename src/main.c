@@ -154,6 +154,10 @@ int main(int argc, char *argv[])
 	vmem_ring_write(&vmem_images, 0, second, sizeof(second));
 	const char third[] = "third message";
 	vmem_ring_write(&vmem_images, 0, third, sizeof(third));
+	const char fourth[] = "fourth message";
+	vmem_ring_write(&vmem_images, 0, fourth, sizeof(fourth));
+	const char fifth[] = "fifth message";
+	vmem_ring_write(&vmem_images, 0, fifth, sizeof(fifth));
 
 	static pthread_t router_handle;
 	pthread_create(&router_handle, NULL, &router_task, NULL);

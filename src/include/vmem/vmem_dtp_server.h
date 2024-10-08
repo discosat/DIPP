@@ -43,7 +43,11 @@ static uint32_t payload_read(uint8_t payload_id, uint32_t offset, void *output, 
         printf("    %u : %u \n", i, offsets[i]);
     }
 
-	ring->read(ring, 0, output, offsets[payload_id]);
+    printf("offset for payload id is %u \n", offsets[payload_id]);
+
+	ring->read(ring, 0, output, payload_id);
+
+    printf("Read to buffer: %s \n", output);
 
     return size;
 }
@@ -71,6 +75,8 @@ bool get_payload_meta(dftp_payload_meta_t *meta, uint8_t payload_id) {
     uint32_t head = driver->head;
     uint32_t tail = driver->tail;
     uint32_t * offsets = (uint32_t *)driver->offsets;
+
+    printf("Size is %u \n", offsets[payload_id+1]-offsets[payload_id]);
     
     meta->size = offsets[payload_id+1]-offsets[payload_id];
     meta->read = payload_read;

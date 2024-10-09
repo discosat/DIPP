@@ -45,7 +45,7 @@ static int is_valid_index(vmem_t * vmem, uint32_t offset) {
 
     uint32_t index = offset_int < 0
         ? (head + offset_int + driver->entries) % driver->entries
-        : (tail + offset_int) % driver->entries; // 1
+        : (tail + offset_int) % driver->entries;
 
     int wraparound = driver->head < driver->tail;
 
@@ -83,7 +83,7 @@ bool get_payload_meta(dftp_payload_meta_t *meta, uint8_t payload_id) {
 	printf("call to get_payload_meta");
 
     printf("attempting to find images ring_buffer \n");
-    vmem_t /* vmem_ring_t */ *ring = NULL;
+    vmem_t *ring = NULL;
 		for(vmem_t * vmem = (vmem_t *) &__start_vmem; vmem < (vmem_t *) &__stop_vmem; vmem++) {
 			if (strncmp("images", vmem->name, 7) == 0) {
 				ring = vmem;
@@ -94,7 +94,7 @@ bool get_payload_meta(dftp_payload_meta_t *meta, uint8_t payload_id) {
 
     printf("found images ring_buffer \n");
 
-    vmem_ring_driver_t * driver = (vmem_ring_driver_t *)ring->/*vmem->*/driver;
+    vmem_ring_driver_t * driver = (vmem_ring_driver_t *)ring->driver;
 
     uint32_t head = driver->head;
     uint32_t tail = driver->tail;
@@ -105,12 +105,12 @@ bool get_payload_meta(dftp_payload_meta_t *meta, uint8_t payload_id) {
     printf("number of entries is %u \n", driver->entries);
     printf("tail is at %u \n", tail);
     printf("head is at %u \n", head);
-    int is_valid = /*ring->*/is_valid_index(ring, payload_id);
+    int is_valid = is_valid_index(ring, payload_id);
     if (!is_valid) {
         printf("index out of ring buffer bounds \n");
         return false;
     }
-    uint32_t data_len = /*ring->*/element_size(ring, payload_id);
+    uint32_t data_len = element_size(ring, payload_id);
     printf("length of payload element is %u \n", data_len);
 
     printf("offsets are: \n");

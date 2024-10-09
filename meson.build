@@ -22,6 +22,7 @@ sources = files([
 	'src/dipp_process.c',
 	'src/dipp_error.c',
 	'src/dipp_config.c',
+	'src/vmem/vmem_dtp_server.c',
 	'src/vmem/vmem_storage.c',
 	'src/vmem/vmem_ring_buffer.c',
 #	'src/vmem/vmem_upload.c',

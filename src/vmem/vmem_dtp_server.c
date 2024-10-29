@@ -120,8 +120,9 @@ static int is_valid_index(uint32_t payload_id) {
     }
 }
 
-static uint32_t payload_read(uint8_t payload_id, uint32_t offset, void *output, uint32_t size) {
-    uint32_t res = 0;
+static uint32_t payload_read(uint16_t payload_id, uint32_t offset, void *output, uint32_t size) {
+
+    // printf("payload read\n");
 
 	vmem_ring_driver_t * driver = (vmem_ring_driver_t *)(&vmem_images)->driver;
     
@@ -133,8 +134,9 @@ static uint32_t payload_read(uint8_t payload_id, uint32_t offset, void *output, 
 }
 
 /* This method is implemented to tell the DTP server which payload to use */
-bool get_payload_meta(dftp_payload_meta_t *meta, uint8_t payload_id) {
-	printf("call to get_payload_meta");
+bool get_payload_meta(dftp_payload_meta_t *meta, uint16_t payload_id) {
+
+    // printf("call to get_payload_meta");
 
     vmem_ring_driver_t * driver = (vmem_ring_driver_t *)(&vmem_images)->driver;
 

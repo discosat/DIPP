@@ -128,6 +128,8 @@ static uint32_t payload_read(uint16_t payload_id, uint32_t offset, void *output,
     
     uint32_t ring_offset = ring_buffer_offset(payload_id, offset);
 
+    // printf("Reading payload with payload_id %u, at offset %u, ring buffer offset %u, size %u\n", payload_id, offset, ring_offset, size);
+
 	(&vmem_images)->read(&vmem_images, ring_offset, output, size);
 
     return res;
@@ -144,23 +146,23 @@ bool get_payload_meta(dftp_payload_meta_t *meta, uint16_t payload_id) {
     uint32_t tail = driver->tail;
     uint32_t * offsets = (uint32_t *)driver->offsets;
 
-    printf("images ring buffer information \n");
-    printf("data_size is %u \n", driver->data_size);
-    printf("number of entries is %u \n", driver->entries);
-    printf("tail is at %u \n", tail);
-    printf("head is at %u \n", head);
+    // printf("images ring buffer information \n");
+    // printf("data_size is %u \n", driver->data_size);
+    // printf("number of entries is %u \n", driver->entries);
+    // printf("tail is at %u \n", tail);
+    // printf("head is at %u \n", head);
     int is_valid = is_valid_index(payload_id);
     if (!is_valid) {
         printf("index out of ring buffer bounds \n");
         return false;
     }
     uint32_t data_len = element_size(payload_id);
-    printf("length of payload element is %u \n", data_len);
+    // printf("length of payload element is %u \n", data_len);
 
-    printf("offsets are: \n");
-    for (int i = 0; i<=driver->entries; i++) {
-        printf("    %u : %u \n", i, offsets[i]);
-    }
+    // printf("offsets are: \n");
+    // for (int i = 0; i<=driver->entries; i++) {
+    //     printf("    %u : %u \n", i, offsets[i]);
+    // }
 
     meta->size = data_len;
     meta->read = payload_read;

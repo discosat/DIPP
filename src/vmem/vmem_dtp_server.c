@@ -4,6 +4,43 @@
 #include <vmem/vmem_ring.h>
 #include "vmem_ring_buffer.h"
 #include "protobuf/metadata.pb-c.h"
+#include <stdio.h>
+
+
+// For uploading local file into the ring buffer- TEMPORARY, FOR TESTING PURPOSES
+int upload_to_ring_buffer(char *filename) {
+
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        printf("Could not open %s\n", filename);
+        return -1;
+    }
+
+    printf("Opened file %s\n", filename);
+
+    fseek(file, 0, SEEK_END);
+    long fsize = ftell(file);
+
+    printf("filesize is %i\n", fsize);
+
+    fseek(file, 0, SEEK_SET); 
+
+    char *buffer = malloc(fsize + 1);
+    fread(buffer, fsize, 1, file);
+    fclose(file);
+
+    buffer[fsize] = 0;
+    // Thank you https://stackoverflow.com/questions/14002954/c-how-to-read-an-entire-file-into-a-buffer
+
+    (&vmem_images)->write(&vmem_images, 0, buffer, fsize);
+
+    printf("Wrote to buffer\n");
+
+    free(buffer);
+
+    return 0;
+}
+
 
 // For these static methods, consider moving them into libparam, having vmem reference as parameter
 // Look at the naming, (offset, index, payload_id) (payload, element), be more consistent...

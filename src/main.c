@@ -80,26 +80,26 @@ static void iface_init(int argc, char *argv[])
 		csp_zmqhub_init_filter2("ZMQ", port, 3, 8, true, &iface, NULL, CSP_ZMQPROXY_SUBSCRIBE_PORT, CSP_ZMQPROXY_PUBLISH_PORT);
 		iface->name = "zmq";
 	}
-	else if (strcmp(interface, "KISS") == 0)
-	{
-		/* KISS setup */
-		csp_usart_conf_t conf = {
-			.device = kiss_device,
-			.baudrate = 115200,
-			.databits = 8,
-			.stopbits = 1,
-			.paritysetting = 0,
-			.checkparity = 0};
+	// else if (strcmp(interface, "KISS") == 0)
+	// {
+	// 	/* KISS setup */
+	// 	csp_usart_conf_t conf = {
+	// 		.device = kiss_device,
+	// 		.baudrate = 115200,
+	// 		.databits = 8,
+	// 		.stopbits = 1,
+	// 		.paritysetting = 0,
+	// 		.checkparity = 0};  // CHECK PARITY SETTING HAS BEEN REMOVED
 
-		int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, &iface);
-		if (error != CSP_ERR_NONE)
-		{
-			csp_print("failed to add KISS interface [%s], error: %d\n", kiss_device, error);
-			exit(1);
-		}
+	// 	int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, &iface); // MISSING ARGUMENT ADDR
+	// 	if (error != CSP_ERR_NONE)
+	// 	{
+	// 		csp_print("failed to add KISS interface [%s], error: %d\n", kiss_device, error);
+	// 		exit(1);
+	// 	}
 
-		iface->name = "KISS";
-	}
+	// 	iface->name = "KISS";
+	// }
 	else if (strcmp(interface, "CAN") == 0)
 	{
 		int error = csp_can_socketcan_open_and_add_interface(can_device, "CAN", pipeline_addr, 1000000, 0, &iface);

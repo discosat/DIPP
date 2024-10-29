@@ -132,7 +132,7 @@ static uint32_t payload_read(uint16_t payload_id, uint32_t offset, void *output,
 
 	(&vmem_images)->read(&vmem_images, ring_offset, output, size);
 
-    return res;
+    return size; // Assume that everything has been read, since the vmem api doesn't return any value to indicate how much data is read
 }
 
 /* This method is implemented to tell the DTP server which payload to use */

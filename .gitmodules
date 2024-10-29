@@ -4,12 +4,3 @@
 [submodule "lib/param"]
 	path = lib/param
 	url = https://github.com/discosat/libparam.git
-	branch = dtp
-[submodule "lib/dtp"]
-	path = lib/dtp
-	url = /home/adamjhr/dipp-dtp-project/dtp
-[submodule "tools/ring_buffer_upload/lib/param"]
-	path = tools/ring_buffer_upload/lib/param
-	url = https://github.com/discosat/libparam.git
-	branch = dtp
-	

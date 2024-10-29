@@ -167,47 +167,7 @@ bool get_payload_meta(dftp_payload_meta_t *meta, uint16_t payload_id) {
     meta->size = data_len;
     meta->read = payload_read;
 
+    // printf("returning\n");
+
     return true;
 }
-
-// RingBufferElementMetadata *ring_buffer_element_info(uint32_t offset) {
-
-//     uint32_t element_len = element_size(offset);
-//     char *output = malloc(element_size); // this should perhaps be allocated statically instead
-
-//     printf("Reading element of size %u \n", element_len);
-
-//     ring->read(vmem_images, 0, output, payload_id);
-
-//     printf("Read element \n");
-
-//     uint32_t meta_size = *((uint32_t *)output);
-
-//     printf("metadata size is %u \n", meta_size);
-
-//     // In general, there is some memory stuff im unsure about, someone needs to look at this code...
-
-//     Metadata *metadata = metadata__unpack(NULL, meta_size, output + sizeof(uint32_t));
-//     struct RingBufferElementMetadata *element_metadata = malloc(RingBufferElementMetadata);
-//     element_metadata->offset;
-//     element_metadata->metadata_len = meta_size;
-//     element_metadata->metadata = metadata;
-//     return element_metadata;
-// }
-
-// RingBufferMetadata *ring_buffer_info() {
-
-//     vmem_ring_driver_t * driver = (vmem_ring_driver_t *)vmem_images->driver;
-
-//     struct RingBufferMetadata *ring_buffer_metadata = malloc(RingBufferMetadata);
-
-//     // WIP
-
-//     int index = driver->tail;
-//     while (index != head) {
-//         index = (index + 1) % driver->entries;
-//     }
-
-
-    
-// }

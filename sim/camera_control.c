@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
     new_meta.channels = image_channels;
     new_meta.timestamp = 0; // example time (should be using unix timestamp)
     new_meta.bits_pixel = bits_per_pixel;
+    new_meta.obid = 0;
     new_meta.camera = "rgb";
 
     const char filename[30];

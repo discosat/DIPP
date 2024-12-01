@@ -162,8 +162,8 @@ void dtp_indeces_server() {
     
     static csp_socket_t sock = {0};
     sock.opts = CSP_O_RDP;
-    csp_bind(&sock, 13);
-    csp_listen(&sock, 3);
+    csp_bind(&sock, INDECES_PORT);
+    csp_listen(&sock, 1); // This allows only one simultaneous connection
 
     csp_conn_t *conn;
 
@@ -190,9 +190,8 @@ void dtp_indeces_server() {
         int count = 0;
         while((count < dtpmetadata_size) && csp_conn_is_active(conn)) {
 
-            // packet size should perhaps be a macro
-            csp_packet_t * packet = csp_buffer_get(196);
-            packet->length = dtpmetadata_size - count < 196 ? dtpmetadata_size - count : 196;
+            csp_packet_t * packet = csp_buffer_get(INDECES_PACKET_SIZE);
+            packet->length = dtpmetadata_size - count < INDECES_PACKET_SIZE ? dtpmetadata_size - count : INDECES_PACKET_SIZE;
             memcpy(packet->data, (void *) (dtpmetadata_packed + count), packet->length);
 
             count += packet->length;

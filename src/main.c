@@ -13,10 +13,10 @@
 #include <vmem/vmem_ring.h>
 #include "vmem_storage.h"
 #include "vmem_ring_buffer.h"
+#include "vmem_dtp_server.h"
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
 #include <dtp/dtp.h>
-#include "vmem_dtp_server.h"
 
 void *vmem_server_task(void *param)
 {
@@ -37,6 +37,12 @@ void *dtp_server_task(void *param)
 {
 	bool keep_running = true;
 	dtp_server_main(&keep_running);
+	return NULL;
+}
+
+void *dtp_indeces_server_task(void *param) 
+{
+	dtp_indeces_server();
 	return NULL;
 }
 
@@ -120,6 +126,8 @@ static void iface_init(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+	printf("argc %u", argc);
+
 	printf("\nbootmsg\n");
 
 	srand(time(NULL));
@@ -156,6 +164,9 @@ int main(int argc, char *argv[])
 
 	static pthread_t dtp_server_handle;
 	pthread_create(&dtp_server_handle, NULL, &dtp_server_task, NULL);
+
+	static pthread_t dtp_indeces_server_handle;
+	pthread_create(&dtp_indeces_server_handle, NULL, &dtp_indeces_server_task, NULL);
 
 	while (1)
 	{

@@ -52,6 +52,10 @@ typedef struct ImageBatch {
 ```
 Modules will receive and return image batches of this format.
 
+### Generate protobuf code
+
+To generate C descriptor code from .proto files, a C implementation of protobuf is used, which can be found at [github.com/protobuf-c/protobuf-c](https://github.com/protobuf-c/protobuf-c).
+
 ## Camera simulator
 For testing purposes a camera simulating program is included in the `sim` folder. Compile the program with the `compile` script.
 Now run it with `./camera <num_images> <image_name>`. To enqueue an image batch of `num_images` images. NB: make a folder called `images` in `sim` and place a BayerGR image within it.

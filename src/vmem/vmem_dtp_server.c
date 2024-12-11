@@ -65,7 +65,8 @@ static DTPMetadata *get_indeces_metadata() {
     dtpmeta->n_items = observation_amount;
     dtpmeta->items = malloc(observation_amount * sizeof(DTPMetadataItem*));
 
-    for (int index = 0; index < observation_amount; index++) {
+    for (uint32_t index = 0; index < observation_amount; index++) {
+
         uint32_t size = vmem_ring_element_size(&vmem_images, index);
         Metadata *metadata = observation_get_metadata(index);
         DTPMetadataItem *item = malloc(sizeof(DTPMetadataItem));

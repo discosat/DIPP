@@ -3,7 +3,7 @@ project('pipeline', 'c',subproject_dir: 'lib',default_options: [
 	'b_lto=false',
 	'default_library=static',
 	'csp:packet_padding_bytes=42', 
-	'csp:buffer_count=1000',
+	'csp:buffer_count=15000',
 	'csp:buffer_size=2048',
 	'csp:conn_max=20',
 	'csp:conn_rxqueue_len=1000',

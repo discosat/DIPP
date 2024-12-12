@@ -1,3 +1,3 @@
 #include <vmem/vmem_ring.h>
 
-VMEM_DEFINE_RING(images, "images", "images.vmem", 100000000, 20);
+VMEM_DEFINE_RING(images, "images", "images.vmem", 1000000000, 500000);

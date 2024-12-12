@@ -10,12 +10,16 @@
 #include "metadata.pb-c.h"
 #include "dtpmetadata.pb-c.h"
 
+typedef struct observation_meta {
+    uint16_t index;
+    uint32_t size;
+    uint32_t obid;
+} observation_meta_t;
 
 // Read the observation at specified index within ring buffer
 static uint32_t observation_read(uint16_t index, uint32_t offset_within_observation, void *output, uint32_t size) {
-    
     uint32_t offset_within_ring_buffer = vmem_ring_offset(&vmem_images, index, offset_within_observation);
-
+    
 	(&vmem_images)->read(&vmem_images, offset_within_ring_buffer, output, size);
 
     return size; // Assume that everything has been read, since the vmem api doesn't return any value to indicate how much data is read
@@ -49,38 +53,28 @@ static uint32_t observation_get_meta_size(uint16_t index) {
 // Get metadata of a specific observation
 static Metadata *observation_get_metadata(uint16_t index) {
     uint32_t meta_size = observation_get_meta_size(index);
-    char meta_buf[meta_size];
+    uint8_t meta_buf[meta_size];
     observation_read(index, 4, meta_buf, meta_size);
     Metadata *metadata = metadata__unpack(NULL, meta_size, meta_buf);
     return metadata;
 }
 
-// Get metadata information about indeces
-static DTPMetadata *get_indeces_metadata() {
+// Get metadata for a specific observation which is to be transferred, in this case only OBID, size and index
+observation_meta_t observation_get_dtp_meta(uint16_t index) {
+    Metadata *meta = observation_get_metadata(index);
 
-    uint32_t observation_amount = vmem_ring_get_amount_of_elements(&vmem_images);
+    observation_meta_t obs_meta = {
+        .index = index,
+        .size = meta->size,
+        .obid = meta->obid,
+    };
 
-    DTPMetadata *dtpmeta = malloc(sizeof(DTPMetadata));
-    dtpmetadata__init(dtpmeta);
-    dtpmeta->n_items = observation_amount;
-    dtpmeta->items = malloc(observation_amount * sizeof(DTPMetadataItem*));
+    metadata__free_unpacked(meta, NULL);
 
-    for (uint32_t index = 0; index < observation_amount; index++) {
-
-        uint32_t size = vmem_ring_element_size(&vmem_images, index);
-        Metadata *metadata = observation_get_metadata(index);
-        DTPMetadataItem *item = malloc(sizeof(DTPMetadataItem));
-        dtpmetadata_item__init(item);
-        item->payload_id = index;
-        item->size = size;
-        item->obid = 0;
-        dtpmeta->items[index] = item;
-    }
-
-    return dtpmeta;
+    return obs_meta;
 }
 
-// Server for serving indeces of ring buffer
+// Server for serving metadata of ring buffer observation
 void dtp_indeces_server() {    
     
     static csp_socket_t sock = {0};
@@ -96,30 +90,41 @@ void dtp_indeces_server() {
             continue;
         }
 
-        DTPMetadata *dtpmetadata = get_indeces_metadata();
+        csp_packet_t *request = csp_read(conn, 50);
 
-        uint32_t dtpmetadata_size = dtpmetadata__get_packed_size(dtpmetadata);
+        if (request->data[0] == DIPP_DTP_OBSERVATION_AMOUNT_REQUEST) { 
+            uint32_t observation_amount = vmem_ring_get_amount_of_elements(&vmem_images);
 
-        csp_packet_t * length_packet = csp_buffer_get(sizeof(uint32_t));
-        length_packet->length = sizeof(uint32_t);
-        memcpy(length_packet->data, &dtpmetadata_size, sizeof(uint32_t));
-        csp_send(conn, length_packet);
+            csp_packet_t *response = csp_buffer_get(sizeof(uint32_t));
+            response->length = sizeof(uint32_t);
+            memcpy(response->data, &observation_amount, sizeof(uint32_t));
+            csp_send(conn, response);
+            csp_buffer_free(response);
 
-        // Pack dtpmetadata struct into a buffer
-        uint8_t *dtpmetadata_packed = malloc(dtpmetadata_size);
-        dtpmetadata__pack(dtpmetadata, dtpmetadata_packed);        
+        } else if (request->data[0] == DIPP_DTP_OBSERVATION_META_REQUEST) {
+            uint16_t index = request->data[1] + (request->data[2] << 8);
 
-        // Send contents of buffer
-        int count = 0;
-        while((count < dtpmetadata_size) && csp_conn_is_active(conn)) {
+            int is_valid = vmem_ring_is_valid_index(&vmem_images, (uint32_t) index); // change to uint16_t...
+            if (!is_valid) {
+                csp_packet_t *invalid_index_response = csp_buffer_get(1);
+                invalid_index_response->length = 1;
+                invalid_index_response->data[0] = 0;
+                csp_send(conn, invalid_index_response);
+                csp_buffer_free(invalid_index_response);
+            } else {
+                observation_meta_t obs_meta = observation_get_dtp_meta(index);
 
-            csp_packet_t * packet = csp_buffer_get(INDECES_PACKET_SIZE);
-            packet->length = dtpmetadata_size - count < INDECES_PACKET_SIZE ? dtpmetadata_size - count : INDECES_PACKET_SIZE;
-            memcpy(packet->data, (void *) (dtpmetadata_packed + count), packet->length);
-
-            count += packet->length;
-            csp_send(conn, packet);
+                csp_packet_t *response = csp_buffer_get(sizeof(observation_meta_t) + 1);
+                response->length = sizeof(observation_meta_t) + 1;
+                response->data[0] = 1;
+                memcpy(response->data+1, &obs_meta, sizeof(observation_meta_t));
+                csp_send(conn, response);
+                
+                csp_buffer_free(response);
+            }
         }
+
+        csp_buffer_free(request);
 
         csp_close(conn);
     }

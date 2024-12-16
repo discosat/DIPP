@@ -206,8 +206,15 @@ void setup_cache_if_needed()
     if (!is_setup)
     {
         // Fetch and setup pipeline and module configurations if not done
+	    printf("rebuilding cache \r\n");
         setup_all_pipelines();
         setup_all_module_configs();
         is_setup = 1;
     }
+}
+
+void invalidate_cache()
+{
+    printf("invalidating cache \r\n");
+    is_setup = 0;
 }

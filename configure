@@ -1,4 +1,4 @@
 #!/bin/sh
 rm -r builddir
-meson setup . builddir
-ninja -C builddir
+meson setup . builddir --cross-file yocto_cross.ini
+ninja -j 4 -C builddir

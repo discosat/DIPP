@@ -57,5 +57,6 @@ extern ModuleParameterList module_parameter_lists[];
 
 /* Preload all configurations if not done yet */
 void setup_cache_if_needed();
+void invalidate_cache();
 
 #endif

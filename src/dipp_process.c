@@ -23,9 +23,12 @@
 #include "metadata.pb-c.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#include "logger.h"
 
 static int output_pipe[2]; // Pipe for inter-process result communication
 static int error_pipe[2];  // Pipe for inter-process error communication
+
+Logger *logger;
 
 // Signal handler for timeout
 void timeout_handler(int signum) {
@@ -75,6 +78,9 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
                 else
                     set_error_param(module_error);
 
+                // invalidate cache, to be rebuilt in next pipeline invocation
+                invalidate_cache();
+
                 fprintf(stderr, "Child process exited with non-zero status\n");
                 return FAILURE;
             }
@@ -83,6 +89,8 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
         {
             // Child process did not exit normally (CRASH)
             set_error_param(MODULE_EXIT_CRASH);
+	        //invalidate cache
+            invalidate_cache();
             fprintf(stderr, "Child process did not exit normally\n");
             return FAILURE;
         }
@@ -167,7 +175,7 @@ void save_images(const char *filename_base, const ImageBatch *batch)
         filePtr = fopen(filename, "wb");
         if (filePtr == NULL) {
         fprintf(stderr, "Error opening file.\n");
-        return 1;
+        return;
         }
 
         // Write the byte array to the file
@@ -210,10 +218,12 @@ int load_pipeline_and_execute(ImageBatch *input_batch)
 
 void process(ImageBatch *input_batch)
 {
-    printf("Processing\n");
+    // printf("Processing\n");
+    // logger_log(logger, LOG_INFO, "Processing image batch");
     int pipeline_result = load_pipeline_and_execute(input_batch);
     
-    printf("Done processing\n");
+    // printf("Done processing\n");
+    // logger_log(logger, LOG_INFO, "Done processing image batch");
     // Reset err values
     err_current_pipeline = 0;
     err_current_module = 0;
@@ -225,15 +235,18 @@ void process(ImageBatch *input_batch)
         set_error_param(SHM_ATTACH);
         return;
     }
+    // logger_log(logger, LOG_INFO, "Attached to shared memory");
 
     if (pipeline_result == SUCCESS)
     {
         //save_images("output", input_batch);
         input_batch->data = shmaddr;
+        // logger_log(logger, LOG_INFO, "Uploading image batch");
             
-        printf("Uploading\n");
+        //printf("Uploading\n");
         upload(input_batch->data, input_batch->num_images, input_batch->batch_size);
-        printf("Done uploading\n");
+        //printf("Done uploading\n");
+        // logger_log(logger, LOG_INFO, "Done uploading image batch");
     }
 
     // Detach and free shared memory
@@ -242,27 +255,43 @@ void process(ImageBatch *input_batch)
         set_error_param(SHM_DETACH);
         perror("shmdt");
     }
+    // logger_log(logger, LOG_INFO, "Detached from shared memory");
     if (shmctl(input_batch->shmid, IPC_RMID, NULL) == -1)
     {
         set_error_param(SHM_REMOVE);
     }
-    printf("Done!\n");
+    // logger_log(logger, LOG_INFO, "Removed shared memory");
+    //printf("Done!\n");
 }
 
 int get_message_from_queue(ImageBatch *datarcv, int do_wait)
 {
     int msg_queue_id;
-    if ((msg_queue_id = msgget(MSG_QUEUE_KEY, 0)) == -1)
-    {
+    if ((msg_queue_id = msgget(MSG_QUEUE_KEY, 0)) == -1) {
         set_error_param(MSGQ_NOT_FOUND);
         return FAILURE;
     }
 
-    if (msgrcv(msg_queue_id, datarcv, sizeof(ImageBatch), 1, do_wait ? 0 : IPC_NOWAIT) == -1)
-    {
+    struct {
+        long mtype;
+        char mtext[sizeof(ImageBatch)];
+    } msg_buffer;
+
+    ssize_t msg_size = msgrcv(msg_queue_id, &msg_buffer, sizeof(msg_buffer.mtext), 1, do_wait ? 0 : IPC_NOWAIT);
+    if (msg_size == -1) {
         set_error_param(MSGQ_EMPTY);
         return FAILURE;
     }
+
+    // Ensure that the received message size is not larger than the ImageBatch structure
+    if (msg_size > sizeof(ImageBatch)) {
+        set_error_param(MSGQ_EMPTY);
+        printf("Received %ld bytes, expected %ld bytes\n", msg_size, sizeof(ImageBatch));
+        return FAILURE;
+    }
+
+    // Copy the data to the datarcv buffer
+    memcpy(datarcv, &msg_buffer, msg_size);
 
     return SUCCESS;
 }
@@ -280,11 +309,17 @@ void process_one(int do_wait)
 /* Process all image batches in the message queue*/
 void process_all(int do_wait)
 {
-    setup_cache_if_needed();
+    
 
     ImageBatch datarcv;
     while (get_message_from_queue(&datarcv, do_wait) == SUCCESS)
+    {
+        logger_log_print(logger, LOG_INFO, "Batch processing started");
+        setup_cache_if_needed();
+	    logger_log_print(logger, LOG_INFO, "Cache rebuilt");
         process(&datarcv);
+        logger_log_print(logger, LOG_INFO, "Batch processing started");
+    }
 }
 
 typedef struct ProcessThreadArgs
@@ -313,6 +348,10 @@ void *process_thread(void *arg)
     atomic_store(&is_processing, 0);
     param_set_uint8(param, 0);
 
+    logger_log_print(logger, LOG_INFO, "Processing finished");
+    logger_flush(logger);
+    logger_destroy(logger);
+
     return NULL;
 }
 
@@ -329,6 +368,18 @@ void callback_run(param_t *param, int index)
         // another thread is already processing
         return;
     }
+
+    const char* dir = "/home/root/logs/";
+    char file_name[256];
+    time_t t = time(NULL);
+    snprintf(file_name, sizeof(file_name), "dipp_%ld.txt", t);
+
+    char full_path[512];
+    snprintf(full_path, sizeof(full_path), "%s%s", dir, file_name);
+
+    logger = logger_create(full_path);
+
+    logger_log_print(logger, LOG_INFO, "Processing started");
 
     /* Initialize thread variables */
     ProcessThreadArgs *args = malloc(sizeof(ProcessThreadArgs));
@@ -354,4 +405,5 @@ void callback_run(param_t *param, int index)
     }
 
     pthread_detach(processing_thread);
+    logger_log_print(logger, LOG_INFO, "Processing thread detatched.");
 }

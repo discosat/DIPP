@@ -61,7 +61,7 @@ size_t get_param_buffer(uint8_t **out, param_t *param)
 void *load_module(char *moduleName)
 {
     char filename[256]; // Adjust the buffer size as needed
-    snprintf(filename, sizeof(filename), "./external_modules/%s.so", moduleName);
+    snprintf(filename, sizeof(filename), "/usr/share/pipeline/%s.so", moduleName);
 
     // Load the external library dynamically
     void *handle = dlopen(filename, RTLD_LAZY);
@@ -206,8 +206,15 @@ void setup_cache_if_needed()
     if (!is_setup)
     {
         // Fetch and setup pipeline and module configurations if not done
+	    printf("rebuilding cache \r\n");
         setup_all_pipelines();
         setup_all_module_configs();
         is_setup = 1;
     }
+}
+
+void invalidate_cache()
+{
+    printf("invalidating cache \r\n");
+    is_setup = 0;
 }

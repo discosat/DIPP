@@ -2,6 +2,8 @@
 *.png
 *.bayerRG
 
+!test.png
+
 # IDE specific files
 /.vscode/
 
@@ -36,6 +38,8 @@
 *.so
 *.so.*
 *.dylib
+
+!external_modules/*.so
 
 # Executables
 *.exe

@@ -47,10 +47,15 @@ typedef struct ImageBatch {
     int batch_size;      /* size of the image batch */
     int shmid;           /* id of shared memory segment with image data */
     int pipeline_id;     /* id of pipeline to utilize for processing */
+    int obid;            /* id for each image batch */
     unsigned char *data; /* address to image data (in shared memory) */
 } ImageBatch;
 ```
 Modules will receive and return image batches of this format.
+
+### Generate protobuf code
+
+To generate C descriptor code from .proto files, a C implementation of protobuf is used, which can be found at [github.com/protobuf-c/protobuf-c](https://github.com/protobuf-c/protobuf-c).
 
 ## Camera simulator
 For testing purposes a camera simulating program is included in the `sim` folder. Compile the program with the `compile` script.

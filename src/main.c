@@ -13,8 +13,10 @@
 #include <vmem/vmem_ring.h>
 #include "vmem_storage.h"
 #include "vmem_ring_buffer.h"
+#include "vmem_dtp_server.h"
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
+#include <dtp/dtp.h>
 
 void *vmem_server_task(void *param)
 {
@@ -28,6 +30,19 @@ void *router_task(void *param)
 	{
 		csp_route_work();
 	}
+	return NULL;
+}
+
+void *dtp_server_task(void *param)
+{
+	bool keep_running = true;
+	dtp_server_main(&keep_running);
+	return NULL;
+}
+
+void *dtp_indeces_server_task(void *param) 
+{
+	dtp_indeces_server();
 	return NULL;
 }
 
@@ -79,10 +94,9 @@ static void iface_init(int argc, char *argv[])
 			.baudrate = 115200,
 			.databits = 8,
 			.stopbits = 1,
-			.paritysetting = 0,
-			.checkparity = 0};
+			.paritysetting = 0};  
 
-		int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, &iface);
+		int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, pipeline_addr, &iface);
 		if (error != CSP_ERR_NONE)
 		{
 			csp_print("failed to add KISS interface [%s], error: %d\n", kiss_device, error);
@@ -111,6 +125,8 @@ static void iface_init(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+	printf("argc %u", argc);
+
 	printf("\nbootmsg\n");
 
 	srand(time(NULL));
@@ -144,6 +160,12 @@ int main(int argc, char *argv[])
 
 	static pthread_t vmem_server_handle;
 	pthread_create(&vmem_server_handle, NULL, &vmem_server_task, NULL);
+
+	static pthread_t dtp_server_handle;
+	pthread_create(&dtp_server_handle, NULL, &dtp_server_task, NULL);
+
+	static pthread_t dtp_indeces_server_handle;
+	pthread_create(&dtp_indeces_server_handle, NULL, &dtp_indeces_server_task, NULL);
 
 	while (1)
 	{

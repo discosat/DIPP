@@ -19,6 +19,7 @@ message Metadata {
     int32 channels = 4;
     int32 timestamp = 5;
     int32 bits_pixel = 6;
-    string camera = 7;
-    repeated MetadataItem items = 8;
+    int32 obid = 7;
+    string camera = 8;
+    repeated MetadataItem items = 9;
 }

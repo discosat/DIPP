@@ -63,3 +63,4 @@
 # Project logs files
 /log/*
 !/log/.gitkeep
+/lib/dtp/*

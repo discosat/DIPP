@@ -58,7 +58,7 @@ deps = [csp_dep,param_dep,dtp_server_dep,proto_c_dep,m_dep,brotli_dep]
 c_args = ['-DHOSTNAME="@0@"'.format(get_option('hostname'))]
 
 dipp = executable(
-	'dipp-dev',
+	'dipp',
 	sources,
 	include_directories: dirs,
 	dependencies: deps,

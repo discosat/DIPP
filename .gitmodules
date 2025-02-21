@@ -7,3 +7,6 @@
 [submodule "lib/dtp"]
 	path = lib/dtp
 	url = https://github.com/discosat/libdtp.git
+[submodule "lib/libdtp"]
+	path = lib/libdtp
+	url = https://github.com/discosat/libdtp.git

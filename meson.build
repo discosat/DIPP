@@ -38,6 +38,9 @@ sources = files(
 	'src/protobuf/pipeline_config.pb-c.c',
 	'src/protobuf/metadata.pb-c.c',
 	'src/protobuf/dtpmetadata.pb-c.c',
+	'src/utils/priority_queue.c',
+	'src/utils/murmur_hash.c',
+	'src/utils/cost_store.c'
 )
 
 dirs = include_directories(
@@ -45,6 +48,7 @@ dirs = include_directories(
 	'src/include/protobuf',
 	'src/include/param',
 	'src/include/vmem',
+	'src/include/utils'
 )
 
 csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])

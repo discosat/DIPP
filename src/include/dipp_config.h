@@ -11,20 +11,25 @@
 #define MODULE_PARAMID_OFFSET 30
 
 /* Structs for storing module and pipeline configurations */
-typedef struct Module {
+typedef struct Module
+{
     char *module_name;
     void *module_function;
-    int module_param_id;
+    int default_effort_param_id;
+    int low_effort_param_id;
+    int medium_effort_param_id;
+    int high_effort_param_id;
 } Module;
 
-typedef struct Pipeline {
+typedef struct Pipeline
+{
     int pipeline_id;
     Module modules[MAX_MODULES];
     int num_modules;
 } Pipeline;
 
 /* Local structures for saving module parameter configurations (translated from Protobuf) */
-typedef enum 
+typedef enum
 {
     NOT_SET = 0,
     BOOL_VALUE = 2,
@@ -37,7 +42,8 @@ typedef struct ModuleParameter
 {
     char *key;
     ModuleParameter__ValueCase value_case;
-    union {
+    union
+    {
         int bool_value;
         int int_value;
         float float_value;
@@ -48,6 +54,7 @@ typedef struct ModuleParameter
 typedef struct ModuleParameterList
 {
     size_t n_parameters;
+    uint32_t hash;
     ModuleParameter **parameters;
 } ModuleParameterList;
 

@@ -7,15 +7,21 @@ enum EffortLevel {
     HIGH = 3;
 }
 
+// Implementation details for a module
+message Implementation {
+    int32 param_id = 1;
+    EffortLevel effort_level = 2;
+}
+
 // Module execution information
 message ModuleDefinition {
-    int32 order = 1;
-    string name = 2;
-    int32 param_id = 3;
-    EffortLevel effort = 4;
+    string name = 1;
+    int32 n_implementations = 2;
+    repeated Implementation implementations = 3;
 }
 
 // Define a message type for pipeline configuration
 message PipelineDefinition {
-    repeated ModuleDefinition modules = 1;
+    int32 n_module_configs = 1;
+    repeated ModuleDefinition modules = 2;
 }

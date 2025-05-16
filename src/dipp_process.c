@@ -17,6 +17,9 @@
 #include "dipp_process.h"
 #include "dipp_process_param.h"
 #include "dipp_paramids.h"
+#include "priority_queue.h"
+#include "cost_store.h"
+#include "murmur_hash.h"
 #include "vmem_storage.h"
 // #include "vmem_upload.h"
 #include "vmem_upload_local.h"
@@ -25,13 +28,16 @@
 #include "stb_image_write.h"
 #include "logger.h"
 
-static int output_pipe[2]; // Pipe for inter-process result communication
-static int error_pipe[2];  // Pipe for inter-process error communication
+static int output_pipe[2];     // Pipe for inter-process result communication
+static int error_pipe[2];      // Pipe for inter-process error communication
+static int is_interrupted = 0; // Flag to indicate if the process was interrupted
 
 Logger *logger;
+CostEntry *cost_cache;
 
 // Signal handler for timeout
-void timeout_handler(int signum) {
+void timeout_handler(int signum)
+{
     printf("Module timeout reached\n");
     uint16_t error_code = MODULE_EXIT_TIMEOUT;
     write(error_pipe[1], &error_code, sizeof(uint16_t));
@@ -89,7 +95,7 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
         {
             // Child process did not exit normally (CRASH)
             set_error_param(MODULE_EXIT_CRASH);
-	        //invalidate cache
+            // invalidate cache
             invalidate_cache();
             fprintf(stderr, "Child process did not exit normally\n");
             return FAILURE;
@@ -99,8 +105,54 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
     }
 }
 
+COST_MODEL_LOOKUP_RESULT get_implementation_config(Module *module, ImageBatch *data, int latency_requirement, int energy_requirement, int *module_param_id, uint32_t *picked_hash, IMPLEMENTATION_PREFERENCE preference)
+{
+    if (module->default_effort_param_id != -1)
+    {
+        uint32_t param_hash = module_parameter_lists[module->default_effort_param_id].hash;
+        *picked_hash = murmur3_batch_fingerprint(data, param_hash);
+
+        uint16_t latency, energy;
+        if (cache_lookup(cost_cache, *picked_hash, &latency, &energy) != -1)
+        {
+            if (latency <= latency_requirement && energy <= energy_requirement)
+            {
+                *module_param_id = module->default_effort_param_id;
+                return COST_MODEL_LOOKUP_RESULT.FOUND_CACHED;
+            }
+        }
+        else
+        {
+            // If not found in cache, check the default cost for the config
+            // TODO: Implement the logic to check the default cost for the config
+            return COST_MODEL_LOOKUP_RESULT.FOUND_NOT_CACHED;
+        }
+        return COST_MODEL_LOOKUP_RESULT.NOT_FOUND;
+    }
+    else
+    {
+        // start from the heavy and go down (the first that fulfils the requiments is the one to use)
+        switch (preference)
+        {
+        case LATENCY:
+            // TODO: write the policy logic
+            break;
+        case ENERGY:
+            // TODO: write the policy logic
+            break;
+        case BEST_EFFORT:
+            // TODO: write the policy logic
+            break;
+        default:
+            printf("Unknown implementation preference\n");
+            break;
+        }
+    }
+    return COST_MODEL_LOOKUP_RESULT.NOT_FOUND;
+}
+
 int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
-{   
+{
     /* Initiate communication pipes */
     if (pipe(output_pipe) == -1 || pipe(error_pipe) == -1)
     {
@@ -108,11 +160,26 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         return FAILURE;
     }
 
-    for (size_t i = 0; i < pipeline->num_modules; ++i)
+    for (size_t i = data->progress + 1; i < pipeline->num_modules; ++i)
     {
+        // TODO: Decide which policy to use
+        // TODO: add the default latency and energy cost to module params
+
+        size_t module_param_id;
+        uint32_t picked_hash;
+        COST_MODEL_LOOKUP_RESULT lookup_result = get_implementation_config(&pipeline->modules[i], data, 0, 0, &module_param_id, &picked_hash, LATENCY);
+
+        if (lookup_result == COST_MODEL_LOOKUP_RESULT.NOT_FOUND)
+        {
+            set_error_param(INTERNAL_RUN_NOT_FOUND);
+            return FAILURE;
+        }
+
+        // TODO: handle the case where the implementation is not cached -> performance needs to be measured and cached
+
         err_current_module = i + 1;
         ProcessFunction module_function = pipeline->modules[i].module_function;
-        ModuleParameterList *module_config = &module_parameter_lists[pipeline->modules[i].module_param_id];
+        ModuleParameterList *module_config = &module_parameter_lists[module_param_id];
 
         int module_status = execute_module_in_process(module_function, data, module_config);
 
@@ -143,6 +210,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         data->num_images = result.num_images;
         data->batch_size = result.batch_size;
         data->pipeline_id = result.pipeline_id;
+
+        // TODO: Monitor in order to break early.
     }
 
     /* Close communication pipes */
@@ -173,9 +242,10 @@ void save_images(const char *filename_base, const ImageBatch *batch)
 
         // Open the file in binary mode for writing
         filePtr = fopen(filename, "wb");
-        if (filePtr == NULL) {
-        fprintf(stderr, "Error opening file.\n");
-        return;
+        if (filePtr == NULL)
+        {
+            fprintf(stderr, "Error opening file.\n");
+            return;
         }
 
         // Write the byte array to the file
@@ -221,70 +291,93 @@ void process(ImageBatch *input_batch)
     // printf("Processing\n");
     // logger_log(logger, LOG_INFO, "Processing image batch");
     int pipeline_result = load_pipeline_and_execute(input_batch);
-    
-    // printf("Done processing\n");
-    // logger_log(logger, LOG_INFO, "Done processing image batch");
+
+    if (pipeline_result == FAILURE)
+    {
+        // printf("Error processing image batch\n");
+        // logger_log(logger, LOG_ERROR, "Error processing image batch");
+        // TODO: Decide what to do when error occurs. Possibilities:
+        // 1. Put onto partial queue
+        // 2. drop the batch
+        return;
+    }
+    else
+    {
+        // printf("Pipeline executed successfully\n");
+        // logger_log(logger, LOG_INFO, "Pipeline executed successfully");
+
+        // 1. check the pipeline progress
+        // 2. if processed partially, push the batch onto partial queue
+        // 3. if processed fully, save and upload the image, discard the batch, including the data file
+    }
+
     // Reset err values
     err_current_pipeline = 0;
     err_current_module = 0;
 
-    // Attach to shared memory from id
-    void *shmaddr = shmat(input_batch->shmid, NULL, 0);
-    if (shmaddr == NULL)
-    {
-        set_error_param(SHM_ATTACH);
-        return;
-    }
-    // logger_log(logger, LOG_INFO, "Attached to shared memory");
+    // TODO: move relevant things to the else branch
 
-    if (pipeline_result == SUCCESS)
-    {
-        //save_images("output", input_batch);
-        input_batch->data = shmaddr;
-        // logger_log(logger, LOG_INFO, "Uploading image batch");
-            
-        //printf("Uploading\n");
-        upload(input_batch->data, input_batch->num_images, input_batch->batch_size);
-        //printf("Done uploading\n");
-        // logger_log(logger, LOG_INFO, "Done uploading image batch");
-    }
+    // // Attach to shared memory from id
+    // void *shmaddr = shmat(input_batch->shmid, NULL, 0);
+    // if (shmaddr == NULL)
+    // {
+    //     set_error_param(SHM_ATTACH);
+    //     return;
+    // }
+    // // logger_log(logger, LOG_INFO, "Attached to shared memory");
 
-    // Detach and free shared memory
-    if (shmdt(shmaddr) == -1)
-    {
-        set_error_param(SHM_DETACH);
-        perror("shmdt");
-    }
-    // logger_log(logger, LOG_INFO, "Detached from shared memory");
-    if (shmctl(input_batch->shmid, IPC_RMID, NULL) == -1)
-    {
-        set_error_param(SHM_REMOVE);
-    }
-    // logger_log(logger, LOG_INFO, "Removed shared memory");
-    //printf("Done!\n");
+    // if (pipeline_result == SUCCESS)
+    // {
+    //     // save_images("output", input_batch);
+    //     input_batch->data = shmaddr;
+    //     // logger_log(logger, LOG_INFO, "Uploading image batch");
+
+    //     // printf("Uploading\n");
+    //     upload(input_batch->data, input_batch->num_images, input_batch->batch_size);
+    //     // printf("Done uploading\n");
+    //     //  logger_log(logger, LOG_INFO, "Done uploading image batch");
+    // }
+
+    // // Detach and free shared memory
+    // if (shmdt(shmaddr) == -1)
+    // {
+    //     set_error_param(SHM_DETACH);
+    //     perror("shmdt");
+    // }
+    // // logger_log(logger, LOG_INFO, "Detached from shared memory");
+    // if (shmctl(input_batch->shmid, IPC_RMID, NULL) == -1)
+    // {
+    //     set_error_param(SHM_REMOVE);
+    // }
+    // // logger_log(logger, LOG_INFO, "Removed shared memory");
+    // // printf("Done!\n");
 }
 
 int get_message_from_queue(ImageBatch *datarcv, int do_wait)
 {
     int msg_queue_id;
-    if ((msg_queue_id = msgget(MSG_QUEUE_KEY, 0)) == -1) {
+    if ((msg_queue_id = msgget(MSG_QUEUE_KEY, 0)) == -1)
+    {
         set_error_param(MSGQ_NOT_FOUND);
         return FAILURE;
     }
 
-    struct {
+    struct
+    {
         long mtype;
         char mtext[sizeof(ImageBatch)];
     } msg_buffer;
 
     ssize_t msg_size = msgrcv(msg_queue_id, &msg_buffer, sizeof(msg_buffer.mtext), 1, do_wait ? 0 : IPC_NOWAIT);
-    if (msg_size == -1) {
+    if (msg_size == -1)
+    {
         set_error_param(MSGQ_EMPTY);
         return FAILURE;
     }
 
     // Ensure that the received message size is not larger than the ImageBatch structure
-    if (msg_size > sizeof(ImageBatch)) {
+    if (msg_size > sizeof(ImageBatch))
+    {
         set_error_param(MSGQ_EMPTY);
         printf("Received %ld bytes, expected %ld bytes\n", msg_size, sizeof(ImageBatch));
         return FAILURE;
@@ -309,14 +402,13 @@ void process_one(int do_wait)
 /* Process all image batches in the message queue*/
 void process_all(int do_wait)
 {
-    
 
     ImageBatch datarcv;
     while (get_message_from_queue(&datarcv, do_wait) == SUCCESS)
     {
         logger_log_print(logger, LOG_INFO, "Batch processing started");
         setup_cache_if_needed();
-	    logger_log_print(logger, LOG_INFO, "Cache rebuilt");
+        logger_log_print(logger, LOG_INFO, "Cache rebuilt");
         process(&datarcv);
         logger_log_print(logger, LOG_INFO, "Batch processing started");
     }
@@ -369,7 +461,7 @@ void callback_run(param_t *param, int index)
         return;
     }
 
-    const char* dir = "/home/root/logs/";
+    const char *dir = "/home/root/logs/";
     char file_name[256];
     time_t t = time(NULL);
     snprintf(file_name, sizeof(file_name), "dipp_%ld.txt", t);
@@ -406,4 +498,54 @@ void callback_run(param_t *param, int index)
 
     pthread_detach(processing_thread);
     logger_log_print(logger, LOG_INFO, "Processing thread detatched.");
+}
+
+void process_images_loop()
+{
+
+    PriorityQueue *ingest_pq = createPriorityQueue("/usr/share/dipp/queue_file");
+    PriorityQueue *partially_processed_pq = createPriorityQueue("/usr/share/dipp/partially_processed_queue_file");
+
+    while (1)
+    {
+        // drain the message queue (nowait)
+        ImageBatch datarcv;
+        while (get_message_from_queue(&datarcv, do_wait) == SUCCESS)
+        {
+            // push data onto the ingest priority queue
+            enqueue(ingest_pq, datarcv);
+        }
+
+        // 1. pull from the partially_processed_pq first
+        ImageBatch *batch = dequeue(partially_processed_pq);
+        if (batch == NULL)
+        {
+            // 2. if empty, pull from the ingest_pq
+            batch = dequeue(ingest_pq);
+            if (batch == NULL)
+            {
+                // 3. if empty, wait for new data
+                continue;
+            }
+        }
+
+        // process the batch (maybe partially)
+        process(batch);
+
+        // if partial not full (let's say size<10), pull data from ingest_pq
+        size_t queue_size = get_queue_size(partially_processed_pq);
+        if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
+        {
+            ImageBatch *new_batch = dequeue(ingest_pq);
+            if (new_batch != NULL)
+            {
+                // process the batch (maybe partially)
+                process(new_batch);
+            }
+        }
+    }
+    // TODO: Prioritize the partially_processed_pq by the cost of the next module.
+    // TODO: have different heuristics for priority
+    // TODO: Allow dynamic rebalancing, when priority definition changes
+    // TODO: Align the ImageBatch with pipeline template + camera control / emulator
 }

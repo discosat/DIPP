@@ -7,6 +7,51 @@
 #endif
 
 #include "protos/pipeline_config.pb-c.h"
+void   implementation__init
+                     (Implementation         *message)
+{
+  static const Implementation init_value = IMPLEMENTATION__INIT;
+  *message = init_value;
+}
+size_t implementation__get_packed_size
+                     (const Implementation *message)
+{
+  assert(message->base.descriptor == &implementation__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t implementation__pack
+                     (const Implementation *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &implementation__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t implementation__pack_to_buffer
+                     (const Implementation *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &implementation__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Implementation *
+       implementation__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Implementation *)
+     protobuf_c_message_unpack (&implementation__descriptor,
+                                allocator, len, data);
+}
+void   implementation__free_unpacked
+                     (Implementation *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &implementation__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   module_definition__init
                      (ModuleDefinition         *message)
 {
@@ -97,23 +142,62 @@ void   pipeline_definition__free_unpacked
   assert(message->base.descriptor == &pipeline_definition__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor module_definition__field_descriptors[4] =
+static const ProtobufCFieldDescriptor implementation__field_descriptors[2] =
 {
   {
-    "order",
+    "param_id",
     1,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    offsetof(ModuleDefinition, order),
+    offsetof(Implementation, param_id),
     NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "name",
+    "effort_level",
     2,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_ENUM,
+    0,   /* quantifier_offset */
+    offsetof(Implementation, effort_level),
+    &effort_level__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned implementation__field_indices_by_name[] = {
+  1,   /* field[1] = effort_level */
+  0,   /* field[0] = param_id */
+};
+static const ProtobufCIntRange implementation__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor implementation__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "Implementation",
+  "Implementation",
+  "Implementation",
+  "",
+  sizeof(Implementation),
+  2,
+  implementation__field_descriptors,
+  implementation__field_indices_by_name,
+  1,  implementation__number_ranges,
+  (ProtobufCMessageInit) implementation__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor module_definition__field_descriptors[3] =
+{
+  {
+    "name",
+    1,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
@@ -124,40 +208,39 @@ static const ProtobufCFieldDescriptor module_definition__field_descriptors[4] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "param_id",
-    3,
+    "n_implementations",
+    2,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    offsetof(ModuleDefinition, param_id),
+    offsetof(ModuleDefinition, n_implementations),
     NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "effort",
-    4,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_ENUM,
-    0,   /* quantifier_offset */
-    offsetof(ModuleDefinition, effort),
-    &effort_level__descriptor,
+    "implementations",
+    3,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(ModuleDefinition, n_implementations),
+    offsetof(ModuleDefinition, implementations),
+    &implementation__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
 static const unsigned module_definition__field_indices_by_name[] = {
-  3,   /* field[3] = effort */
-  1,   /* field[1] = name */
-  0,   /* field[0] = order */
-  2,   /* field[2] = param_id */
+  2,   /* field[2] = implementations */
+  1,   /* field[1] = n_implementations */
+  0,   /* field[0] = name */
 };
 static const ProtobufCIntRange module_definition__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 4 }
+  { 0, 3 }
 };
 const ProtobufCMessageDescriptor module_definition__descriptor =
 {
@@ -167,18 +250,30 @@ const ProtobufCMessageDescriptor module_definition__descriptor =
   "ModuleDefinition",
   "",
   sizeof(ModuleDefinition),
-  4,
+  3,
   module_definition__field_descriptors,
   module_definition__field_indices_by_name,
   1,  module_definition__number_ranges,
   (ProtobufCMessageInit) module_definition__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor pipeline_definition__field_descriptors[1] =
+static const ProtobufCFieldDescriptor pipeline_definition__field_descriptors[2] =
 {
   {
-    "modules",
+    "n_module_configs",
     1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(PipelineDefinition, n_module_configs),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "modules",
+    2,
     PROTOBUF_C_LABEL_REPEATED,
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(PipelineDefinition, n_modules),
@@ -190,12 +285,13 @@ static const ProtobufCFieldDescriptor pipeline_definition__field_descriptors[1] 
   },
 };
 static const unsigned pipeline_definition__field_indices_by_name[] = {
-  0,   /* field[0] = modules */
+  1,   /* field[1] = modules */
+  0,   /* field[0] = n_module_configs */
 };
 static const ProtobufCIntRange pipeline_definition__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 1 }
+  { 0, 2 }
 };
 const ProtobufCMessageDescriptor pipeline_definition__descriptor =
 {
@@ -205,7 +301,7 @@ const ProtobufCMessageDescriptor pipeline_definition__descriptor =
   "PipelineDefinition",
   "",
   sizeof(PipelineDefinition),
-  1,
+  2,
   pipeline_definition__field_descriptors,
   pipeline_definition__field_indices_by_name,
   1,  pipeline_definition__number_ranges,

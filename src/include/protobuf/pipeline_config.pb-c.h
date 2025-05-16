@@ -15,6 +15,7 @@ PROTOBUF_C__BEGIN_DECLS
 #endif
 
 
+typedef struct Implementation Implementation;
 typedef struct ModuleDefinition ModuleDefinition;
 typedef struct PipelineDefinition PipelineDefinition;
 
@@ -32,19 +33,33 @@ typedef enum _EffortLevel {
 /* --- messages --- */
 
 /*
+ * Implementation details for a module
+ */
+struct  Implementation
+{
+  ProtobufCMessage base;
+  int32_t param_id;
+  EffortLevel effort_level;
+};
+#define IMPLEMENTATION__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&implementation__descriptor) \
+    , 0, EFFORT_LEVEL__DEFAULT }
+
+
+/*
  * Module execution information
  */
 struct  ModuleDefinition
 {
   ProtobufCMessage base;
-  int32_t order;
   char *name;
-  int32_t param_id;
-  EffortLevel effort;
+  int32_t n_implementations;
+  size_t n_implementations;
+  Implementation **implementations;
 };
 #define MODULE_DEFINITION__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&module_definition__descriptor) \
-    , 0, (char *)protobuf_c_empty_string, 0, EFFORT_LEVEL__DEFAULT }
+    , (char *)protobuf_c_empty_string, 0, 0,NULL }
 
 
 /*
@@ -53,14 +68,34 @@ struct  ModuleDefinition
 struct  PipelineDefinition
 {
   ProtobufCMessage base;
+  int32_t n_module_configs;
   size_t n_modules;
   ModuleDefinition **modules;
 };
 #define PIPELINE_DEFINITION__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&pipeline_definition__descriptor) \
-    , 0,NULL }
+    , 0, 0,NULL }
 
 
+/* Implementation methods */
+void   implementation__init
+                     (Implementation         *message);
+size_t implementation__get_packed_size
+                     (const Implementation   *message);
+size_t implementation__pack
+                     (const Implementation   *message,
+                      uint8_t             *out);
+size_t implementation__pack_to_buffer
+                     (const Implementation   *message,
+                      ProtobufCBuffer     *buffer);
+Implementation *
+       implementation__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   implementation__free_unpacked
+                     (Implementation *message,
+                      ProtobufCAllocator *allocator);
 /* ModuleDefinition methods */
 void   module_definition__init
                      (ModuleDefinition         *message);
@@ -101,6 +136,9 @@ void   pipeline_definition__free_unpacked
                       ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
+typedef void (*Implementation_Closure)
+                 (const Implementation *message,
+                  void *closure_data);
 typedef void (*ModuleDefinition_Closure)
                  (const ModuleDefinition *message,
                   void *closure_data);
@@ -114,6 +152,7 @@ typedef void (*PipelineDefinition_Closure)
 /* --- descriptors --- */
 
 extern const ProtobufCEnumDescriptor    effort_level__descriptor;
+extern const ProtobufCMessageDescriptor implementation__descriptor;
 extern const ProtobufCMessageDescriptor module_definition__descriptor;
 extern const ProtobufCMessageDescriptor pipeline_definition__descriptor;
 

@@ -16,9 +16,12 @@ ModuleParameterList module_parameter_lists[MAX_MODULES];
 
 static int is_setup = 0;
 
-int is_buffer_empty(uint8_t *buffer, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        if (buffer[i] != 0) {
+int is_buffer_empty(uint8_t *buffer, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        if (buffer[i] != 0)
+        {
             return 0; // Buffer contains non-zero values
         }
     }
@@ -83,7 +86,7 @@ void *load_module(char *moduleName)
     return functionPointer;
 }
 
-void setup_pipeline(param_t *param, int index)
+void setup_pipeline(param_t *param)
 {
     uint8_t *buffer = NULL;
     size_t buf_size = get_param_buffer(&buffer, param);
@@ -104,23 +107,46 @@ void setup_pipeline(param_t *param, int index)
     for (size_t module_idx = 0; module_idx < pdef->n_modules; module_idx++)
     {
         ModuleDefinition *mdef = pdef->modules[module_idx];
+
         pipelines[pipeline_id].modules[module_idx].module_name = strdup(mdef->name);
         pipelines[pipeline_id].modules[module_idx].module_function = load_module(mdef->name);
-        pipelines[pipeline_id].modules[module_idx].module_param_id = mdef->param_id - 1;
+        for (size_t impl_idx = 0; impl_idx < mdef->n_implementations; impl_idx++)
+        {
+            Implementation *impl = mdef->implementations[impl_idx];
+            switch (impl->effort_level)
+            {
+            case EFFORT_LEVEL__DEFAULT:
+                pipelines[pipeline_id].modules[module_idx].default_effort_param_id = impl->param_id;
+                break;
+            case EFFORT_LEVEL__LOW:
+                pipelines[pipeline_id].modules[module_idx].low_effort_param_id = impl->param_id;
+                break;
+            case EFFORT_LEVEL__MEDIUM:
+                pipelines[pipeline_id].modules[module_idx].medium_effort_param_id = impl->param_id;
+                break;
+            case EFFORT_LEVEL__HIGH:
+                pipelines[pipeline_id].modules[module_idx].high_effort_param_id = impl->param_id;
+                break;
+            default:
+                // Handle unknown effort level
+                break;
+            }
+        }
     }
 
     /* Free the unpacked pipeline definition data */
     pipeline_definition__free_unpacked(pdef, NULL);
 }
 
-void setup_module_config(param_t *param, int index)
+void setup_module_config(param_t *param)
 {
     uint8_t *buffer = NULL;
     size_t buf_size = get_param_buffer(&buffer, param);
+    uint32_t hash = murmur3_32(buffer, buf_size, 42);
 
     ModuleConfig *mcon = module_config__unpack(NULL, buf_size, buffer);
     free(buffer);
-    buffer = NULL; 
+    buffer = NULL;
 
     if (!mcon)
     {
@@ -129,6 +155,7 @@ void setup_module_config(param_t *param, int index)
 
     int module_id = param->id - MODULE_PARAMID_OFFSET; // Minus 30 cause IDs are offset by 30 to accommodate pipeline ids (see pipeline.h)
     module_parameter_lists[module_id].n_parameters = mcon->n_parameters;
+    module_parameter_lists[module_id].hash = hash;
     module_parameter_lists[module_id].parameters = malloc(mcon->n_parameters * sizeof(ModuleParameter *));
     if (!module_parameter_lists[module_id].parameters) // Check if malloc failed
     {
@@ -142,7 +169,7 @@ void setup_module_config(param_t *param, int index)
         module_parameter_lists[module_id].parameters[i] = malloc(sizeof(ModuleParameter));
 
         if (!module_parameter_lists[module_id].parameters[i]) // Check if malloc failed
-        {   
+        {
             set_error_param(MEMORY_MALLOC);
             // Cleanup previously allocated memory for parameters
             for (size_t j = 0; j < i; j++)
@@ -164,20 +191,20 @@ void setup_module_config(param_t *param, int index)
 
         switch (mcon->parameters[i]->value_case)
         {
-            case CONFIG_PARAMETER__VALUE_BOOL_VALUE:
-                module_parameter_lists[module_id].parameters[i]->bool_value = mcon->parameters[i]->bool_value;
-                break;
-            case CONFIG_PARAMETER__VALUE_INT_VALUE:
-                module_parameter_lists[module_id].parameters[i]->int_value = mcon->parameters[i]->int_value;
-                break;
-            case CONFIG_PARAMETER__VALUE_FLOAT_VALUE:
-                module_parameter_lists[module_id].parameters[i]->float_value = mcon->parameters[i]->float_value;
-                break;
-            case CONFIG_PARAMETER__VALUE_STRING_VALUE:
-                module_parameter_lists[module_id].parameters[i]->string_value = strdup(mcon->parameters[i]->string_value);
-                break;
-            default:
-                break;
+        case CONFIG_PARAMETER__VALUE_BOOL_VALUE:
+            module_parameter_lists[module_id].parameters[i]->bool_value = mcon->parameters[i]->bool_value;
+            break;
+        case CONFIG_PARAMETER__VALUE_INT_VALUE:
+            module_parameter_lists[module_id].parameters[i]->int_value = mcon->parameters[i]->int_value;
+            break;
+        case CONFIG_PARAMETER__VALUE_FLOAT_VALUE:
+            module_parameter_lists[module_id].parameters[i]->float_value = mcon->parameters[i]->float_value;
+            break;
+        case CONFIG_PARAMETER__VALUE_STRING_VALUE:
+            module_parameter_lists[module_id].parameters[i]->string_value = strdup(mcon->parameters[i]->string_value);
+            break;
+        default:
+            break;
         }
     }
 
@@ -189,7 +216,7 @@ void setup_all_pipelines()
 {
     for (size_t pipeline_idx = 0; pipeline_idx < MAX_PIPELINES; pipeline_idx++)
     {
-        setup_pipeline(pipeline_config_params[pipeline_idx], 0);
+        setup_pipeline(pipeline_config_params[pipeline_idx]);
     }
 }
 
@@ -197,7 +224,7 @@ void setup_all_module_configs()
 {
     for (size_t module_idx = 0; module_idx < MAX_MODULES; module_idx++)
     {
-        setup_module_config(module_config_params[module_idx], 0);
+        setup_module_config(module_config_params[module_idx]);
     }
 }
 
@@ -206,7 +233,7 @@ void setup_cache_if_needed()
     if (!is_setup)
     {
         // Fetch and setup pipeline and module configurations if not done
-	    printf("rebuilding cache \r\n");
+        printf("rebuilding cache \r\n");
         setup_all_pipelines();
         setup_all_module_configs();
         is_setup = 1;

@@ -14,6 +14,7 @@
 #include "vmem_storage.h"
 #include "vmem_ring_buffer.h"
 #include "vmem_dtp_server.h"
+#include "dipp_config.h"
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
 #include <dtp/dtp.h>
@@ -40,9 +41,15 @@ void *dtp_server_task(void *param)
 	return NULL;
 }
 
-void *dtp_indeces_server_task(void *param) 
+void *dtp_indeces_server_task(void *param)
 {
 	dtp_indeces_server();
+	return NULL;
+}
+
+void *process_images_task(void *param)
+{
+	process_images_loop();
 	return NULL;
 }
 
@@ -62,7 +69,7 @@ static void iface_init(int argc, char *argv[])
 		{
 		case 'i':
 			// Use the provided interface instead of "ZMQ"
-			interface = optarg; 
+			interface = optarg;
 			break;
 		case 'p':
 			// Use the provided port/devices
@@ -94,7 +101,7 @@ static void iface_init(int argc, char *argv[])
 			.baudrate = 115200,
 			.databits = 8,
 			.stopbits = 1,
-			.paritysetting = 0};  
+			.paritysetting = 0};
 
 		int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, &iface);
 		if (error != CSP_ERR_NONE)
@@ -167,9 +174,12 @@ int main(int argc, char *argv[])
 	static pthread_t dtp_indeces_server_handle;
 	pthread_create(&dtp_indeces_server_handle, NULL, &dtp_indeces_server_task, NULL);
 
+	static pthread_t process_images_handle;
+	pthread_create(&process_images_handle, NULL, &process_images_task, NULL);
+
 	while (1)
 	{
-		sleep(10 * 1000); // TODO: Handle kbd interupt
+		sleep(10 * 1000);
 	}
 
 	return 0;

@@ -2,16 +2,18 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#include <sys/shm.h>
+#include <sys/mman.h>
 #include <param/param.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdatomic.h>
+#include <glob.h>
 #include "dipp_error.h"
 #include "dipp_config.h"
 #include "dipp_process.h"
@@ -206,10 +208,13 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             return FAILURE;
         }
 
-        data->shmid = result.shmid;
         data->num_images = result.num_images;
         data->batch_size = result.batch_size;
         data->pipeline_id = result.pipeline_id;
+        data->priority = result.priority;
+        data->progress = result.progress;
+        strcpy(data->uuid, result.uuid);
+        strcpy(data->filename, result.filename);
 
         // TODO: Monitor in order to break early.
     }
@@ -274,6 +279,19 @@ int get_pipeline_by_id(int pipeline_id, Pipeline **pipeline)
     return FAILURE;
 }
 
+int get_pipeline_length(int pipeline_id)
+{
+    for (size_t i = 0; i < MAX_PIPELINES; i++)
+    {
+        if (pipelines[i].pipeline_id == pipeline_id)
+        {
+            return pipelines[i].num_modules;
+        }
+    }
+    set_error_param(INTERNAL_PID_NOT_FOUND);
+    return FAILURE;
+}
+
 int load_pipeline_and_execute(ImageBatch *input_batch)
 {
     // Execute the pipeline with parameter values
@@ -296,9 +314,7 @@ void process(ImageBatch *input_batch)
     {
         // printf("Error processing image batch\n");
         // logger_log(logger, LOG_ERROR, "Error processing image batch");
-        // TODO: Decide what to do when error occurs. Possibilities:
-        // 1. Put onto partial queue
-        // 2. drop the batch
+        // TODO: Implement retry logic (allow a single retry)
         return;
     }
     else
@@ -306,51 +322,80 @@ void process(ImageBatch *input_batch)
         // printf("Pipeline executed successfully\n");
         // logger_log(logger, LOG_INFO, "Pipeline executed successfully");
 
-        // 1. check the pipeline progress
-        // 2. if processed partially, push the batch onto partial queue
-        // 3. if processed fully, save and upload the image, discard the batch, including the data file
+        int pipeline_length = get_pipeline_length(input_batch->pipeline_id);
+        if (pipeline_length == FAILURE)
+        {
+            printf("Error getting pipeline length\n");
+            // logger_log(logger, LOG_ERROR, "Error getting pipeline length");
+            return;
+        }
+        if (input_batch->progress == pipeline_length)
+        {
+            printf("Pipeline fully executed successfully\n");
+            // logger_log(logger, LOG_INFO, "Pipeline executed successfully");
+
+            int fd = open(input_batch->filename, O_RDONLY, 0644);
+            if (fd == -1)
+            {
+                set_error_param(MMAP_OPEN);
+                return;
+            }
+
+            input_batch->data = mmap(NULL, input_batch->batch_size, PROT_READ, MAP_PRIVATE, fd, 0);
+            if (input_batch->data == MAP_FAILED)
+            {
+                close(fd);
+                set_error_param(MMAP_ATTACH);
+                return;
+            }
+
+            close(fd);
+
+            upload(input_batch->data, input_batch->num_images, input_batch->batch_size);
+
+            if (munmap(input_batch->data, input_batch->batch_size) == -1)
+            {
+                set_error_param(MMAP_UNMAP);
+                return;
+            }
+
+            // TODO: Uncomment the following lines to delete the files after processing
+
+            // char filename_prefix[] = "/usr/share/dipp/data/batch_%s_*";
+            // char glob_pattern[sizeof(filename_prefix) + 37];
+            // snprintf(glob_pattern, sizeof(filename_prefix) + 37, filename_prefix, input_batch->uuid);
+
+            // glob_t gstruct;
+            // int r = glob(glob_pattern, GLOB_ERR, NULL, &gstruct);
+
+            // if (r == 0)
+            // {
+            //     for (size_t i = 0; i < gstruct.gl_pathc; i++)
+            //     {
+            //         remove(gstruct.gl_pathv[i]);
+            //     }
+            // }
+            // else
+            // {
+            //     printf("Error deleting files\n");
+            //     // logger_log(logger, LOG_ERROR, "Error deleting files");
+            // }
+        }
+        else
+        {
+            printf("Pipeline partially executed successfully\n");
+            // logger_log(logger, LOG_INFO, "Pipeline executed partially");
+
+            // push the batch to the partial queue
+            enqueue(partially_processed_pq, *input_batch);
+
+            printf("Batch pushed to partially processed queue\n");
+        }
     }
 
     // Reset err values
     err_current_pipeline = 0;
     err_current_module = 0;
-
-    // TODO: move relevant things to the else branch
-
-    // // Attach to shared memory from id
-    // void *shmaddr = shmat(input_batch->shmid, NULL, 0);
-    // if (shmaddr == NULL)
-    // {
-    //     set_error_param(SHM_ATTACH);
-    //     return;
-    // }
-    // // logger_log(logger, LOG_INFO, "Attached to shared memory");
-
-    // if (pipeline_result == SUCCESS)
-    // {
-    //     // save_images("output", input_batch);
-    //     input_batch->data = shmaddr;
-    //     // logger_log(logger, LOG_INFO, "Uploading image batch");
-
-    //     // printf("Uploading\n");
-    //     upload(input_batch->data, input_batch->num_images, input_batch->batch_size);
-    //     // printf("Done uploading\n");
-    //     //  logger_log(logger, LOG_INFO, "Done uploading image batch");
-    // }
-
-    // // Detach and free shared memory
-    // if (shmdt(shmaddr) == -1)
-    // {
-    //     set_error_param(SHM_DETACH);
-    //     perror("shmdt");
-    // }
-    // // logger_log(logger, LOG_INFO, "Detached from shared memory");
-    // if (shmctl(input_batch->shmid, IPC_RMID, NULL) == -1)
-    // {
-    //     set_error_param(SHM_REMOVE);
-    // }
-    // // logger_log(logger, LOG_INFO, "Removed shared memory");
-    // // printf("Done!\n");
 }
 
 int get_message_from_queue(ImageBatch *datarcv, int do_wait)
@@ -503,8 +548,8 @@ void callback_run(param_t *param, int index)
 void process_images_loop()
 {
 
-    PriorityQueue *ingest_pq = createPriorityQueue("/usr/share/dipp/queue_file");
-    PriorityQueue *partially_processed_pq = createPriorityQueue("/usr/share/dipp/partially_processed_queue_file");
+    ingest_pq = createPriorityQueue("/usr/share/dipp/queue_file");
+    partially_processed_pq = createPriorityQueue("/usr/share/dipp/partially_processed_queue_file");
 
     while (1)
     {
@@ -544,8 +589,4 @@ void process_images_loop()
             }
         }
     }
-    // TODO: Prioritize the partially_processed_pq by the cost of the next module.
-    // TODO: have different heuristics for priority
-    // TODO: Allow dynamic rebalancing, when priority definition changes
-    // TODO: Align the ImageBatch with pipeline template + camera control / emulator
 }

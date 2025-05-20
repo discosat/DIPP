@@ -8,7 +8,7 @@
 
 static uint64_t global_time = 0;
 
-typedef struct
+typedef struct CostEntry
 {
     uint32_t hash;
     uint16_t latency;
@@ -20,5 +20,7 @@ typedef struct
 int cost_store_init(CostEntry *cache);
 void cache_insert(CostEntry *cache, uint32_t hash, uint16_t latency, uint16_t energy);
 int cache_lookup(CostEntry *cache, uint32_t hash, uint16_t *latency, uint16_t *energy);
+
+extern CostEntry *cost_cache;
 
 #endif // COST_STORE_H

@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <stdatomic.h>
 #include <glob.h>
+#include <time.h>
 #include "dipp_error.h"
 #include "dipp_config.h"
 #include "dipp_process.h"
@@ -125,9 +126,20 @@ COST_MODEL_LOOKUP_RESULT get_implementation_config(Module *module, ImageBatch *d
         }
         else
         {
-            // If not found in cache, check the default cost for the config
-            // TODO: Implement the logic to check the default cost for the config
-            return COST_MODEL_LOOKUP_RESULT.FOUND_NOT_CACHED;
+            latency = module_parameter_lists[module->default_effort_param_id].latency_cost;
+            energy = module_parameter_lists[module->default_effort_param_id].energy_cost;
+
+            // if not provided by the user, use the default values
+            if (latency == 0)
+                latency = DEFAULT_EFFORT_LATENCY;
+            if (energy == 0)
+                energy = DEFAULT_EFFORT_ENERGY;
+
+            if (latency <= latency_requirement && energy <= energy_requirement)
+            {
+                *module_param_id = module->default_effort_param_id;
+                return COST_MODEL_LOOKUP_RESULT.FOUND_NOT_CACHED;
+            }
         }
         return COST_MODEL_LOOKUP_RESULT.NOT_FOUND;
     }
@@ -183,7 +195,17 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         ProcessFunction module_function = pipeline->modules[i].module_function;
         ModuleParameterList *module_config = &module_parameter_lists[module_param_id];
 
+        // measure time to execute the module
+        struct timespec start, end;
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        // TODO: get the starting energy
+
         int module_status = execute_module_in_process(module_function, data, module_config);
+
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        // TODO: get the energy cost
+
+        long elapsed_ns = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
 
         if (module_status == FAILURE)
         {
@@ -194,6 +216,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             close(error_pipe[1]);
             return FAILURE;
         }
+
+        // save the costs to the cost store if not already cached
 
         ImageBatch result;
         int res = read(output_pipe[0], &result, sizeof(result)); // Read the result from the pipe
@@ -561,15 +585,15 @@ void process_images_loop()
             enqueue(ingest_pq, datarcv);
         }
 
-        // 1. pull from the partially_processed_pq first
+        // pull from the partially_processed_pq first
         ImageBatch *batch = dequeue(partially_processed_pq);
         if (batch == NULL)
         {
-            // 2. if empty, pull from the ingest_pq
+            // if empty, pull from the ingest_pq
             batch = dequeue(ingest_pq);
             if (batch == NULL)
             {
-                // 3. if empty, wait for new data
+                // if empty, wait for new data
                 continue;
             }
         }

@@ -2,12 +2,22 @@
 #define DIPP_PROCESS_H
 
 #include "dipp_config.h"
+#include "priority_queue.h"
 
 #define MSG_QUEUE_KEY 71
 
 // Return codes
 #define SUCCESS 0
 #define FAILURE -1
+
+#define DEFAULT_EFFORT_LATENCY 3000
+#define DEFAULT_EFFORT_ENERGY 3000
+#define LOW_EFFORT_LATENCY 2000
+#define LOW_EFFORT_ENERGY 2000
+#define MEDIUM_EFFORT_LATENCY 3000
+#define MEDIUM_EFFORT_ENERGY 3000
+#define HIGH_EFFORT_LATENCY 4000
+#define HIGH_EFFORT_ENERGY 4000
 
 PriorityQueue *ingest_pq;
 PriorityQueue *partially_processed_pq;

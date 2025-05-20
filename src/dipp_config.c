@@ -110,6 +110,14 @@ void setup_pipeline(param_t *param)
 
         pipelines[pipeline_id].modules[module_idx].module_name = strdup(mdef->name);
         pipelines[pipeline_id].modules[module_idx].module_function = load_module(mdef->name);
+
+        // set the default param id (not available == -1)
+        pipelines[pipeline_id].modules[module_idx].default_effort_param_id = -1;
+        pipelines[pipeline_id].modules[module_idx].low_effort_param_id = -1;
+        pipelines[pipeline_id].modules[module_idx].medium_effort_param_id = -1;
+        pipelines[pipeline_id].modules[module_idx].high_effort_param_id = -1;
+
+        // Set the param ids for available implementations
         for (size_t impl_idx = 0; impl_idx < mdef->n_implementations; impl_idx++)
         {
             Implementation *impl = mdef->implementations[impl_idx];
@@ -155,6 +163,8 @@ void setup_module_config(param_t *param)
 
     int module_id = param->id - MODULE_PARAMID_OFFSET; // Minus 30 cause IDs are offset by 30 to accommodate pipeline ids (see pipeline.h)
     module_parameter_lists[module_id].n_parameters = mcon->n_parameters;
+    module_parameter_lists[module_id].latency_cost = mcon->latency_cost;
+    module_parameter_lists[module_id].energy_cost = mcon->energy_cost;
     module_parameter_lists[module_id].hash = hash;
     module_parameter_lists[module_id].parameters = malloc(mcon->n_parameters * sizeof(ModuleParameter *));
     if (!module_parameter_lists[module_id].parameters) // Check if malloc failed

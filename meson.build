@@ -41,6 +41,10 @@ sources = files(
 	'src/utils/priority_queue.c',
 	'src/utils/murmur_hash.c',
 	'src/utils/cost_store.c'
+	'src/heuristics/best_effort_heuristic.c',
+	'src/heuristics/default_effort.c',
+	'src/heuristics/implementation_judge.c',
+	'src/heuristics/lowest_effort_heuristic.c'
 )
 
 dirs = include_directories(
@@ -48,7 +52,8 @@ dirs = include_directories(
 	'src/include/protobuf',
 	'src/include/param',
 	'src/include/vmem',
-	'src/include/utils'
+	'src/include/utils',
+	'src/include/heuristics'
 )
 
 csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])
@@ -57,7 +62,8 @@ dtp_server_dep = dependency('dtp_server', fallback: ['dtp', 'dtp_server_dep'])
 proto_c_dep = dependency('libprotobuf-c', fallback: ['protobuf-c', 'proto_c_dep'])
 brotli_dep = dependency('libbrotlidec')
 m_dep = meson.get_compiler('c').find_library('m', required : false)
-deps = [csp_dep,param_dep,dtp_server_dep,proto_c_dep,m_dep,brotli_dep]
+uuid_dep = meson.get_compiler('c').find_library('uuid', required: false)
+deps = [csp_dep,param_dep,dtp_server_dep,proto_c_dep,m_dep,brotli_dep, uuid_dep]
 
 c_args = ['-DHOSTNAME="@0@"'.format(get_option('hostname'))]
 

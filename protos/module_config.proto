@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+// Define a message parameter for representing generic values
+message ConfigParameter {
+        string key = 1;
+        oneof value {
+            bool bool_value = 2;
+            int32 int_value = 3;
+            float float_value = 4;
+            string string_value = 5;
+        }
+    }
+
+// Define a message type for module configuration
+message ModuleConfig {
+    int32 latency_cost = 1;
+    int32 energy_cost = 2;
+    repeated ConfigParameter parameters = 4;
+}

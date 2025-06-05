@@ -77,3 +77,12 @@ dipp = executable(
 	c_args: c_args,
 	link_args: ['-ldl'],
 )
+
+mock_energy_server = executable(
+    'mock_energy_server',
+    'src/mock_energy_server.c',
+    include_directories: dirs,
+    dependencies: [csp_dep, param_dep, m_dep],
+    install: true,
+    c_args: c_args,
+)

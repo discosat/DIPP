@@ -25,7 +25,7 @@ typedef struct Pipeline
 {
     int pipeline_id;
     Module modules[MAX_MODULES];
-    int num_modules;
+    size_t num_modules;
 } Pipeline;
 
 /* Local structures for saving module parameter configurations (translated from Protobuf) */

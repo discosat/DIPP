@@ -18,6 +18,23 @@
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
 #include <dtp/dtp.h>
+#include "mock_energy_server.h"
+
+// Static storage for remote energy reading
+static uint32_t remote_energy_value = 0;
+
+// Define remote parameter to access mock energy readings
+PARAM_DEFINE_REMOTE_DYNAMIC(
+	MOCK_ENERGY_NJ_ID,			   // ID
+	mock_energy_nj,				   // Name
+	MOCK_ENERGY_NODE_ADDR,		   // Node address
+	PARAM_TYPE_UINT32,			   // Type
+	-1,							   // Array count (-1 for single value)
+	0,							   // Array step (0 for single value)
+	PM_CSP,						   // Flags
+	&remote_energy_value,		   // Physical address points to our static variable
+	"Remote energy sensor reading" // Doc string
+);
 
 void *vmem_server_task(void *param)
 {
@@ -158,6 +175,9 @@ int main(int argc, char *argv[])
 
 	csp_bind_callback(csp_service_handler, CSP_ANY);
 	csp_bind_callback(param_serve, PARAM_PORT_SERVER);
+
+	// Add energy parameter to param list
+	param_list_add(&mock_energy_nj);
 
 	vmem_file_init(&vmem_storage);
 	vmem_ring_init(&vmem_images);

@@ -39,14 +39,6 @@ typedef enum COST_MODEL_LOOKUP_RESULT
     FOUND_NOT_CACHED = -2 // found an implementation that fulfils requirements, but not cached
 } COST_MODEL_LOOKUP_RESULT;
 
-typedef enum IMPLEMENTATION_PREFERENCE
-{
-    LATENCY = 0,
-    ENERGY = 1,
-    BEST_EFFORT = 2,
-    // TODO: maybe aggregate of latency and energy
-}
-
 typedef struct ImageBatch
 {
     long mtype;          /* message type to read from the message queue */

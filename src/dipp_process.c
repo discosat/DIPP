@@ -10,6 +10,11 @@
 #include <sys/msg.h>
 #include <sys/mman.h>
 #include <param/param.h>
+#include <param/param_client.h>
+#include <csp/csp_types.h>
+#include "mock_energy_server.h"
+#include <param/param_client.h>
+#include "mock_energy_server.h"
 #include <pthread.h>
 #include <signal.h>
 #include <stdatomic.h>
@@ -30,6 +35,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 #include "logger.h"
+#include "heuristics.h"
 
 static int output_pipe[2];     // Pipe for inter-process result communication
 static int error_pipe[2];      // Pipe for inter-process error communication
@@ -37,6 +43,7 @@ static int is_interrupted = 0; // Flag to indicate if the process was interrupte
 
 Logger *logger;
 CostEntry *cost_cache;
+Heuristic *current_heuristic;
 
 // Signal handler for timeout
 void timeout_handler(int signum)
@@ -108,63 +115,6 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
     }
 }
 
-COST_MODEL_LOOKUP_RESULT get_implementation_config(Module *module, ImageBatch *data, int latency_requirement, int energy_requirement, int *module_param_id, uint32_t *picked_hash, IMPLEMENTATION_PREFERENCE preference)
-{
-    if (module->default_effort_param_id != -1)
-    {
-        uint32_t param_hash = module_parameter_lists[module->default_effort_param_id].hash;
-        *picked_hash = murmur3_batch_fingerprint(data, param_hash);
-
-        uint16_t latency, energy;
-        if (cache_lookup(cost_cache, *picked_hash, &latency, &energy) != -1)
-        {
-            if (latency <= latency_requirement && energy <= energy_requirement)
-            {
-                *module_param_id = module->default_effort_param_id;
-                return COST_MODEL_LOOKUP_RESULT.FOUND_CACHED;
-            }
-        }
-        else
-        {
-            latency = module_parameter_lists[module->default_effort_param_id].latency_cost;
-            energy = module_parameter_lists[module->default_effort_param_id].energy_cost;
-
-            // if not provided by the user, use the default values
-            if (latency == 0)
-                latency = DEFAULT_EFFORT_LATENCY;
-            if (energy == 0)
-                energy = DEFAULT_EFFORT_ENERGY;
-
-            if (latency <= latency_requirement && energy <= energy_requirement)
-            {
-                *module_param_id = module->default_effort_param_id;
-                return COST_MODEL_LOOKUP_RESULT.FOUND_NOT_CACHED;
-            }
-        }
-        return COST_MODEL_LOOKUP_RESULT.NOT_FOUND;
-    }
-    else
-    {
-        // start from the heavy and go down (the first that fulfils the requiments is the one to use)
-        switch (preference)
-        {
-        case LATENCY:
-            // TODO: write the policy logic
-            break;
-        case ENERGY:
-            // TODO: write the policy logic
-            break;
-        case BEST_EFFORT:
-            // TODO: write the policy logic
-            break;
-        default:
-            printf("Unknown implementation preference\n");
-            break;
-        }
-    }
-    return COST_MODEL_LOOKUP_RESULT.NOT_FOUND;
-}
-
 int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 {
     /* Initiate communication pipes */
@@ -176,12 +126,10 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 
     for (size_t i = data->progress + 1; i < pipeline->num_modules; ++i)
     {
-        // TODO: Decide which policy to use
-        // TODO: add the default latency and energy cost to module params
-
         size_t module_param_id;
         uint32_t picked_hash;
-        COST_MODEL_LOOKUP_RESULT lookup_result = get_implementation_config(&pipeline->modules[i], data, 0, 0, &module_param_id, &picked_hash, LATENCY);
+
+        COST_MODEL_LOOKUP_RESULT lookup_result = current_heuristic->heuristic_function(&pipeline->modules[i], data, pipeline->num_modules, &module_param_id, &picked_hash);
 
         if (lookup_result == COST_MODEL_LOOKUP_RESULT.NOT_FOUND)
         {
@@ -189,23 +137,55 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             return FAILURE;
         }
 
-        // TODO: handle the case where the implementation is not cached -> performance needs to be measured and cached
-
         err_current_module = i + 1;
         ProcessFunction module_function = pipeline->modules[i].module_function;
         ModuleParameterList *module_config = &module_parameter_lists[module_param_id];
 
         // measure time to execute the module
         struct timespec start, end;
-        clock_gettime(CLOCK_MONOTONIC, &start);
-        // TODO: get the starting energy
+        long elapsed_ns = 0;
+        if (lookup_result == FOUND_NOT_CACHED)
+        {
+            clock_gettime(CLOCK_MONOTONIC, &start);
+
+            // Get starting energy reading
+            uint32_t start_energy = 0;
+            if (param_pull_single(&mock_energy_nj, 0, CSP_PRIO_HIGH, 0, MOCK_ENERGY_NODE_ADDR, 500, 2) != 0)
+            {
+                fprintf(stderr, "Failed to pull start energy reading\n");
+                start_energy = 0;
+            }
+            else
+            {
+                start_energy = param_get_uint32(&mock_energy_nj);
+            }
+        }
 
         int module_status = execute_module_in_process(module_function, data, module_config);
 
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        // TODO: get the energy cost
+        uint32_t energy_cost = 0;
 
-        long elapsed_ns = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
+        if (lookup_result == FOUND_NOT_CACHED)
+        {
+            // measure time to execute the module
+            clock_gettime(CLOCK_MONOTONIC, &end);
+            // Get ending energy reading
+            uint32_t end_energy = 0;
+            if (param_pull_single(&mock_energy_nj, 0, CSP_PRIO_HIGH, 0, MOCK_ENERGY_NODE_ADDR, 500, 2) != 0)
+            {
+                fprintf(stderr, "Failed to pull end energy reading\n");
+                end_energy = 0;
+            }
+            else
+            {
+                end_energy = param_get_uint32(&mock_energy_nj);
+            }
+
+            // Calculate energy cost (0 if readings failed)
+            energy_cost = (start_energy && end_energy) ? (end_energy - start_energy) : 0;
+
+            elapsed_ns = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
+        }
 
         if (module_status == FAILURE)
         {
@@ -217,7 +197,11 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             return FAILURE;
         }
 
-        // save the costs to the cost store if not already cached
+        if (lookup_result == FOUND_NOT_CACHED)
+        {
+            // Store both latency and energy cost in cache
+            cache_insert(cost_cache, picked_hash, elapsed_ns, energy_cost);
+        }
 
         ImageBatch result;
         int res = read(output_pipe[0], &result, sizeof(result)); // Read the result from the pipe
@@ -239,8 +223,6 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         data->progress = result.progress;
         strcpy(data->uuid, result.uuid);
         strcpy(data->filename, result.filename);
-
-        // TODO: Monitor in order to break early.
     }
 
     /* Close communication pipes */
@@ -250,43 +232,6 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
     close(error_pipe[1]);
 
     return SUCCESS;
-}
-
-void save_images(const char *filename_base, const ImageBatch *batch)
-{
-    uint32_t offset = 0;
-    int image_index = 0;
-
-    while (image_index < batch->num_images && offset < batch->batch_size)
-    {
-        uint32_t meta_size = *((uint32_t *)(batch->data + offset));
-        offset += sizeof(uint32_t); // Move the offset to the start of metadata
-        Metadata *metadata = metadata__unpack(NULL, meta_size, batch->data + offset);
-        offset += meta_size; // Move offset to start of image
-
-        char filename[20];
-        sprintf(filename, "%s%d.raw", filename_base, image_index);
-
-        FILE *filePtr;
-
-        // Open the file in binary mode for writing
-        filePtr = fopen(filename, "wb");
-        if (filePtr == NULL)
-        {
-            fprintf(stderr, "Error opening file.\n");
-            return;
-        }
-
-        // Write the byte array to the file
-        fwrite(batch->data + offset, sizeof(unsigned char), metadata->size, filePtr);
-
-        // Close the file
-        fclose(filePtr);
-
-        offset += metadata->size; // Move the offset to the start of the next image block
-
-        image_index++;
-    }
 }
 
 int get_pipeline_by_id(int pipeline_id, Pipeline **pipeline)
@@ -330,14 +275,11 @@ int load_pipeline_and_execute(ImageBatch *input_batch)
 
 void process(ImageBatch *input_batch)
 {
-    // printf("Processing\n");
-    // logger_log(logger, LOG_INFO, "Processing image batch");
     int pipeline_result = load_pipeline_and_execute(input_batch);
 
     if (pipeline_result == FAILURE)
     {
-        // printf("Error processing image batch\n");
-        // logger_log(logger, LOG_ERROR, "Error processing image batch");
+
         // TODO: Implement retry logic (allow a single retry)
         return;
     }
@@ -458,122 +400,25 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
     return SUCCESS;
 }
 
-/* Process one image batch from the message queue*/
-void process_one(int do_wait)
-{
-    setup_cache_if_needed();
-
-    ImageBatch datarcv;
-    if (get_message_from_queue(&datarcv, do_wait) == SUCCESS)
-        process(&datarcv);
-}
-
-/* Process all image batches in the message queue*/
-void process_all(int do_wait)
-{
-
-    ImageBatch datarcv;
-    while (get_message_from_queue(&datarcv, do_wait) == SUCCESS)
-    {
-        logger_log_print(logger, LOG_INFO, "Batch processing started");
-        setup_cache_if_needed();
-        logger_log_print(logger, LOG_INFO, "Cache rebuilt");
-        process(&datarcv);
-        logger_log_print(logger, LOG_INFO, "Batch processing started");
-    }
-}
-
-typedef struct ProcessThreadArgs
-{
-    int all;
-    int wait;
-    param_t *param;
-} ProcessThreadArgs;
-
-atomic_int is_processing = ATOMIC_VAR_INIT(0);
-
-void *process_thread(void *arg)
-{
-    ProcessThreadArgs *args = (ProcessThreadArgs *)arg;
-    int all = args->all;
-    int wait = args->wait;
-    param_t *param = args->param;
-    free(args);
-
-    if (all)
-        process_all(wait);
-    else
-        process_one(wait);
-
-    /* Indicate that processing is finished */
-    atomic_store(&is_processing, 0);
-    param_set_uint8(param, 0);
-
-    logger_log_print(logger, LOG_INFO, "Processing finished");
-    logger_flush(logger);
-    logger_destroy(logger);
-
-    return NULL;
-}
-
-void callback_run(param_t *param, int index)
-{
-    uint8_t param_value = param_get_uint8(param);
-    if (!param_value)
-        return;
-
-    /* Check whether a thread is currently processing */
-    int expected = 0;
-    if (!atomic_compare_exchange_strong(&is_processing, &expected, 1))
-    {
-        // another thread is already processing
-        return;
-    }
-
-    const char *dir = "/home/root/logs/";
-    char file_name[256];
-    time_t t = time(NULL);
-    snprintf(file_name, sizeof(file_name), "dipp_%ld.txt", t);
-
-    char full_path[512];
-    snprintf(full_path, sizeof(full_path), "%s%s", dir, file_name);
-
-    logger = logger_create(full_path);
-
-    logger_log_print(logger, LOG_INFO, "Processing started");
-
-    /* Initialize thread variables */
-    ProcessThreadArgs *args = malloc(sizeof(ProcessThreadArgs));
-    if (args == NULL)
-    {
-        // atomically update is_processing
-        atomic_store(&is_processing, 0);
-        return;
-    }
-
-    args->all = param_value % 2 == 0;
-    args->wait = param_value > 2;
-    args->param = param;
-
-    /* Execute pipeline on new thread, to allow callback to finish */
-    pthread_t processing_thread;
-    if (pthread_create(&processing_thread, NULL, process_thread, args) != 0)
-    {
-        // create thread failed
-        free(args);
-        atomic_store(&is_processing, 0);
-        return;
-    }
-
-    pthread_detach(processing_thread);
-    logger_log_print(logger, LOG_INFO, "Processing thread detatched.");
-}
-
 void process_images_loop()
 {
 
     ingest_pq = createPriorityQueue("/usr/share/dipp/queue_file");
     partially_processed_pq = createPriorityQueue("/usr/share/dipp/partially_processed_queue_file");
+
+    // get the heuristic parameter
+    switch (param_get_uint32(&heuristic))
+    {
+    case LOWEST_EFFORT:
+        current_heuristic = &lowest_effort_heuristic;
+        break;
+    case BEST_EFFORT:
+        current_heuristic = &best_effort_heuristic;
+        break;
+    default:
+        current_heuristic = &lowest_effort_heuristic;
+        break;
+    }
 
     while (1)
     {
@@ -597,6 +442,8 @@ void process_images_loop()
                 continue;
             }
         }
+
+        setup_cache_if_needed();
 
         // process the batch (maybe partially)
         process(batch);

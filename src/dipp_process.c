@@ -36,6 +36,7 @@
 #include "stb_image_write.h"
 #include "logger.h"
 #include "heuristics.h"
+#include "telemetry.h"
 
 static int output_pipe[2];     // Pipe for inter-process result communication
 static int error_pipe[2];      // Pipe for inter-process error communication
@@ -143,6 +144,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 
         // measure time to execute the module
         struct timespec start, end;
+        uint32_t start_energy = 0, end_energy = 0;
         long elapsed_ns = 0;
         if (lookup_result == FOUND_NOT_CACHED)
         {
@@ -153,11 +155,10 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             if (param_pull_single(&mock_energy_nj, 0, CSP_PRIO_HIGH, 0, MOCK_ENERGY_NODE_ADDR, 500, 2) != 0)
             {
                 fprintf(stderr, "Failed to pull start energy reading\n");
-                start_energy = 0;
             }
             else
             {
-                start_energy = param_get_uint32(&mock_energy_nj);
+                start_energy = get_energy_reading();
             }
         }
 
@@ -170,15 +171,13 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             // measure time to execute the module
             clock_gettime(CLOCK_MONOTONIC, &end);
             // Get ending energy reading
-            uint32_t end_energy = 0;
             if (param_pull_single(&mock_energy_nj, 0, CSP_PRIO_HIGH, 0, MOCK_ENERGY_NODE_ADDR, 500, 2) != 0)
             {
                 fprintf(stderr, "Failed to pull end energy reading\n");
-                end_energy = 0;
             }
             else
             {
-                end_energy = param_get_uint32(&mock_energy_nj);
+                end_energy = get_energy_reading();
             }
 
             // Calculate energy cost (0 if readings failed)

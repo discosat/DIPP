@@ -18,7 +18,7 @@
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
 #include <dtp/dtp.h>
-#include "mock_energy_server.h"
+#include "telemetry.h"
 
 void *vmem_server_task(void *param)
 {
@@ -162,6 +162,8 @@ int main(int argc, char *argv[])
 
 	vmem_file_init(&vmem_storage);
 	vmem_ring_init(&vmem_images);
+
+	initialize_telemetry();
 
 	static pthread_t router_handle;
 	pthread_create(&router_handle, NULL, &router_task, NULL);

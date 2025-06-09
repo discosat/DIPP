@@ -148,6 +148,9 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
 void process_images_loop()
 {
 
+    // TODO: Set storage mode.
+    global_storage_mode = STORAGE_MMAP;
+
     ingest_pq = createPriorityQueue("/usr/share/dipp/queue_file");
     partially_processed_pq = createPriorityQueue("/usr/share/dipp/partially_processed_queue_file");
 

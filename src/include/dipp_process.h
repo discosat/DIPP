@@ -22,6 +22,8 @@
 
 extern PriorityQueue *ingest_pq;
 extern PriorityQueue *partially_processed_pq;
+extern CostEntry *cost_cache;
+StorageMode global_storage_mode;
 
 // Pipeline run codes
 typedef enum PIPELINE_PROCESS
@@ -62,6 +64,10 @@ typedef struct ImageBatchFingerprint
 
 typedef ImageBatch (*ProcessFunction)(ImageBatch *, ModuleParameterList *, int *);
 
-extern CostEntry *cost_cache;
+typedef enum
+{
+    STORAGE_MMAP,
+    STORAGE_MEM,
+} StorageMode;
 
 #endif

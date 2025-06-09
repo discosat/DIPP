@@ -32,19 +32,25 @@ sources = files(
 	'src/vmem/vmem_dtp_server.c',
 	'src/vmem/vmem_storage.c',
 	'src/vmem/vmem_ring_buffer.c',
-#	'src/vmem/vmem_upload.c',
 	'src/vmem/vmem_upload_local.c',
 	'src/protobuf/module_config.pb-c.c',
 	'src/protobuf/pipeline_config.pb-c.c',
 	'src/protobuf/metadata.pb-c.c',
 	'src/protobuf/dtpmetadata.pb-c.c',
-	'src/utils/priority_queue.c',
 	'src/utils/murmur_hash.c',
-	'src/utils/cost_store.c'
 	'src/heuristics/best_effort_heuristic.c',
 	'src/heuristics/default_effort.c',
 	'src/heuristics/implementation_judge.c',
-	'src/heuristics/lowest_effort_heuristic.c'
+	'src/heuristics/lowest_effort_heuristic.c',
+	'src/cost_store/cost_store.c',
+	'src/cost_store/cost_store_mmap.c',
+	'src/cost_store/cost_store_mem.c',
+	'src/priority_queue/priority_queue.c',
+	'src/priority_queue/priority_queue_mmap.c',
+	'src/priority_queue/priority_queue_mem.c',
+	'src/pipeline/pipeline_executor.c',
+	'src/process/process_module.c'
+
 )
 
 dirs = include_directories(
@@ -52,8 +58,12 @@ dirs = include_directories(
 	'src/include/protobuf',
 	'src/include/param',
 	'src/include/vmem',
+	'src/include/process',
+	'src/include/pipeline',
 	'src/include/utils',
-	'src/include/heuristics'
+	'src/include/heuristics',
+	'src/include/cost_store',
+	'src/include/priority_queue'
 )
 
 csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])

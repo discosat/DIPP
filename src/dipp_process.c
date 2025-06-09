@@ -4,18 +4,13 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/mman.h>
 #include <param/param.h>
-#include <param/param_client.h>
 #include <csp/csp_types.h>
 #include <param/param_client.h>
-#include <pthread.h>
-#include <signal.h>
-#include <stdatomic.h>
 #include <glob.h>
 #include <time.h>
 #include "dipp_error.h"
@@ -25,179 +20,10 @@
 #include "dipp_paramids.h"
 #include "priority_queue.h"
 #include "cost_store.h"
-#include "murmur_hash.h"
 #include "vmem_storage.h"
-// #include "vmem_upload.h"
-#include "vmem_upload_local.h"
-#include "metadata.pb-c.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-#include "logger.h"
 #include "heuristics.h"
-#include "telemetry.h"
 #include "process_module.h"
-
-static int is_interrupted = 0; // Flag to indicate if the process was interrupted
-
-Logger *logger;
-CostEntry *cost_cache;
-Heuristic *current_heuristic;
-
-int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
-{
-    /* Initiate communication pipes */
-    if (pipe(output_pipe) == -1 || pipe(error_pipe) == -1)
-    {
-        set_error_param(PIPE_CREATE);
-        return FAILURE;
-    }
-
-    for (size_t i = data->progress + 1; i < pipeline->num_modules; ++i)
-    {
-        size_t module_param_id;
-        uint32_t picked_hash;
-
-        COST_MODEL_LOOKUP_RESULT lookup_result = current_heuristic->heuristic_function(&pipeline->modules[i], data, pipeline->num_modules, &module_param_id, &picked_hash);
-
-        if (lookup_result == COST_MODEL_LOOKUP_RESULT.NOT_FOUND)
-        {
-            set_error_param(INTERNAL_RUN_NOT_FOUND);
-            return FAILURE;
-        }
-
-        err_current_module = i + 1;
-        ProcessFunction module_function = pipeline->modules[i].module_function;
-        ModuleParameterList *module_config = &module_parameter_lists[module_param_id];
-
-        // measure time to execute the module
-        struct timespec start, end;
-        uint32_t start_energy = 0, end_energy = 0;
-        long elapsed_ns = 0;
-        if (lookup_result == FOUND_NOT_CACHED)
-        {
-            clock_gettime(CLOCK_MONOTONIC, &start);
-
-            // Get starting energy reading
-            uint32_t start_energy = 0;
-            if (param_pull_single(&mock_energy_nj, 0, CSP_PRIO_HIGH, 0, MOCK_ENERGY_NODE_ADDR, 500, 2) != 0)
-            {
-                fprintf(stderr, "Failed to pull start energy reading\n");
-            }
-            else
-            {
-                start_energy = get_energy_reading();
-            }
-        }
-
-        int module_status = execute_module_in_process(module_function, data, module_config);
-
-        uint32_t energy_cost = 0;
-
-        if (lookup_result == FOUND_NOT_CACHED)
-        {
-            // measure time to execute the module
-            clock_gettime(CLOCK_MONOTONIC, &end);
-            // Get ending energy reading
-            if (param_pull_single(&mock_energy_nj, 0, CSP_PRIO_HIGH, 0, MOCK_ENERGY_NODE_ADDR, 500, 2) != 0)
-            {
-                fprintf(stderr, "Failed to pull end energy reading\n");
-            }
-            else
-            {
-                end_energy = get_energy_reading();
-            }
-
-            // Calculate energy cost (0 if readings failed)
-            energy_cost = (start_energy && end_energy) ? (end_energy - start_energy) : 0;
-
-            elapsed_ns = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
-        }
-
-        if (module_status == FAILURE)
-        {
-            /* Close all active pipes */
-            close(output_pipe[0]); // Close the read end of the pipe
-            close(output_pipe[1]); // Close the write end of the pipe
-            close(error_pipe[0]);
-            close(error_pipe[1]);
-            return FAILURE;
-        }
-
-        if (lookup_result == FOUND_NOT_CACHED)
-        {
-            // Store both latency and energy cost in cache
-            cache_insert(cost_cache, picked_hash, elapsed_ns, energy_cost);
-        }
-
-        ImageBatch result;
-        int res = read(output_pipe[0], &result, sizeof(result)); // Read the result from the pipe
-        if (res == FAILURE)
-        {
-            set_error_param(PIPE_READ);
-            return FAILURE;
-        }
-        if (res == 0)
-        {
-            set_error_param(PIPE_EMPTY);
-            return FAILURE;
-        }
-
-        data->num_images = result.num_images;
-        data->batch_size = result.batch_size;
-        data->pipeline_id = result.pipeline_id;
-        data->priority = result.priority;
-        data->progress = result.progress;
-        strcpy(data->uuid, result.uuid);
-        strcpy(data->filename, result.filename);
-    }
-
-    /* Close communication pipes */
-    close(output_pipe[0]); // Close the read end of the pipe
-    close(output_pipe[1]); // Close the write end of the pipe
-    close(error_pipe[0]);
-    close(error_pipe[1]);
-
-    return SUCCESS;
-}
-
-int get_pipeline_by_id(int pipeline_id, Pipeline **pipeline)
-{
-    for (size_t i = 0; i < MAX_PIPELINES; i++)
-    {
-        if (pipelines[i].pipeline_id == pipeline_id)
-        {
-            *pipeline = &pipelines[i];
-            return SUCCESS;
-        }
-    }
-    set_error_param(INTERNAL_PID_NOT_FOUND);
-    return FAILURE;
-}
-
-int get_pipeline_length(int pipeline_id)
-{
-    for (size_t i = 0; i < MAX_PIPELINES; i++)
-    {
-        if (pipelines[i].pipeline_id == pipeline_id)
-        {
-            return pipelines[i].num_modules;
-        }
-    }
-    set_error_param(INTERNAL_PID_NOT_FOUND);
-    return FAILURE;
-}
-
-int load_pipeline_and_execute(ImageBatch *input_batch)
-{
-    // Execute the pipeline with parameter values
-    Pipeline *pipeline;
-    if (get_pipeline_by_id(input_batch->pipeline_id, &pipeline) == FAILURE)
-        return FAILURE;
-
-    err_current_pipeline = pipeline->pipeline_id;
-
-    return execute_pipeline(pipeline, input_batch);
-}
+#include "pipeline_executor.h"
 
 void process(ImageBatch *input_batch)
 {
@@ -211,20 +37,15 @@ void process(ImageBatch *input_batch)
     }
     else
     {
-        // printf("Pipeline executed successfully\n");
-        // logger_log(logger, LOG_INFO, "Pipeline executed successfully");
-
         int pipeline_length = get_pipeline_length(input_batch->pipeline_id);
         if (pipeline_length == FAILURE)
         {
             printf("Error getting pipeline length\n");
-            // logger_log(logger, LOG_ERROR, "Error getting pipeline length");
             return;
         }
         if (input_batch->progress == pipeline_length)
         {
             printf("Pipeline fully executed successfully\n");
-            // logger_log(logger, LOG_INFO, "Pipeline executed successfully");
 
             int fd = open(input_batch->filename, O_RDONLY, 0644);
             if (fd == -1)
@@ -270,13 +91,11 @@ void process(ImageBatch *input_batch)
             // else
             // {
             //     printf("Error deleting files\n");
-            //     // logger_log(logger, LOG_ERROR, "Error deleting files");
             // }
         }
         else
         {
             printf("Pipeline partially executed successfully\n");
-            // logger_log(logger, LOG_INFO, "Pipeline executed partially");
 
             // push the batch to the partial queue
             enqueue(partially_processed_pq, *input_batch);
@@ -331,6 +150,8 @@ void process_images_loop()
 
     ingest_pq = createPriorityQueue("/usr/share/dipp/queue_file");
     partially_processed_pq = createPriorityQueue("/usr/share/dipp/partially_processed_queue_file");
+
+    cost_store_init(&cost_cache);
 
     // get the heuristic parameter
     switch (param_get_uint32(&heuristic))

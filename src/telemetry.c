@@ -32,5 +32,14 @@ void initialize_telemetry()
 
 uint32_t get_energy_reading()
 {
-    return param_get_uint32(&mock_energy_nj);
+
+    if (param_pull_single(&mock_energy_nj, 0, CSP_PRIO_HIGH, 0, MOCK_ENERGY_NODE_ADDR, 500, 2) != 0)
+    {
+        fprintf(stderr, "Failed to pull start energy reading\n");
+        return 0; // Return 0 if the pull fails
+    }
+    else
+    {
+        return param_get_uint32(&mock_energy_nj);
+    }
 }

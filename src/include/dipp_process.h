@@ -3,6 +3,7 @@
 
 #include "dipp_config.h"
 #include "priority_queue.h"
+#include "cost_store.h"
 
 #define MSG_QUEUE_KEY 71
 
@@ -19,8 +20,8 @@
 #define HIGH_EFFORT_LATENCY 4000
 #define HIGH_EFFORT_ENERGY 4000
 
-PriorityQueue *ingest_pq;
-PriorityQueue *partially_processed_pq;
+extern PriorityQueue *ingest_pq;
+extern PriorityQueue *partially_processed_pq;
 
 // Pipeline run codes
 typedef enum PIPELINE_PROCESS
@@ -60,5 +61,7 @@ typedef struct ImageBatchFingerprint
 } ImageBatchFingerprint;
 
 typedef ImageBatch (*ProcessFunction)(ImageBatch *, ModuleParameterList *, int *);
+
+extern CostEntry *cost_cache;
 
 #endif

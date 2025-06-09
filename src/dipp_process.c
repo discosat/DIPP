@@ -47,6 +47,8 @@ void process(ImageBatch *input_batch)
         {
             printf("Pipeline fully executed successfully\n");
 
+            // TODO: Create factory for Image reader, with init, read, close, upload
+
             int fd = open(input_batch->filename, O_RDONLY, 0644);
             if (fd == -1)
             {

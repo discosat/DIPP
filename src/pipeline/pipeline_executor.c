@@ -106,6 +106,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         data->pipeline_id = result.pipeline_id;
         data->priority = result.priority;
         data->progress = result.progress;
+        data->shmid = result.shmid;
         strcpy(data->uuid, result.uuid);
         strcpy(data->filename, result.filename);
     }

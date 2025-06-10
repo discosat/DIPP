@@ -111,7 +111,7 @@ int cache_lookup(CostEntry *cache, uint32_t hash, uint16_t *latency, uint16_t *e
     return -1;
 }
 
-CostStore cost_store_mem = {
+CostStoreImpl cost_store_mem = {
     .init = cost_store_init,
     .insert = cache_insert,
     .lookup = cache_lookup};

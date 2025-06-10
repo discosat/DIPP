@@ -60,7 +60,7 @@ void process(ImageBatch *input_batch)
             if (input_batch->data == MAP_FAILED)
             {
                 close(fd);
-                set_error_param(MMAP_ATTACH);
+                set_error_param(MMAP_MAP);
                 return;
             }
 

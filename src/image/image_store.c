@@ -21,21 +21,85 @@ int image_batch_read_data(ImageBatch *batch)
     {
     case STORAGE_MMAP:
     {
-        // Memory-mapped file access
-        int fd = open(batch->filename, O_RDONLY, 0644);
-        if (fd == -1)
+
+        // Check if the filename is set
+        if (batch->filename[0] == '\0')
         {
-            set_error_param(MMAP_OPEN);
-            return FAILURE;
+            // this means that DIPP is running in persisted mode but data came from shared memory
+            char file_uuid[37];
+            uuid_t uuid;
+            uuid_generate_random(uuid);
+            uuid_unparse_lower(uuid, file_uuid);
+
+            char filename_prefix[] = "/usr/share/dipp/data/batch_%s_%s.bin";
+            char batch_filename[sizeof(filename_prefix) + 37 + 37];
+            snprintf(batch_filename, sizeof(filename_prefix) + 37 + 37, filename_prefix, batch->uuid, file_uuid);
+
+            strncpy(batch->filename, batch_filename, sizeof(batch->filename) - 1);
+            batch->filename[sizeof(batch->filename) - 1] = '\0'; // Ensure null termination
+
+            // Memory-mapped file access
+            int fd = open(batch->filename, O_RDONLY, 0644);
+            if (fd == -1)
+            {
+                set_error_param(MMAP_OPEN);
+                return FAILURE;
+            }
+
+            batch->data = mmap(NULL, batch->batch_size, PROT_READ, MAP_PRIVATE, fd, 0);
+            close(fd);
+
+            if (batch->data == MAP_FAILED)
+            {
+                set_error_param(MMAP_MAP);
+                return FAILURE;
+            }
+
+            // Shared memory access
+            unsigned char *shm_data = shmat(batch->shmid, NULL, 0);
+            if (shm_data == (void *)-1)
+            {
+                set_error_param(SHM_ATTACH);
+                return FAILURE;
+            }
+
+            // Copy data from shared memory to memory-mapped file
+            memcpy(batch->data, shm_data, batch->batch_size);
+
+            // Detach from shared memory
+            if (shmdt(shm_data) == -1)
+            {
+                set_error_param(SHM_DETACH);
+                return FAILURE;
+            }
+
+            // Remove the shared memory segment
+            if (shmctl(batch->shmid, IPC_RMID, NULL) == -1)
+            {
+                set_error_param(SHM_REMOVE);
+                return FAILURE;
+            }
+            // Clear the shared memory ID
+            batch->shmid = -1;
         }
-
-        batch->data = mmap(NULL, batch->batch_size, PROT_READ, MAP_PRIVATE, fd, 0);
-        close(fd);
-
-        if (batch->data == MAP_FAILED)
+        else
         {
-            set_error_param(MMAP_ATTACH);
-            return FAILURE;
+            // Memory-mapped file access
+            int fd = open(batch->filename, O_RDONLY, 0644);
+            if (fd == -1)
+            {
+                set_error_param(MMAP_OPEN);
+                return FAILURE;
+            }
+
+            batch->data = mmap(NULL, batch->batch_size, PROT_READ, MAP_PRIVATE, fd, 0);
+            close(fd);
+
+            if (batch->data == MAP_FAILED)
+            {
+                set_error_param(MMAP_MAP);
+                return FAILURE;
+            }
         }
 
         break;
@@ -114,7 +178,3 @@ int image_batch_setup_storage(ImageBatch *batch, StorageMode storage_mode)
 
     return SUCCESS;
 }
-
-// TODO: implement switch to the persisted variant. Images will most likely come from camera
-// controller through shared memory, but dipp might start in persisted mode
-// (check its filename[0]==\0 && storage_mode == STORAGE_MMAP, if so, persist)

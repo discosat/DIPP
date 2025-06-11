@@ -17,7 +17,6 @@
 #include "dipp_error.h"
 #include "dipp_config.h"
 #include "dipp_process.h"
-#include "dipp_process_param.h"
 #include "dipp_paramids.h"
 #include "priority_queue.h"
 #include "cost_store.h"

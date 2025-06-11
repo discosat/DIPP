@@ -6,249 +6,235 @@
 #define PROTOBUF_C__NO_DEPRECATED
 #endif
 
-#include "protos/module_config.pb-c.h"
-void   config_parameter__init
-                     (ConfigParameter         *message)
+#include "module_config.pb-c.h"
+void config_parameter__init(ConfigParameter *message)
 {
   static const ConfigParameter init_value = CONFIG_PARAMETER__INIT;
   *message = init_value;
 }
-size_t config_parameter__get_packed_size
-                     (const ConfigParameter *message)
+size_t config_parameter__get_packed_size(const ConfigParameter *message)
 {
   assert(message->base.descriptor == &config_parameter__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+  return protobuf_c_message_get_packed_size((const ProtobufCMessage *)(message));
 }
-size_t config_parameter__pack
-                     (const ConfigParameter *message,
-                      uint8_t       *out)
+size_t config_parameter__pack(const ConfigParameter *message,
+                              uint8_t *out)
 {
   assert(message->base.descriptor == &config_parameter__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+  return protobuf_c_message_pack((const ProtobufCMessage *)message, out);
 }
-size_t config_parameter__pack_to_buffer
-                     (const ConfigParameter *message,
-                      ProtobufCBuffer *buffer)
+size_t config_parameter__pack_to_buffer(const ConfigParameter *message,
+                                        ProtobufCBuffer *buffer)
 {
   assert(message->base.descriptor == &config_parameter__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+  return protobuf_c_message_pack_to_buffer((const ProtobufCMessage *)message, buffer);
 }
 ConfigParameter *
-       config_parameter__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
+config_parameter__unpack(ProtobufCAllocator *allocator,
+                         size_t len,
+                         const uint8_t *data)
 {
   return (ConfigParameter *)
-     protobuf_c_message_unpack (&config_parameter__descriptor,
+      protobuf_c_message_unpack(&config_parameter__descriptor,
                                 allocator, len, data);
 }
-void   config_parameter__free_unpacked
-                     (ConfigParameter *message,
-                      ProtobufCAllocator *allocator)
+void config_parameter__free_unpacked(ConfigParameter *message,
+                                     ProtobufCAllocator *allocator)
 {
-  if(!message)
+  if (!message)
     return;
   assert(message->base.descriptor == &config_parameter__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+  protobuf_c_message_free_unpacked((ProtobufCMessage *)message, allocator);
 }
-void   module_config__init
-                     (ModuleConfig         *message)
+void module_config__init(ModuleConfig *message)
 {
   static const ModuleConfig init_value = MODULE_CONFIG__INIT;
   *message = init_value;
 }
-size_t module_config__get_packed_size
-                     (const ModuleConfig *message)
+size_t module_config__get_packed_size(const ModuleConfig *message)
 {
   assert(message->base.descriptor == &module_config__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+  return protobuf_c_message_get_packed_size((const ProtobufCMessage *)(message));
 }
-size_t module_config__pack
-                     (const ModuleConfig *message,
-                      uint8_t       *out)
+size_t module_config__pack(const ModuleConfig *message,
+                           uint8_t *out)
 {
   assert(message->base.descriptor == &module_config__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+  return protobuf_c_message_pack((const ProtobufCMessage *)message, out);
 }
-size_t module_config__pack_to_buffer
-                     (const ModuleConfig *message,
-                      ProtobufCBuffer *buffer)
+size_t module_config__pack_to_buffer(const ModuleConfig *message,
+                                     ProtobufCBuffer *buffer)
 {
   assert(message->base.descriptor == &module_config__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+  return protobuf_c_message_pack_to_buffer((const ProtobufCMessage *)message, buffer);
 }
 ModuleConfig *
-       module_config__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
+module_config__unpack(ProtobufCAllocator *allocator,
+                      size_t len,
+                      const uint8_t *data)
 {
   return (ModuleConfig *)
-     protobuf_c_message_unpack (&module_config__descriptor,
+      protobuf_c_message_unpack(&module_config__descriptor,
                                 allocator, len, data);
 }
-void   module_config__free_unpacked
-                     (ModuleConfig *message,
-                      ProtobufCAllocator *allocator)
+void module_config__free_unpacked(ModuleConfig *message,
+                                  ProtobufCAllocator *allocator)
 {
-  if(!message)
+  if (!message)
     return;
   assert(message->base.descriptor == &module_config__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+  protobuf_c_message_free_unpacked((ProtobufCMessage *)message, allocator);
 }
 static const ProtobufCFieldDescriptor config_parameter__field_descriptors[5] =
-{
-  {
-    "key",
-    1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(ConfigParameter, key),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "bool_value",
-    2,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_BOOL,
-    offsetof(ConfigParameter, value_case),
-    offsetof(ConfigParameter, bool_value),
-    NULL,
-    NULL,
-    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "int_value",
-    3,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_INT32,
-    offsetof(ConfigParameter, value_case),
-    offsetof(ConfigParameter, int_value),
-    NULL,
-    NULL,
-    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "float_value",
-    4,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_FLOAT,
-    offsetof(ConfigParameter, value_case),
-    offsetof(ConfigParameter, float_value),
-    NULL,
-    NULL,
-    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "string_value",
-    5,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    offsetof(ConfigParameter, value_case),
-    offsetof(ConfigParameter, string_value),
-    NULL,
-    &protobuf_c_empty_string,
-    PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
+    {
+        {
+            "key",
+            1,
+            PROTOBUF_C_LABEL_NONE,
+            PROTOBUF_C_TYPE_STRING,
+            0, /* quantifier_offset */
+            offsetof(ConfigParameter, key),
+            NULL,
+            &protobuf_c_empty_string,
+            0,            /* flags */
+            0, NULL, NULL /* reserved1,reserved2, etc */
+        },
+        {
+            "bool_value",
+            2,
+            PROTOBUF_C_LABEL_NONE,
+            PROTOBUF_C_TYPE_BOOL,
+            offsetof(ConfigParameter, value_case),
+            offsetof(ConfigParameter, bool_value),
+            NULL,
+            NULL,
+            PROTOBUF_C_FIELD_FLAG_ONEOF, /* flags */
+            0, NULL, NULL                /* reserved1,reserved2, etc */
+        },
+        {
+            "int_value",
+            3,
+            PROTOBUF_C_LABEL_NONE,
+            PROTOBUF_C_TYPE_INT32,
+            offsetof(ConfigParameter, value_case),
+            offsetof(ConfigParameter, int_value),
+            NULL,
+            NULL,
+            PROTOBUF_C_FIELD_FLAG_ONEOF, /* flags */
+            0, NULL, NULL                /* reserved1,reserved2, etc */
+        },
+        {
+            "float_value",
+            4,
+            PROTOBUF_C_LABEL_NONE,
+            PROTOBUF_C_TYPE_FLOAT,
+            offsetof(ConfigParameter, value_case),
+            offsetof(ConfigParameter, float_value),
+            NULL,
+            NULL,
+            PROTOBUF_C_FIELD_FLAG_ONEOF, /* flags */
+            0, NULL, NULL                /* reserved1,reserved2, etc */
+        },
+        {
+            "string_value",
+            5,
+            PROTOBUF_C_LABEL_NONE,
+            PROTOBUF_C_TYPE_STRING,
+            offsetof(ConfigParameter, value_case),
+            offsetof(ConfigParameter, string_value),
+            NULL,
+            &protobuf_c_empty_string,
+            PROTOBUF_C_FIELD_FLAG_ONEOF, /* flags */
+            0, NULL, NULL                /* reserved1,reserved2, etc */
+        },
 };
 static const unsigned config_parameter__field_indices_by_name[] = {
-  1,   /* field[1] = bool_value */
-  3,   /* field[3] = float_value */
-  2,   /* field[2] = int_value */
-  0,   /* field[0] = key */
-  4,   /* field[4] = string_value */
+    1, /* field[1] = bool_value */
+    3, /* field[3] = float_value */
+    2, /* field[2] = int_value */
+    0, /* field[0] = key */
+    4, /* field[4] = string_value */
 };
 static const ProtobufCIntRange config_parameter__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 5 }
-};
+    {
+        {1, 0},
+        {0, 5}};
 const ProtobufCMessageDescriptor config_parameter__descriptor =
-{
-  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "ConfigParameter",
-  "ConfigParameter",
-  "ConfigParameter",
-  "",
-  sizeof(ConfigParameter),
-  5,
-  config_parameter__field_descriptors,
-  config_parameter__field_indices_by_name,
-  1,  config_parameter__number_ranges,
-  (ProtobufCMessageInit) config_parameter__init,
-  NULL,NULL,NULL    /* reserved[123] */
+    {
+        PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+        "ConfigParameter",
+        "ConfigParameter",
+        "ConfigParameter",
+        "",
+        sizeof(ConfigParameter),
+        5,
+        config_parameter__field_descriptors,
+        config_parameter__field_indices_by_name,
+        1, config_parameter__number_ranges,
+        (ProtobufCMessageInit)config_parameter__init,
+        NULL, NULL, NULL /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor module_config__field_descriptors[3] =
-{
-  {
-    "latency_cost",
-    1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    offsetof(ModuleConfig, latency_cost),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "energy_cost",
-    2,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    offsetof(ModuleConfig, energy_cost),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "parameters",
-    4,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(ModuleConfig, n_parameters),
-    offsetof(ModuleConfig, parameters),
-    &config_parameter__descriptor,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
+    {
+        {
+            "latency_cost",
+            1,
+            PROTOBUF_C_LABEL_NONE,
+            PROTOBUF_C_TYPE_INT32,
+            0, /* quantifier_offset */
+            offsetof(ModuleConfig, latency_cost),
+            NULL,
+            NULL,
+            0,            /* flags */
+            0, NULL, NULL /* reserved1,reserved2, etc */
+        },
+        {
+            "energy_cost",
+            2,
+            PROTOBUF_C_LABEL_NONE,
+            PROTOBUF_C_TYPE_INT32,
+            0, /* quantifier_offset */
+            offsetof(ModuleConfig, energy_cost),
+            NULL,
+            NULL,
+            0,            /* flags */
+            0, NULL, NULL /* reserved1,reserved2, etc */
+        },
+        {
+            "parameters",
+            4,
+            PROTOBUF_C_LABEL_REPEATED,
+            PROTOBUF_C_TYPE_MESSAGE,
+            offsetof(ModuleConfig, n_parameters),
+            offsetof(ModuleConfig, parameters),
+            &config_parameter__descriptor,
+            NULL,
+            0,            /* flags */
+            0, NULL, NULL /* reserved1,reserved2, etc */
+        },
 };
 static const unsigned module_config__field_indices_by_name[] = {
-  1,   /* field[1] = energy_cost */
-  0,   /* field[0] = latency_cost */
-  2,   /* field[2] = parameters */
+    1, /* field[1] = energy_cost */
+    0, /* field[0] = latency_cost */
+    2, /* field[2] = parameters */
 };
 static const ProtobufCIntRange module_config__number_ranges[2 + 1] =
-{
-  { 1, 0 },
-  { 4, 2 },
-  { 0, 3 }
-};
+    {
+        {1, 0},
+        {4, 2},
+        {0, 3}};
 const ProtobufCMessageDescriptor module_config__descriptor =
-{
-  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "ModuleConfig",
-  "ModuleConfig",
-  "ModuleConfig",
-  "",
-  sizeof(ModuleConfig),
-  3,
-  module_config__field_descriptors,
-  module_config__field_indices_by_name,
-  2,  module_config__number_ranges,
-  (ProtobufCMessageInit) module_config__init,
-  NULL,NULL,NULL    /* reserved[123] */
+    {
+        PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+        "ModuleConfig",
+        "ModuleConfig",
+        "ModuleConfig",
+        "",
+        sizeof(ModuleConfig),
+        3,
+        module_config__field_descriptors,
+        module_config__field_indices_by_name,
+        2, module_config__number_ranges,
+        (ProtobufCMessageInit)module_config__init,
+        NULL, NULL, NULL /* reserved[123] */
 };

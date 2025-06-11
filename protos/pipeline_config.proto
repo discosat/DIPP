@@ -16,8 +16,7 @@ message Implementation {
 // Module execution information
 message ModuleDefinition {
     string name = 1;
-    int32 n_implementations = 2;
-    repeated Implementation implementations = 3;
+    repeated Implementation implementations = 2;
 }
 
 // Define a message type for pipeline configuration

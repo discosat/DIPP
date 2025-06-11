@@ -49,7 +49,9 @@ sources = files(
 	'src/priority_queue/priority_queue_mmap.c',
 	'src/priority_queue/priority_queue_mem.c',
 	'src/pipeline/pipeline_executor.c',
-	'src/process/process_module.c'
+	'src/process/process_module.c',
+	'src/image/image_store.c',
+	'src/telemetry.c'
 
 )
 
@@ -63,7 +65,8 @@ dirs = include_directories(
 	'src/include/utils',
 	'src/include/heuristics',
 	'src/include/cost_store',
-	'src/include/priority_queue'
+	'src/include/priority_queue',
+	'src/include/image',
 )
 
 csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])
@@ -95,4 +98,5 @@ mock_energy_server = executable(
     dependencies: [csp_dep, param_dep, m_dep],
     install: true,
     c_args: c_args,
+	link_args: ['-ldl'],
 )

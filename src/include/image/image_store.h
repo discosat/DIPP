@@ -1,12 +1,11 @@
 #ifndef DIPP_IMAGE_STORE_H
 #define DIPP_IMAGE_STORE_H
 
-#include "dipp_process.h"
+#include "image_batch.h"
 
 /**
  * Read image batch data based on storage mode
  * @param batch Pointer to ImageBatch structure
- * @param data_out Pointer to store the data address (will be set by function)
  * @return status code
  */
 int image_batch_read_data(ImageBatch *batch);

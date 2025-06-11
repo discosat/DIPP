@@ -2,16 +2,26 @@
 #define HEURISTICS_H
 
 #include <stdio.h>
-#include "dipp_process.h"
+#include "image_batch.h"
 #include "pipeline_config.pb-c.h"
+#include "cost_store.h"
 
-typedef enum HEURISTIC
+#define DEFAULT_EFFORT_LATENCY 3000
+#define DEFAULT_EFFORT_ENERGY 3000
+#define LOW_EFFORT_LATENCY 2000
+#define LOW_EFFORT_ENERGY 2000
+#define MEDIUM_EFFORT_LATENCY 3000
+#define MEDIUM_EFFORT_ENERGY 3000
+#define HIGH_EFFORT_LATENCY 4000
+#define HIGH_EFFORT_ENERGY 4000
+
+typedef enum HEURISTIC_TYPE
 {
     LOWEST_EFFORT = 0,
     BEST_EFFORT = 1,
-} HEURISTIC;
+} HEURISTIC_TYPE;
 
-typedef struct
+typedef struct Heuristic
 {
     COST_MODEL_LOOKUP_RESULT (*heuristic_function)(Module *module, ImageBatch *data, size_t num_modules, int *module_param_id, uint32_t *picked_hash);
 } Heuristic;

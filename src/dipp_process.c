@@ -13,6 +13,7 @@
 #include <param/param_client.h>
 #include <glob.h>
 #include <time.h>
+#include "pipeline_executor.h"
 #include "dipp_error.h"
 #include "dipp_config.h"
 #include "dipp_process.h"
@@ -23,7 +24,21 @@
 #include "vmem_storage.h"
 #include "heuristics.h"
 #include "process_module.h"
-#include "pipeline_executor.h"
+#include "image_store.h"
+#include "image_batch.h"
+#include "vmem_upload_local.h"
+#include "heuristics.h"
+
+PriorityQueue *ingest_pq = NULL;
+PriorityQueue *partially_processed_pq = NULL;
+PriorityQueueImpl *pq_impl = NULL;
+
+CostStoreImpl *cost_store_impl = NULL;
+CostEntry *cost_cache = NULL;
+
+StorageMode global_storage_mode = STORAGE_MMAP;
+
+Heuristic *current_heuristic = NULL;
 
 void process(ImageBatch *input_batch)
 {
@@ -47,32 +62,16 @@ void process(ImageBatch *input_batch)
         {
             printf("Pipeline fully executed successfully\n");
 
-            // TODO: Create factory for Image reader, with init, read, close, upload
-
-            int fd = open(input_batch->filename, O_RDONLY, 0644);
-            if (fd == -1)
+            image_batch_read_data(input_batch);
+            if (input_batch->data == NULL)
             {
-                set_error_param(MMAP_OPEN);
+                printf("Error reading image data\n");
                 return;
             }
-
-            input_batch->data = mmap(NULL, input_batch->batch_size, PROT_READ, MAP_PRIVATE, fd, 0);
-            if (input_batch->data == MAP_FAILED)
-            {
-                close(fd);
-                set_error_param(MMAP_MAP);
-                return;
-            }
-
-            close(fd);
 
             upload(input_batch->data, input_batch->num_images, input_batch->batch_size);
 
-            if (munmap(input_batch->data, input_batch->batch_size) == -1)
-            {
-                set_error_param(MMAP_UNMAP);
-                return;
-            }
+            image_batch_cleanup(input_batch);
 
             // TODO: Uncomment the following lines to delete the files after processing
 
@@ -100,7 +99,11 @@ void process(ImageBatch *input_batch)
             printf("Pipeline partially executed successfully\n");
 
             // push the batch to the partial queue
-            enqueue(partially_processed_pq, *input_batch);
+            if (pq_impl->enqueue(partially_processed_pq, *input_batch) != SUCCESS)
+            {
+                printf("Error: Failed to enqueue batch to partially processed queue\n");
+                return;
+            }
 
             printf("Batch pushed to partially processed queue\n");
         }
@@ -144,22 +147,26 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
     // Copy the data to the datarcv buffer
     memcpy(datarcv, &msg_buffer, msg_size);
 
+    image_batch_setup_storage(datarcv, global_storage_mode);
+
     return SUCCESS;
 }
 
 void process_images_loop()
 {
 
-    // TODO: Set storage mode.
-    global_storage_mode = STORAGE_MMAP;
+    pq_impl = get_priority_queue_impl(global_storage_mode);
 
-    ingest_pq = createPriorityQueue("/usr/share/dipp/queue_file");
-    partially_processed_pq = createPriorityQueue("/usr/share/dipp/partially_processed_queue_file");
+    pq_impl->init(ingest_pq, "/usr/share/dipp/queue_file");
+    pq_impl->init(partially_processed_pq, "/usr/share/dipp/partially_processed_queue_file");
 
-    cost_store_init(&cost_cache);
+    cost_store_impl = get_cost_store_impl(global_storage_mode);
+    cost_store_impl->init(cost_cache);
+
+    HEURISTIC_TYPE curr_heur = LOWEST_EFFORT;
 
     // get the heuristic parameter
-    switch (param_get_uint32(&heuristic))
+    switch (curr_heur)
     {
     case LOWEST_EFFORT:
         current_heuristic = &lowest_effort_heuristic;
@@ -176,18 +183,18 @@ void process_images_loop()
     {
         // drain the message queue (nowait)
         ImageBatch datarcv;
-        while (get_message_from_queue(&datarcv, do_wait) == SUCCESS)
+        while (get_message_from_queue(&datarcv, 0) == SUCCESS)
         {
             // push data onto the ingest priority queue
-            enqueue(ingest_pq, datarcv);
+            pq_impl->enqueue(ingest_pq, datarcv);
         }
 
         // pull from the partially_processed_pq first
-        ImageBatch *batch = dequeue(partially_processed_pq);
+        ImageBatch *batch = pq_impl->dequeue(partially_processed_pq);
         if (batch == NULL)
         {
             // if empty, pull from the ingest_pq
-            batch = dequeue(ingest_pq);
+            batch = pq_impl->dequeue(ingest_pq);
             if (batch == NULL)
             {
                 // if empty, wait for new data
@@ -201,10 +208,10 @@ void process_images_loop()
         process(batch);
 
         // if partial not full (let's say size<10), pull data from ingest_pq
-        size_t queue_size = get_queue_size(partially_processed_pq);
+        size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
         if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
         {
-            ImageBatch *new_batch = dequeue(ingest_pq);
+            ImageBatch *new_batch = pq_impl->dequeue(ingest_pq);
             if (new_batch != NULL)
             {
                 // process the batch (maybe partially)

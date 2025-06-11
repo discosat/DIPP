@@ -1,4 +1,6 @@
+#include <csp/csp.h>
 #include <param/param.h>
+#include <param/param_client.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -24,7 +26,7 @@ PARAM_DEFINE_REMOTE_DYNAMIC(
 void initialize_telemetry()
 {
     // Initialize the parameter system
-    param_init();
+    // param_init();
 
     // Add the mock energy parameter to the parameter list
     param_list_add(&mock_energy_nj);

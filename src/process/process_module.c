@@ -6,10 +6,13 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include "process_module.h"
-#include "dipp_process.h"
+#include "image_batch.h"
 #include "dipp_config.h"
 #include "dipp_process_param.h"
 #include "dipp_error.h"
+
+int output_pipe[2] = {-1, -1};
+int error_pipe[2] = {-1, -1};
 
 // Signal handler for timeout
 void timeout_handler(int signum)
@@ -51,7 +54,7 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
             {
                 uint16_t module_error;
                 size_t res = read(error_pipe[0], &module_error, sizeof(uint16_t));
-                if (res == FAILURE)
+                if (res == -1)
                     set_error_param(PIPE_READ);
                 else if (res == 0)
                     set_error_param(MODULE_EXIT_NORMAL);
@@ -64,7 +67,7 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
                 invalidate_cache();
 
                 fprintf(stderr, "Child process exited with non-zero status\n");
-                return FAILURE;
+                return -1;
             }
         }
         else
@@ -74,9 +77,9 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
             // invalidate cache
             invalidate_cache();
             fprintf(stderr, "Child process did not exit normally\n");
-            return FAILURE;
+            return -1;
         }
 
-        return SUCCESS;
+        return 0;
     }
 }

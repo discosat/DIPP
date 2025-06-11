@@ -1,6 +1,7 @@
 #include "heuristics.h"
-#include "dipp_process.h"
+#include "image_batch.h"
 #include "cost_store.h"
+#include "murmur_hash.h"
 
 COST_MODEL_LOOKUP_RESULT get_default_implementation(Module *module, ImageBatch *data, int latency_requirement, int energy_requirement, int *module_param_id, uint32_t *picked_hash)
 {
@@ -8,7 +9,7 @@ COST_MODEL_LOOKUP_RESULT get_default_implementation(Module *module, ImageBatch *
     *picked_hash = murmur3_batch_fingerprint(data, param_hash);
 
     uint16_t latency, energy;
-    if (cache_lookup(cost_cache, *picked_hash, &latency, &energy) != -1)
+    if (cost_store_impl->lookup(cost_cache, *picked_hash, &latency, &energy) != -1)
     {
         if (latency <= latency_requirement && energy <= energy_requirement)
         {

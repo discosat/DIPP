@@ -14,7 +14,7 @@
 #include "vmem_storage.h"
 #include "vmem_ring_buffer.h"
 #include "vmem_dtp_server.h"
-#include "dipp_config.h"
+#include "dipp_process.h"
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
 #include <dtp/dtp.h>

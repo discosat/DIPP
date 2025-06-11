@@ -10,6 +10,7 @@
 #include "vmem_storage.h"
 #include "module_config.pb-c.h"
 #include "pipeline_config.pb-c.h"
+#include "murmur_hash.h"
 
 Pipeline pipelines[MAX_PIPELINES];
 ModuleParameterList module_parameter_lists[MAX_MODULES];
@@ -86,7 +87,7 @@ void *load_module(char *moduleName)
     return functionPointer;
 }
 
-void setup_pipeline(param_t *param)
+void setup_pipeline(param_t *param, int index)
 {
     uint8_t *buffer = NULL;
     size_t buf_size = get_param_buffer(&buffer, param);
@@ -146,7 +147,7 @@ void setup_pipeline(param_t *param)
     pipeline_definition__free_unpacked(pdef, NULL);
 }
 
-void setup_module_config(param_t *param)
+void setup_module_config(param_t *param, int index)
 {
     uint8_t *buffer = NULL;
     size_t buf_size = get_param_buffer(&buffer, param);
@@ -226,7 +227,7 @@ void setup_all_pipelines()
 {
     for (size_t pipeline_idx = 0; pipeline_idx < MAX_PIPELINES; pipeline_idx++)
     {
-        setup_pipeline(pipeline_config_params[pipeline_idx]);
+        setup_pipeline(pipeline_config_params[pipeline_idx], 0);
     }
 }
 
@@ -234,7 +235,7 @@ void setup_all_module_configs()
 {
     for (size_t module_idx = 0; module_idx < MAX_MODULES; module_idx++)
     {
-        setup_module_config(module_config_params[module_idx]);
+        setup_module_config(module_config_params[module_idx], 0);
     }
 }
 

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <uuid/uuid.h>
 
 int image_batch_read_data(ImageBatch *batch)
 {

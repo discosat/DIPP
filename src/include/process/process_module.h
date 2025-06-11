@@ -1,12 +1,22 @@
 #ifndef DIPP_PROCESS_MODULE_H
 #define DIPP_PROCESS_MODULE_H
 
-#include "dipp_process.h"
+#include "image_batch.h"
 #include "dipp_config.h"
 
 extern int output_pipe[2]; // Pipe for inter-process result communication
 extern int error_pipe[2];  // Pipe for inter-process error communication
 
-int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModuleParameterList *config)
+// Pipeline run codes
+typedef enum PIPELINE_PROCESS
+{
+    PROCESS_STOP = 0,
+    PROCESS_ONE = 1,
+    PROCESS_ALL = 2,
+    PROCESS_WAIT_ONE = 3,
+    PROCESS_WAIT_ALL = 4
+} PIPELINE_PROCESS;
+
+int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModuleParameterList *config);
 
 #endif // DIPP_PROCESS_MODULE_H

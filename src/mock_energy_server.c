@@ -10,26 +10,35 @@
 #include <csp/drivers/can_socketcan.h>
 #include <param/param.h>
 #include <param/param_server.h>
-#include <vmem/vmem_server.h>
 
 // Mock energy sensor parameter value
 static int32_t mock_energy_value = 0;
 
 // Parameter definition for mock energy sensor
-PARAM_DEFINE_STATIC_RAM(MOCK_ENERGY_NJ_ID, mock_energy_nj, PARAM_TYPE_UINT32, 1, 1,
+PARAM_DEFINE_STATIC_RAM(MOCK_ENERGY_NJ_ID, mock_energy_nj, PARAM_TYPE_UINT32, -1, 0,
                         PM_CSP, NULL, "nJ", &mock_energy_value,
                         "Mock energy consumption in nanojoules");
+
+uint32_t _serial0;
+
+#define PARAMID_SERIAL0 31
+
+PARAM_DEFINE_STATIC_RAM(PARAMID_SERIAL0, serial0, PARAM_TYPE_INT32, -1, 0, PM_HWREG, NULL, "", &_serial0, NULL);
+
+void serial_init(void)
+{
+    _serial0 = rand();
+}
+
+uint32_t serial_get(void)
+{
+    return _serial0;
+}
 
 static int32_t get_mock_energy_reading(void)
 {
     // Generate random value between 1000 and 10000 nJ
     return 1000 + (rand() % 9000);
-}
-
-void *vmem_server_task(void *param)
-{
-    vmem_server_loop(param);
-    return NULL;
 }
 
 void *router_task(void *param)
@@ -100,10 +109,6 @@ int main(void)
     // Create router thread
     pthread_t router_handle;
     pthread_create(&router_handle, NULL, &router_task, NULL);
-
-    // Create vmem server thread
-    pthread_t vmem_handle;
-    pthread_create(&vmem_handle, NULL, &vmem_server_task, NULL);
 
     // Create energy update thread
     pthread_t energy_handle;

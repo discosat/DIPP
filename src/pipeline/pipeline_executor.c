@@ -11,7 +11,7 @@
 #include "vmem_upload_local.h"
 #include "telemetry.h"
 #include "dipp_config.h"
-#include "dipp_process.h"
+#include "image_batch.h"
 #include "dipp_error.h"
 
 int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
@@ -20,20 +20,20 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
     if (pipe(output_pipe) == -1 || pipe(error_pipe) == -1)
     {
         set_error_param(PIPE_CREATE);
-        return FAILURE;
+        return -1;
     }
 
     for (size_t i = data->progress + 1; i < pipeline->num_modules; ++i)
     {
-        size_t module_param_id;
+        int module_param_id;
         uint32_t picked_hash;
 
         COST_MODEL_LOOKUP_RESULT lookup_result = current_heuristic->heuristic_function(&pipeline->modules[i], data, pipeline->num_modules, &module_param_id, &picked_hash);
 
-        if (lookup_result == COST_MODEL_LOOKUP_RESULT.NOT_FOUND)
+        if (lookup_result == NOT_FOUND)
         {
             set_error_param(INTERNAL_RUN_NOT_FOUND);
-            return FAILURE;
+            return -1;
         }
 
         err_current_module = i + 1;
@@ -49,8 +49,6 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             clock_gettime(CLOCK_MONOTONIC, &start);
 
             // Get starting energy reading
-            uint32_t start_energy = 0;
-
             start_energy = get_energy_reading();
         }
 
@@ -72,33 +70,33 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             elapsed_ns = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
         }
 
-        if (module_status == FAILURE)
+        if (module_status == -1)
         {
             /* Close all active pipes */
             close(output_pipe[0]); // Close the read end of the pipe
             close(output_pipe[1]); // Close the write end of the pipe
             close(error_pipe[0]);
             close(error_pipe[1]);
-            return FAILURE;
+            return -1;
         }
 
         if (lookup_result == FOUND_NOT_CACHED)
         {
             // Store both latency and energy cost in cache
-            cache_insert(cost_cache, picked_hash, elapsed_ns, energy_cost);
+            cost_store_impl->insert(cost_cache, picked_hash, elapsed_ns, energy_cost);
         }
 
         ImageBatch result;
         int res = read(output_pipe[0], &result, sizeof(result)); // Read the result from the pipe
-        if (res == FAILURE)
+        if (res == -1)
         {
             set_error_param(PIPE_READ);
-            return FAILURE;
+            return -1;
         }
         if (res == 0)
         {
             set_error_param(PIPE_EMPTY);
-            return FAILURE;
+            return -1;
         }
 
         data->num_images = result.num_images;
@@ -117,7 +115,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
     close(error_pipe[0]);
     close(error_pipe[1]);
 
-    return SUCCESS;
+    return 0;
 }
 
 int get_pipeline_by_id(int pipeline_id, Pipeline **pipeline)
@@ -127,11 +125,11 @@ int get_pipeline_by_id(int pipeline_id, Pipeline **pipeline)
         if (pipelines[i].pipeline_id == pipeline_id)
         {
             *pipeline = &pipelines[i];
-            return SUCCESS;
+            return 0;
         }
     }
     set_error_param(INTERNAL_PID_NOT_FOUND);
-    return FAILURE;
+    return -1;
 }
 
 int get_pipeline_length(int pipeline_id)
@@ -144,15 +142,15 @@ int get_pipeline_length(int pipeline_id)
         }
     }
     set_error_param(INTERNAL_PID_NOT_FOUND);
-    return FAILURE;
+    return -1;
 }
 
 int load_pipeline_and_execute(ImageBatch *input_batch)
 {
     // Execute the pipeline with parameter values
     Pipeline *pipeline;
-    if (get_pipeline_by_id(input_batch->pipeline_id, &pipeline) == FAILURE)
-        return FAILURE;
+    if (get_pipeline_by_id(input_batch->pipeline_id, &pipeline) == -1)
+        return -1;
 
     err_current_pipeline = pipeline->pipeline_id;
 

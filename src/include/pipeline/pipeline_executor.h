@@ -1,7 +1,7 @@
 #ifndef DIPP_PIPELINE_EXECUTOR_H
 #define DIPP_PIPELINE_EXECUTOR_H
 
-#include "dipp_process.h"
+#include "image_batch.h"
 #include "dipp_config.h"
 #include "heuristics.h"
 

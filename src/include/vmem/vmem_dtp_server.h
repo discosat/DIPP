@@ -7,4 +7,6 @@
 #define DIPP_DTP_OBSERVATION_AMOUNT_REQUEST 0
 #define DIPP_DTP_OBSERVATION_META_REQUEST 1
 
+void dtp_indeces_server();
+
 #endif

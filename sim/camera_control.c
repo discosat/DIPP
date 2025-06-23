@@ -4,6 +4,8 @@
 #include <sys/shm.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
+
 #include "camera_control.h"
 #include "metadata.pb-c.h"
 
@@ -11,11 +13,14 @@ int main(int argc, char *argv[])
 {
     if (argc < 3)
     {
-        printf("Missing arguments: Expected <num_images> <image_name>");
+        printf("ERROR: missing arguments!\n");
+        printf("Usage: ./camera <num_images> <image_name>");
         return -1;
     }
 
     char * image_name = argv[2];
+
+    printf("\nReceived image: %s \n", image_name);
 
     // Get timestamp (used for SHM key)
     struct timespec time;
@@ -25,11 +30,15 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    printf("Got timestamp: %ld.%02ld seconds\n", time.tv_sec, time.tv_nsec);
+
     // Prepare the data
     ImageBatch data;
     data.mtype = 1;
     data.num_images = atoi(argv[1]);
     data.pipeline_id = 1;
+
+    printf("\nData (ImageBatch) prepared. \n");
 
     // Hardcoded bayer image specs
     uint32_t image_height = 2056;
@@ -49,9 +58,15 @@ int main(int argc, char *argv[])
     new_meta.obid = 0;
     new_meta.camera = "rgb";
 
-    const char filename[30];
-    sprintf(filename, "images/%s", image_name);
-    FILE *fh = fopen(filename, "r");
+    printf("Image data:\n - Image size: %u\n - Image width: %u\n - Image height: %u\n - Image channels: %u\n", new_meta.size, new_meta.width, new_meta.height, new_meta.channels);
+
+    FILE *fh = fopen(image_name, "rb");
+
+    if(errno == 0){
+        printf("\nImage loaded (no error: %d).\n", errno);
+    } else {
+        printf("\nError number (errno): %d\n", errno); 
+    }
 
     size_t meta_size = metadata__get_packed_size(&new_meta);
     uint8_t meta_buf[meta_size];

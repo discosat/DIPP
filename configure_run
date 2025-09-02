@@ -1,5 +1,39 @@
 #!/bin/sh
-rm -r builddir
-meson setup . builddir
-ninja -C builddir
-./builddir/dipp
+
+# Default to native build if no arguments provided
+CROSS_FILE=""
+BUILD_DIR="builddir"
+
+# Check for cross-compilation argument
+if [ "$1" = "cross" ] || [ "$1" = "--cross" ]; then
+    if [ -f "yocto_cross.ini" ]; then
+        CROSS_FILE="--cross-file yocto_cross.ini"
+        BUILD_DIR="builddir"
+        echo "Using cross-compilation with yocto_cross.ini"
+    else
+        echo "Error: yocto_cross.ini not found for cross-compilation"
+        exit 1
+    fi
+elif [ -n "$1" ]; then
+    # Allow specifying custom cross file
+    if [ -f "$1" ]; then
+        CROSS_FILE="--cross-file $1"
+        BUILD_DIR="builddir"
+        echo "Using cross-compilation with $1"
+    else
+        echo "Error: Cross file $1 not found"
+        exit 1
+    fi
+fi
+
+echo "Building in directory: $BUILD_DIR"
+rm -rf $BUILD_DIR
+meson setup . $BUILD_DIR $CROSS_FILE
+ninja -C $BUILD_DIR
+
+# Only run the executable if native build (cross-compiled binaries can't run on host)
+if [ -z "$CROSS_FILE" ]; then
+    ./$BUILD_DIR/dipp
+else
+    echo "Cross-compiled binary created at $BUILD_DIR/dipp"
+fi

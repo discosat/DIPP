@@ -63,7 +63,7 @@ dipp = executable(
 	include_directories: dirs,
 	dependencies: deps,
 	install: true,
-	#c_args: ['-g2', '-O0', '-Wall', '-Wextra'] + c_args,
+	c_args: ['-g2', '-O0', '-Wall', '-Wextra'] + c_args,
 	c_args: c_args,
 	link_args: ['-ldl'],
 )

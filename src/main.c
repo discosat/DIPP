@@ -53,7 +53,7 @@ static void iface_init(int argc, char *argv[])
 	char *port = "localhost";		  // Default port
 	char *kiss_device = "/dev/ttyS1"; // Default KISS device
 	char *can_device = "vcan0";		  // Default CAN device
-	int pipeline_addr = 162;		  // Default pipeline address
+	int upload_addr = 170;		  // Default upload address
 
 	int opt;
 	while ((opt = getopt(argc, argv, "i:p:a:")) != -1)
@@ -71,11 +71,11 @@ static void iface_init(int argc, char *argv[])
 			can_device = optarg;
 			break;
 		case 'a':
-			// Use the pipeline address
-			pipeline_addr = atoi(optarg);
+			// Use the upload address
+			upload_addr = atoi(optarg);
 			break;
 		default:
-			fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <pipeline_address<´>]\n", argv[0]);
+			fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <upload_address<´>]\n", argv[0]);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -107,7 +107,7 @@ static void iface_init(int argc, char *argv[])
 	}
 	else if (strcmp(interface, "CAN") == 0)
 	{
-		int error = csp_can_socketcan_open_and_add_interface(can_device, "CAN", pipeline_addr, 1000000, 0, &iface);
+		int error = csp_can_socketcan_open_and_add_interface(can_device, "CAN", upload_addr, 1000000, 0, &iface);
 		if (error != CSP_ERR_NONE)
 		{
 			csp_print("failed to add CAN interface [%s], error: %d\n", can_device, error);
@@ -117,7 +117,7 @@ static void iface_init(int argc, char *argv[])
 		iface->name = "CAN";
 	}
 
-	iface->addr = pipeline_addr;
+	iface->addr = upload_addr;
 	iface->netmask = 8;
 	csp_rtable_set(0, 0, iface, CSP_NO_VIA_ADDRESS);
 	csp_iflist_add(iface);
@@ -125,7 +125,9 @@ static void iface_init(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-	printf("argc %u", argc);
+	printf("\n%sDISCO2 Uploading node\n\n", "\x1B[36m");
+
+	printf("%sargc %u", "\x1B[0m", argc);
 
 	printf("\nbootmsg\n");
 
@@ -137,17 +139,6 @@ int main(int argc, char *argv[])
 	/* Init CSP with */
 	csp_conf.hostname = HOSTNAME; // HOSTNAME defined in meson_options.txt
 	csp_init();
-
-	/* Interfaces */
-	iface_init(argc, argv);
-	csp_print("Connection table\r\n");
-	csp_conn_print_table();
-
-	csp_print("Interfaces\r\n");
-	csp_iflist_print();
-
-	csp_print("Route table\r\n");
-	csp_rtable_print();
 
 	csp_bind_callback(csp_service_handler, CSP_ANY);
 	csp_bind_callback(param_serve, PARAM_PORT_SERVER);

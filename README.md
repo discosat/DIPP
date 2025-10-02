@@ -1,3 +1,6 @@
+# IMPORTANT
+This is a <b>stripped-off</b> version of DIPP! The purpose is to be able to upload, rather than download. 
+
 # C Data Processing Pipeline
 DIPP stands for: DISCO Image Processing Pipeline.
 

@@ -47,7 +47,6 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
     {
         // Set up signal handler for timeout and starm alarm timer
         signal(SIGALRM, timeout_handler);
-        alarm(param_get_uint32(&module_timeout));
 
         // Child process: Execute the module function
         ImageBatch result = func(input, config, error_pipe);
@@ -154,20 +153,20 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
     return SUCCESS;
 }
 
-void save_images(const char *filename_base, const ImageBatch *batch)
+void save_file(const char *filename_base, const ImageBatch *batch)
 {
     uint32_t offset = 0;
-    int image_index = 0;
+    int file_index = 0;
 
-    while (image_index < batch->num_images && offset < batch->batch_size)
+    while (file_index < batch->num_images && offset < batch->batch_size)
     {
         uint32_t meta_size = *((uint32_t *)(batch->data + offset));
         offset += sizeof(uint32_t); // Move the offset to the start of metadata
         Metadata *metadata = metadata__unpack(NULL, meta_size, batch->data + offset);
-        offset += meta_size; // Move offset to start of image
+        offset += meta_size; // Move offset to start of file
 
         char filename[20];
-        sprintf(filename, "%s%d.raw", filename_base, image_index);
+        sprintf(filename, "%s%d.raw", filename_base, file_index);
 
         FILE *filePtr;
 
@@ -186,7 +185,7 @@ void save_images(const char *filename_base, const ImageBatch *batch)
 
         offset += metadata->size; // Move the offset to the start of the next image block
 
-        image_index++;
+        file_index++;
     }
 }
 
@@ -306,22 +305,6 @@ void process_one(int do_wait)
         process(&datarcv);
 }
 
-/* Process all image batches in the message queue*/
-void process_all(int do_wait)
-{
-    
-
-    ImageBatch datarcv;
-    while (get_message_from_queue(&datarcv, do_wait) == SUCCESS)
-    {
-        logger_log_print(logger, LOG_INFO, "Batch processing started");
-        setup_cache_if_needed();
-	    logger_log_print(logger, LOG_INFO, "Cache rebuilt");
-        process(&datarcv);
-        logger_log_print(logger, LOG_INFO, "Batch processing started");
-    }
-}
-
 typedef struct ProcessThreadArgs
 {
     int all;
@@ -340,7 +323,7 @@ void *process_thread(void *arg)
     free(args);
 
     if (all)
-        process_all(wait);
+        return NULL;
     else
         process_one(wait);
 

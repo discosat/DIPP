@@ -23,6 +23,10 @@ typedef enum HEURISTIC_TYPE
 
 typedef struct Heuristic
 {
+    // Pick a module effort level based on the currently used heuristic.
+    // The module_param_id will be populated with the ID of the picked module.
+    // The picked_hash will be populated with the hash of the image batch metadata
+    // and module parameters. This is further used to populate cost model after the first execution
     COST_MODEL_LOOKUP_RESULT (*heuristic_function)(Module *module, ImageBatch *data, size_t num_modules, int *module_param_id, uint32_t *picked_hash);
 } Heuristic;
 

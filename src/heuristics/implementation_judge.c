@@ -5,6 +5,12 @@
 #include "murmur_hash.h"
 #include "pipeline_config.pb-c.h"
 
+// Decide whether the module effort level fulfills the latency and energy requirements.
+// It calculates a hash of the image batch metadata and module, and performs a lookup in the cost model.
+// It returns FOUND_CACHED if a matching entry is found in the cost model cache and it fulfills
+// the latency and energy requirements, FOUND_NOT_CACHED if no matching entry is found but the
+// default latency and energy values fit within the requirements, or NOT_FOUND in case the module
+// effort level was not found or does not fulfill the requirements.
 COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module, ImageBatch *data, int latency_requirement, int energy_requirement, int *module_param_id, uint32_t *picked_hash)
 {
     int32_t module_id = -1;
@@ -66,5 +72,7 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
             return FOUND_NOT_CACHED;
         }
     }
+
+    // Module does not fulfill the requirements
     return NOT_FOUND;
 }

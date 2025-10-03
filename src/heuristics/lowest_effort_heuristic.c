@@ -20,13 +20,15 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
     // TODO: Add a scaling factor to the lateny requirement (we should not use the whole time left to process the rest of the modules)
     int energy_requirement = 0; // TODO: change this to the current energy battery level - MIN_BATTERY_LEVEL
 
+    // If there is only a single effort level, use that one
     if (module->default_effort_param_id != -1)
     {
         return get_default_implementation(module, data, latency_requirement, energy_requirement, module_param_id, picked_hash);
     }
     else
     {
-        // start from the heavy and go down (the first that fulfils the requiments is the one to use)
+        // start from the lightest and go up in the effort levels
+        // (the first that fulfils the requiments is the one to use)
         COST_MODEL_LOOKUP_RESULT result = judge_implementation(EFFORT_LEVEL__LOW, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash);
         if (result == FOUND_NOT_CACHED || result == FOUND_CACHED)
         {
@@ -42,6 +44,7 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
         {
             return result;
         }
+        // The effort levels are either empty or none of them fulfill the requirements
         return NOT_FOUND;
     }
 }

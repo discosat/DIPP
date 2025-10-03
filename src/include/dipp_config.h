@@ -15,7 +15,10 @@ typedef struct Module
 {
     char *module_name;
     void *module_function;
+    // default effort to be set in case there is only a single effort level
     int default_effort_param_id;
+    // Distinct effort levels for the module,
+    // only set these in case there are multiple effort levels
     int low_effort_param_id;
     int medium_effort_param_id;
     int high_effort_param_id;

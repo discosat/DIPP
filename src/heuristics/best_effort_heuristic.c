@@ -26,7 +26,8 @@ COST_MODEL_LOOKUP_RESULT get_best_effort_implementation_config(Module *module, I
     }
     else
     {
-        // start from the heavy and go down (the first that fulfils the requiments is the one to use)
+        // start from the heavy and go down in the effort levels
+        // (the first that fulfils the requiments is the one to use)
         COST_MODEL_LOOKUP_RESULT result = judge_implementation(EFFORT_LEVEL__HIGH, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash);
         if (result == FOUND_NOT_CACHED || result == FOUND_CACHED)
         {
@@ -42,6 +43,7 @@ COST_MODEL_LOOKUP_RESULT get_best_effort_implementation_config(Module *module, I
         {
             return result;
         }
+        // The effort levels are either empty or none of them fulfill the requirements
         return NOT_FOUND;
     }
 }

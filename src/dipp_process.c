@@ -39,14 +39,19 @@ StorageMode global_storage_mode = STORAGE_MMAP;
 
 Heuristic *current_heuristic = NULL;
 
+// Process a single image batch, either fully or partially
+// It executes the pipeline, either fully or partially, depending
+// on the available resources. Based on this, it either uploads
+// and cleans up the image batch, or pushes the image batch onto the
+// partially processed queue.
 void process(ImageBatch *input_batch)
 {
     int pipeline_result = load_pipeline_and_execute(input_batch);
 
     if (pipeline_result == FAILURE)
     {
-
-        // TODO: Implement retry logic (allow a single retry)
+        // Something went wrong during the execution.
+        // TODO: Consider possible retries
         return;
     }
     else
@@ -113,6 +118,8 @@ void process(ImageBatch *input_batch)
     err_current_module = 0;
 }
 
+// Pull data from the message queue, additionally setting the storage
+// attribute of the image batch
 int get_message_from_queue(ImageBatch *datarcv, int do_wait)
 {
     int msg_queue_id;
@@ -146,13 +153,56 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
     // Copy the data to the datarcv buffer
     memcpy(datarcv, &msg_buffer, msg_size);
 
+    // set storage attribute on the image batch
     image_batch_setup_storage(datarcv, global_storage_mode);
 
     return SUCCESS;
 }
 
+// Retrieve the storage mode and heuristic from environment variables
+// Defaults of MMAP and LOWEST_EFFORT are used if not set or invalid
+void get_env_vars()
+{
+    const char *storage_mode_str = getenv("STORAGE_MODE");
+    if (storage_mode_str != NULL)
+    {
+        if (strcmp(storage_mode_str, "MEM") == 0)
+        {
+            global_storage_mode = STORAGE_MEM;
+        }
+        else if (strcmp(storage_mode_str, "MMAP") == 0)
+        {
+            global_storage_mode = STORAGE_MMAP;
+        }
+        else
+        {
+            printf("Unknown STORAGE_MODE '%s', defaulting to MMAP\n", storage_mode_str);
+            global_storage_mode = STORAGE_MMAP;
+        }
+    }
+
+    const char *heuristic_str = getenv("HEURISTIC");
+    if (heuristic_str != NULL)
+    {
+        if (strcmp(heuristic_str, "LOWEST_EFFORT") == 0)
+        {
+            current_heuristic = &lowest_effort_heuristic;
+        }
+        else if (strcmp(heuristic_str, "BEST_EFFORT") == 0)
+        {
+            current_heuristic = &best_effort_heuristic;
+        }
+        else
+        {
+            printf("Unknown HEURISTIC '%s', defaulting to LOWEST_EFFORT\n", heuristic_str);
+            current_heuristic = &lowest_effort_heuristic;
+        }
+    }
+}
+
 void process_images_loop()
 {
+    get_env_vars();
 
     pq_impl = get_priority_queue_impl(global_storage_mode);
 

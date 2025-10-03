@@ -14,6 +14,9 @@
 #include "image_batch.h"
 #include "dipp_error.h"
 
+// Execute the pipeline on the given batch. It picks up from the possibly partially executed state,
+// and for each module it picks the best effort level that fulfills the requirements based on the current state.
+// If no such effort level is found, it stops the execution and returns an error.
 int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 {
     /* Initiate communication pipes */
@@ -28,22 +31,32 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         int module_param_id;
         uint32_t picked_hash;
 
+        // pick the module effort level using the currently set heuristic
         COST_MODEL_LOOKUP_RESULT lookup_result = current_heuristic->heuristic_function(&pipeline->modules[i], data, pipeline->num_modules, &module_param_id, &picked_hash);
 
+        // No new progress can be made, as no module fulfills the requirements
         if (lookup_result == NOT_FOUND)
         {
-            set_error_param(INTERNAL_RUN_NOT_FOUND);
-            return -1;
+            printf("No matching module found. No effort level fulfills the requirements\n");
+            /* Close all active pipes */
+            close(output_pipe[0]); // Close the read end of the pipe
+            close(output_pipe[1]); // Close the write end of the pipe
+            close(error_pipe[0]);
+            close(error_pipe[1]);
+            return 0;
         }
 
         err_current_module = i + 1;
         ProcessFunction module_function = pipeline->modules[i].module_function;
+        // pick the module with selected effort level
         ModuleParameterList *module_config = &module_parameter_lists[module_param_id];
 
         // measure time to execute the module
         struct timespec start, end;
         uint32_t start_energy = 0, end_energy = 0;
         long elapsed_ns = 0;
+
+        // the profiling information is not found, collect it here
         if (lookup_result == FOUND_NOT_CACHED)
         {
             clock_gettime(CLOCK_MONOTONIC, &start);
@@ -56,6 +69,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 
         uint32_t energy_cost = 0;
 
+        // the profiling information is not found, collect it here
         if (lookup_result == FOUND_NOT_CACHED)
         {
             // measure time to execute the module
@@ -70,6 +84,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             elapsed_ns = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
         }
 
+        // error encountered, clean up
         if (module_status == -1)
         {
             /* Close all active pipes */
@@ -99,6 +114,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             return -1;
         }
 
+        // update the image batch metadata before the next module
         data->num_images = result.num_images;
         data->batch_size = result.batch_size;
         data->pipeline_id = result.pipeline_id;
@@ -118,6 +134,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
     return 0;
 }
 
+// Retrieve a pointer to the pipeline with the given ID.
+// Set a corresponding error if pipeline ID not found.
 int get_pipeline_by_id(int pipeline_id, Pipeline **pipeline)
 {
     for (size_t i = 0; i < MAX_PIPELINES; i++)

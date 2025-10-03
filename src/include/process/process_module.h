@@ -17,6 +17,8 @@ typedef enum PIPELINE_PROCESS
     PROCESS_WAIT_ALL = 4
 } PIPELINE_PROCESS;
 
+// Spawn a new process to isolate the module execution from the rest of the system.
+// It sets up a timeout handler to kill the process if it exceeds the allowed time.
 int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModuleParameterList *config);
 
 #endif // DIPP_PROCESS_MODULE_H

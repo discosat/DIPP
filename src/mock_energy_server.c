@@ -50,6 +50,7 @@ void *router_task(void *param)
     return NULL;
 }
 
+// generate a new energy value every second
 void *energy_update_task(void *param)
 {
     while (1)

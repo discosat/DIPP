@@ -5,7 +5,6 @@
 #include <vmem/vmem_ring.h>
 #include "vmem_ring_buffer.h"
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <csp/csp.h>
 #include "metadata.pb-c.h"

@@ -23,19 +23,29 @@ typedef struct CostEntry
     uint8_t valid;
 } CostEntry;
 
+// New CostStore wrapper with statically allocated items (like PriorityQueue)
+typedef struct CostStore
+{
+    CostEntry items[MAX_ENTRIES];
+} CostStore;
+
 typedef struct CostStoreImpl
 {
-    int (*init)(CostEntry *cache);
-    void (*insert)(CostEntry *cache, uint32_t hash, uint16_t latency, uint16_t energy);
-    int (*lookup)(CostEntry *cache, uint32_t hash, uint16_t *latency, uint16_t *energy);
+    // init now takes CostStore ** so it can set the caller's pointer to mapped or allocated memory
+    int (*init)(CostStore **store, char *filename);
+    void (*insert)(CostStore *store, uint32_t hash, uint16_t latency, uint16_t energy);
+    int (*lookup)(CostStore *store, uint32_t hash, uint16_t *latency, uint16_t *energy);
+    int (*clean_up)(CostStore *store); // free/munmap backend resources
 } CostStoreImpl;
 
-extern CostEntry *cost_cache;
+// extern pointer to the malloc'd outer CostStore (items[] inside are static)
+extern CostStore *cost_store;
 
 CostStoreImpl *get_cost_store_impl(StorageMode storage_type);
 
-int cache_lookup(CostEntry *cache, uint32_t hash, uint16_t *latency, uint16_t *energy);
-void cache_insert(CostEntry *cache, uint32_t hash, uint16_t latency, uint16_t energy);
+// updated prototypes
+int cache_lookup(CostStore *store, uint32_t hash, uint16_t *latency, uint16_t *energy);
+void cache_insert(CostStore *store, uint32_t hash, uint16_t latency, uint16_t energy);
 
 extern CostStoreImpl cost_store_mmap;
 extern CostStoreImpl cost_store_mem;

@@ -7,24 +7,26 @@
 #include "image_batch.h"
 
 // Define maximum size of the priority queue
-#define MAX 100
+#define MAX_QUEUE_SIZE 100
 #define MAX_PARTIAL_QUEUE_SIZE 10
 
 // Define PriorityQueue structure
 typedef struct PriorityQueue
 {
-    ImageBatch items[MAX];
+    ImageBatch items[MAX_QUEUE_SIZE];
     int size;
     pthread_mutex_t lock;
 } PriorityQueue;
 
 typedef struct PriorityQueueImpl
 {
-    int (*init)(PriorityQueue *pq, char *filename);
+    // init takes PriorityQueue ** so the implementation can allocate or mmap the outer struct and assign *pq
+    int (*init)(PriorityQueue **pq, char *filename);
     int (*enqueue)(PriorityQueue *pq, ImageBatch item);
     ImageBatch *(*dequeue)(PriorityQueue *pq);
     ImageBatch *(*peek)(PriorityQueue *pq);
     size_t (*get_queue_size)(PriorityQueue *pq);
+    int (*clean_up)(PriorityQueue *pq);
 } PriorityQueueImpl;
 
 PriorityQueueImpl *get_priority_queue_impl(StorageMode storage_type);

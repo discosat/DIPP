@@ -4,10 +4,31 @@
 #include <unistd.h>
 #include <string.h>
 
-int init_pq_mem(PriorityQueue *pq, char *filename)
+// Initialize in-memory priority queue: allocate outer PriorityQueue if *pq is NULL and init it
+int init_pq_mem(PriorityQueue **pq, char *filename)
 {
-    pthread_mutex_init(&pq->lock, NULL);
-    pq->size = 0;
+    (void)filename;
+    if (pq == NULL)
+    {
+        printf("Error: provided PriorityQueue** is NULL\n");
+        return -1;
+    }
+
+    if (*pq == NULL)
+    {
+        *pq = malloc(sizeof(PriorityQueue));
+        if (!*pq)
+        {
+            printf("Failed to allocate memory for priority queue\n");
+            return -1;
+        }
+    }
+
+    // initialize fields
+    memset((*pq)->items, 0, sizeof((*pq)->items));
+    (*pq)->size = 0;
+    pthread_mutex_init(&(*pq)->lock, NULL);
+
     return 0;
 }
 
@@ -16,7 +37,7 @@ int enqueue_mem(PriorityQueue *pq, ImageBatch item)
 {
     pthread_mutex_lock(&pq->lock);
 
-    if (pq->size == MAX)
+    if (pq->size == MAX_QUEUE_SIZE)
     {
         pthread_mutex_unlock(&pq->lock);
         printf("Priority queue is full\n");
@@ -54,9 +75,20 @@ ImageBatch *dequeue_mem(PriorityQueue *pq)
     return item;
 }
 
+int clean_up_pq_mem(PriorityQueue *pq)
+{
+    pthread_mutex_destroy(&pq->lock);
+    if (pq)
+    {
+        free(pq);
+    }
+    return 0;
+}
+
 PriorityQueueImpl priority_queue_mem = {
     .init = init_pq_mem,
     .enqueue = enqueue_mem,
     .dequeue = dequeue_mem,
     .peek = peek,
-    .get_queue_size = get_queue_size};
+    .get_queue_size = get_queue_size,
+    .clean_up = clean_up_pq_mem};

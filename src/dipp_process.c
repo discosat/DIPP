@@ -210,7 +210,7 @@ void process_images_loop()
     pq_impl->init(partially_processed_pq, "/usr/share/dipp/partially_processed_queue_file");
 
     cost_store_impl = get_cost_store_impl(global_storage_mode);
-    cost_store_impl->init(cost_cache);
+    cost_store_impl->init(cost_cache, CACHE_FILE);
 
     HEURISTIC_TYPE curr_heur = LOWEST_EFFORT;
 
@@ -268,4 +268,8 @@ void process_images_loop()
             }
         }
     }
+
+    pq_impl->clean_up(ingest_pq);
+    pq_impl->clean_up(partially_processed_pq);
+    cost_store_impl->clean_up(cost_cache);
 }

@@ -19,12 +19,12 @@ CostStoreImpl *get_cost_store_impl(StorageMode storage_type)
     }
 }
 
-// Find existing hash
-int find_entry(CostEntry *cache, uint32_t hash)
+// Find existing hash in the CostStore's statically allocated items
+int find_entry(CostStore *store, uint32_t hash)
 {
     for (int i = 0; i < MAX_ENTRIES; ++i)
     {
-        if (cache[i].valid && cache[i].hash == hash)
+        if (store->items[i].valid && store->items[i].hash == hash)
         {
             return i;
         }
@@ -32,74 +32,31 @@ int find_entry(CostEntry *cache, uint32_t hash)
     return -1;
 }
 
-int find_lru_index(CostEntry *cache)
+int find_lru_index(CostStore *store)
 {
     uint64_t oldest = UINT64_MAX;
     int index = -1;
     for (int i = 0; i < MAX_ENTRIES; i++)
     {
-        if (cache[i].valid && cache[i].timestamp < oldest)
+        if (store->items[i].valid && store->items[i].timestamp < oldest)
         {
-            oldest = cache[i].timestamp;
+            oldest = store->items[i].timestamp;
             index = i;
         }
     }
     return index;
 }
 
-// Insert
-void cache_insert(CostEntry *cache, uint32_t hash, uint16_t latency, uint16_t energy)
+// lookup remains shared
+int cache_lookup(CostStore *store, uint32_t hash, uint16_t *latency, uint16_t *energy)
 {
-    global_time++;
-    // Check if entry already exists
-    int idx = find_entry(cache, hash);
-    // Update existing entry
+    int idx = find_entry(store, hash);
     if (idx != -1)
     {
-        cache[idx].latency = latency;
-        cache[idx].energy = energy;
-        cache[idx].timestamp = global_time;
-        printf("Updated existing entry.\n");
-        return;
-    }
-
-    // Check for free slot
-    for (int i = 0; i < MAX_ENTRIES; i++)
-    {
-        if (!cache[i].valid)
-        {
-            cache[i].hash = hash;
-            cache[i].latency = latency;
-            cache[i].energy = energy;
-            cache[i].valid = 1;
-            cache[i].timestamp = global_time;
-            printf("Inserted into free slot.\n");
-            return;
-        }
-    }
-
-    // Evict LRU entry and insert new entry
-    int evict = find_lru_index(cache);
-    if (evict != -1)
-    {
-        cache[evict].hash = hash;
-        cache[evict].latency = latency;
-        cache[evict].energy = energy;
-        cache[evict].valid = 1;
-        cache[evict].timestamp = global_time;
-        printf("Evicted LRU and inserted.\n");
-    }
-}
-
-int cache_lookup(CostEntry *cache, uint32_t hash, uint16_t *latency, uint16_t *energy)
-{
-    int idx = find_entry(cache, hash);
-    if (idx != -1)
-    {
-        *latency = cache[idx].latency;
-        *energy = cache[idx].energy;
+        *latency = store->items[idx].latency;
+        *energy = store->items[idx].energy;
         // Update timestamp for LRU
-        cache[idx].timestamp = ++global_time;
+        store->items[idx].timestamp = ++global_time;
         return idx;
     }
     return -1;

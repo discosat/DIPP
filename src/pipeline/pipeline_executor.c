@@ -98,7 +98,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         if (lookup_result == FOUND_NOT_CACHED)
         {
             // Store both latency and energy cost in cache
-            cost_store_impl->insert(cost_cache, picked_hash, elapsed_ns, energy_cost);
+            cost_store_impl->insert(cost_store, picked_hash, elapsed_ns, energy_cost);
         }
 
         ImageBatch result;

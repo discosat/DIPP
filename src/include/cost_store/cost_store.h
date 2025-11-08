@@ -46,6 +46,8 @@ CostStoreImpl *get_cost_store_impl(StorageMode storage_type);
 // updated prototypes
 int cache_lookup(CostStore *store, uint32_t hash, uint16_t *latency, uint16_t *energy);
 void cache_insert(CostStore *store, uint32_t hash, uint16_t latency, uint16_t energy);
+int find_entry(CostStore *store, uint32_t hash);
+int find_lru_index(CostStore *store);
 
 extern CostStoreImpl cost_store_mmap;
 extern CostStoreImpl cost_store_mem;

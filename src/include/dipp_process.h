@@ -14,7 +14,7 @@
 
 extern PriorityQueue *ingest_pq;
 extern PriorityQueue *partially_processed_pq;
-extern CostEntry *cost_cache;
+extern CostStore *cost_store;
 extern StorageMode global_storage_mode;
 
 // Main processing loop running in a thread

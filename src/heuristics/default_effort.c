@@ -9,7 +9,7 @@ COST_MODEL_LOOKUP_RESULT get_default_implementation(Module *module, ImageBatch *
     *picked_hash = murmur3_batch_fingerprint(data, param_hash);
 
     uint16_t latency, energy;
-    if (cost_store_impl->lookup(cost_cache, *picked_hash, &latency, &energy) != -1)
+    if (cost_store_impl->lookup(cost_store, *picked_hash, &latency, &energy) != -1)
     {
         if (latency <= latency_requirement && energy <= energy_requirement)
         {

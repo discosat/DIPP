@@ -79,11 +79,37 @@ int enqueue_mmap(PriorityQueue *pq, ImageBatch item)
     // each process will later memory-map the contents into this pointer
     item.data = NULL;
 
+    printf("New item arrived in pq: \r\n");
+    printf("Number of images: %i\r\n", item.num_images);
+    printf("Batch size: %i\r\n", item.batch_size);
+    printf("Pipeline ID: %i\r\n", item.pipeline_id);
+    printf("Priority: %i\r\n", item.priority);
+    printf("Filename: %s\r\n", item.filename);
+    printf("UUID: %s\r\n", item.uuid);
+    printf("Progress: %i\r\n", item.progress);
+    printf("Storage mode: %i\r\n", item.storage_mode);
+
     pq->items[pq->size++] = item;
     heapifyUp(pq, pq->size - 1);
 
     // sync to disk
     msync(pq, sizeof(PriorityQueue), MS_SYNC);
+
+    printf("Item enqueued. Here is the queue.\r\n");
+    for (int i = 0; i < pq->size; i++)
+    {
+        // print data inside each item
+        printf("Item %i:\r\n", i);
+        printf("Number of images: %i\r\n", pq->items[i].num_images);
+        printf("Batch size: %i\r\n", pq->items[i].batch_size);
+        printf("Pipeline ID: %i\r\n", pq->items[i].pipeline_id);
+        printf("Priority: %i\r\n", pq->items[i].priority);
+        printf("Filename: %s\r\n", pq->items[i].filename);
+        printf("UUID: %s\r\n", pq->items[i].uuid);
+        printf("Progress: %i\r\n", pq->items[i].progress);
+        printf("Storage mode: %i\r\n", pq->items[i].storage_mode);
+        printf("----\r\n");
+    }
 
     pthread_mutex_unlock(&pq->lock);
     return 0; // success
@@ -97,7 +123,7 @@ ImageBatch *dequeue_mmap(PriorityQueue *pq)
     if (!pq->size)
     {
         pthread_mutex_unlock(&pq->lock);
-        printf("Priority queue is empty\n");
+        // printf("Priority queue is empty\n");
         return NULL;
     }
 

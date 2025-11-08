@@ -101,6 +101,19 @@ void setup_pipeline(param_t *param, int index)
         return; // Skip this pipeline if unpacking fails
     }
 
+    // print the pipeline definition for debugging
+    printf("Pipeline Definition: ID=%d, Num Modules=%zu\n", param->id - PIPELINE_PARAMID_OFFSET, pdef->n_modules);
+    for (size_t i = 0; i < pdef->n_modules; i++)
+    {
+        ModuleDefinition *mdef = pdef->modules[i];
+        printf("  Module %zu: Name=%s, Num Implementations=%zu\n", i, mdef->name, mdef->n_implementations);
+        for (size_t j = 0; j < mdef->n_implementations; j++)
+        {
+            Implementation *impl = mdef->implementations[j];
+            printf("    Implementation %zu: Param ID=%d, Effort Level=%d\n", j, impl->param_id, impl->effort_level);
+        }
+    }
+
     int pipeline_id = param->id - PIPELINE_PARAMID_OFFSET;
     pipelines[pipeline_id].pipeline_id = pipeline_id + 1;
     pipelines[pipeline_id].num_modules = pdef->n_modules;
@@ -160,6 +173,37 @@ void setup_module_config(param_t *param, int index)
     if (!mcon)
     {
         return; // Skip this module if unpacking fails
+    }
+
+    // print the module config for debugging
+    printf("Module Config: ID=%d, Num Parameters=%zu, Latency Cost=%d, Energy Cost=%d, Hash=%u\n",
+           param->id - MODULE_PARAMID_OFFSET,
+           mcon->n_parameters,
+           mcon->latency_cost,
+           mcon->energy_cost,
+           hash);
+
+    for (size_t i = 0; i < mcon->n_parameters; i++)
+    {
+        ConfigParameter *cparam = mcon->parameters[i];
+        printf("  Parameter %zu: Key=%s, Value Case=%d\n", i, cparam->key, cparam->value_case);
+        switch (cparam->value_case)
+        {
+        case CONFIG_PARAMETER__VALUE_BOOL_VALUE:
+            printf("    Bool Value=%d\n", cparam->bool_value);
+            break;
+        case CONFIG_PARAMETER__VALUE_INT_VALUE:
+            printf("    Int Value=%d\n", cparam->int_value);
+            break;
+        case CONFIG_PARAMETER__VALUE_FLOAT_VALUE:
+            printf("    Float Value=%f\n", cparam->float_value);
+            break;
+        case CONFIG_PARAMETER__VALUE_STRING_VALUE:
+            printf("    String Value=%s\n", cparam->string_value);
+            break;
+        default:
+            break;
+        }
     }
 
     int module_id = param->id - MODULE_PARAMID_OFFSET; // Minus 30 cause IDs are offset by 30 to accommodate pipeline ids (see pipeline.h)

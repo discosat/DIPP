@@ -33,7 +33,7 @@ PriorityQueue *partially_processed_pq = NULL;
 PriorityQueueImpl *pq_impl = NULL;
 
 CostStoreImpl *cost_store_impl = NULL;
-CostEntry *cost_cache = NULL;
+CostStore *cost_store = NULL;
 
 StorageMode global_storage_mode = STORAGE_MMAP;
 
@@ -62,7 +62,7 @@ void process(ImageBatch *input_batch)
             printf("Error getting pipeline length\n");
             return;
         }
-        if (input_batch->progress == pipeline_length)
+        if (input_batch->progress == pipeline_length - 1)
         {
             printf("Pipeline fully executed successfully\n");
 
@@ -138,14 +138,14 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
     ssize_t msg_size = msgrcv(msg_queue_id, &msg_buffer, sizeof(msg_buffer.mtext), 1, do_wait ? 0 : IPC_NOWAIT);
     if (msg_size == -1)
     {
-        set_error_param(MSGQ_EMPTY);
+        // set_error_param(MSGQ_EMPTY);
         return FAILURE;
     }
 
     // Ensure that the received message size is not larger than the ImageBatch structure
     if (msg_size > sizeof(ImageBatch))
     {
-        set_error_param(MSGQ_EMPTY);
+        // set_error_param(MSGQ_EMPTY);
         printf("Received %ld bytes, expected %ld bytes\n", msg_size, sizeof(ImageBatch));
         return FAILURE;
     }
@@ -206,11 +206,11 @@ void process_images_loop()
 
     pq_impl = get_priority_queue_impl(global_storage_mode);
 
-    pq_impl->init(ingest_pq, "/usr/share/dipp/queue_file");
-    pq_impl->init(partially_processed_pq, "/usr/share/dipp/partially_processed_queue_file");
+    pq_impl->init(&ingest_pq, "/usr/share/dipp/queue_file");
+    pq_impl->init(&partially_processed_pq, "/usr/share/dipp/partially_processed_queue_file");
 
     cost_store_impl = get_cost_store_impl(global_storage_mode);
-    cost_store_impl->init(cost_cache, CACHE_FILE);
+    cost_store_impl->init(&cost_store, CACHE_FILE);
 
     HEURISTIC_TYPE curr_heur = LOWEST_EFFORT;
 
@@ -251,25 +251,38 @@ void process_images_loop()
             }
         }
 
-        setup_cache_if_needed();
+        // print the batch info for debugging
+        printf("----\r\n");
+        printf("Processing batch: \r\n");
+        printf("Number of images: %i\r\n", batch->num_images);
+        printf("Batch size: %i\r\n", batch->batch_size);
+        printf("Pipeline ID: %i\r\n", batch->pipeline_id);
+        printf("Priority: %i\r\n", batch->priority);
+        printf("Filename: %s\r\n", batch->filename);
+        printf("UUID: %s\r\n", batch->uuid);
+        printf("Progress: %i\r\n", batch->progress);
+        printf("Storage mode: %i\r\n", batch->storage_mode);
+        printf("----\r\n");
+
+        // setup_cache_if_needed();
 
         // process the batch (maybe partially)
-        process(batch);
+        // process(batch);
 
-        // if partial not full (let's say size<10), pull data from ingest_pq
-        size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
-        if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
-        {
-            ImageBatch *new_batch = pq_impl->dequeue(ingest_pq);
-            if (new_batch != NULL)
-            {
-                // process the batch (maybe partially)
-                process(new_batch);
-            }
-        }
+        // if partial not full (size<10 by default), pull data from ingest_pq
+        // size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
+        // if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
+        // {
+        //     ImageBatch *new_batch = pq_impl->dequeue(ingest_pq);
+        //     if (new_batch != NULL)
+        //     {
+        //         // process the batch (maybe partially)
+        //         process(new_batch);
+        //     }
+        // }
     }
 
     pq_impl->clean_up(ingest_pq);
     pq_impl->clean_up(partially_processed_pq);
-    cost_store_impl->clean_up(cost_cache);
+    cost_store_impl->clean_up(cost_store);
 }

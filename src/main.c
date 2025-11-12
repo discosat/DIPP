@@ -96,7 +96,7 @@ static void iface_init(int argc, char *argv[])
 			.stopbits = 1,
 			.paritysetting = 0};  
 
-		int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, &iface);
+		int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, pipeline_addr, &iface);
 		if (error != CSP_ERR_NONE)
 		{
 			csp_print("failed to add KISS interface [%s], error: %d\n", kiss_device, error);

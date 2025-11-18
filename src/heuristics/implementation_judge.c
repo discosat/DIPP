@@ -11,7 +11,7 @@
 // the latency and energy requirements, FOUND_NOT_CACHED if no matching entry is found but the
 // default latency and energy values fit within the requirements, or NOT_FOUND in case the module
 // effort level was not found or does not fulfill the requirements.
-COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module, ImageBatch *data, int latency_requirement, int energy_requirement, int *module_param_id, uint32_t *picked_hash)
+COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module, ImageBatch *data, uint32_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash, bool is_lowest_effort)
 {
     int32_t module_id = -1;
 
@@ -37,7 +37,7 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
 
     if (module_id == -1)
     {
-        printf("Module %s does not have an implementation for effort level %d\n", module->module_name, effort);
+        // printf("Module %s does not have an implementation for effort level %d\n", module->module_name, effort);
         return NOT_FOUND;
     }
 
@@ -46,9 +46,19 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
     uint32_t param_hash = module_config->hash;
     *picked_hash = murmur3_batch_fingerprint(data, param_hash);
 
-    uint16_t latency, energy;
+    uint32_t latency;
+    float energy;
+
+    if (is_lowest_effort)
+    {
+        // In lowest effort, we ignore latency requirements and only make sure that energy fits
+        // This is in the case when we have already missed the deadline and want to just finish processing
+        latency_requirement = UINT32_MAX;
+    }
+
     if (cost_store_impl->lookup(cost_store, *picked_hash, &latency, &energy) != -1)
     {
+        // printf("Found in cost store with latency=%u, energy=%f\r\n", latency, energy);
         if (latency <= latency_requirement && energy <= energy_requirement)
         {
             *module_param_id = module_id;
@@ -57,13 +67,14 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
     }
     else
     {
-        latency = module_config->latency_cost;
-        energy = module_config->energy_cost;
+        // printf("Did not find in cost store\r\n");
+        latency = (uint32_t)module_config->latency_cost;
+        energy = (float)module_config->energy_cost;
 
         // if not provided by the user, use the default values
         if (latency == 0)
             latency = DEFAULT_EFFORT_LATENCY;
-        if (energy == 0)
+        if (energy == 0.0f)
             energy = DEFAULT_EFFORT_ENERGY;
 
         if (latency <= latency_requirement && energy <= energy_requirement)

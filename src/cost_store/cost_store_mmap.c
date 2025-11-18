@@ -74,7 +74,7 @@ int cost_store_init_mmap(CostStore **store, char *filename)
 }
 
 // mmap-specific insert: same as mem but persist to disk
-void insert_mmap(CostStore *store, uint32_t hash, uint16_t latency, uint16_t energy)
+void insert_mmap(CostStore *store, uint32_t hash, uint32_t latency, float energy)
 {
     global_time++;
     int idx = find_entry(store, hash);
@@ -85,7 +85,7 @@ void insert_mmap(CostStore *store, uint32_t hash, uint16_t latency, uint16_t ene
         store->items[idx].timestamp = global_time;
         // persist change
         msync(store, sizeof(CostStore), MS_SYNC);
-        printf("Updated existing entry (mmap, synced).\n");
+        // printf("Updated existing entry (mmap, synced).\n");
         return;
     }
 
@@ -99,7 +99,7 @@ void insert_mmap(CostStore *store, uint32_t hash, uint16_t latency, uint16_t ene
             store->items[i].valid = 1;
             store->items[i].timestamp = global_time;
             msync(store, sizeof(CostStore), MS_SYNC);
-            printf("Inserted into free slot (mmap, synced).\n");
+            // printf("Inserted into free slot (mmap, synced).\n");
             return;
         }
     }
@@ -113,7 +113,7 @@ void insert_mmap(CostStore *store, uint32_t hash, uint16_t latency, uint16_t ene
         store->items[evict].valid = 1;
         store->items[evict].timestamp = global_time;
         msync(store, sizeof(CostStore), MS_SYNC);
-        printf("Evicted LRU and inserted (mmap, synced).\n");
+        // printf("Evicted LRU and inserted (mmap, synced).\n");
     }
 }
 

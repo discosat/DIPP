@@ -1,7 +1,7 @@
 #ifndef DIPP_PARAMIDS_H
 #define DIPP_PARAMIDS_H
 
-#define PARAMID_PIPELINE_RUN 1
+#define PARAMID_BATTERY_LEVEL 1
 
 /* Error log parameters */
 #define PARAMID_ERROR_LOG 2

@@ -13,6 +13,7 @@
 #include "dipp_config.h"
 #include "image_batch.h"
 #include "dipp_error.h"
+#include "utils/timestamp.h"
 
 // Execute the pipeline on the given batch. It picks up from the possibly partially executed state,
 // and for each module it picks the best effort level that fulfills the requirements based on the current state.
@@ -26,18 +27,26 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         return -1;
     }
 
+    printf("Starting pipeline execution from module %d out of %zu modules\r\n", data->progress + 1, pipeline->num_modules);
+    log_timestamp("Starting pipeline execution");
+
     for (size_t i = data->progress + 1; i < pipeline->num_modules; ++i)
     {
-        int module_param_id;
+        int module_param_id = -1;
         uint32_t picked_hash;
 
+        printf("Starting the execution of %ldth module\r\n", i);
+        log_timestamp("Starting execution of module");
+
+        // printf("Looking up the best param_id using heuristic\r\n");
         // pick the module effort level using the currently set heuristic
         COST_MODEL_LOOKUP_RESULT lookup_result = current_heuristic->heuristic_function(&pipeline->modules[i], data, pipeline->num_modules, &module_param_id, &picked_hash);
+        // printf("Got back a param_id=%d\r\n", module_param_id);
 
         // No new progress can be made, as no module fulfills the requirements
         if (lookup_result == NOT_FOUND)
         {
-            printf("No matching module found. No effort level fulfills the requirements\n");
+            // printf("No matching module found. No effort level fulfills the requirements\r\n");
             /* Close all active pipes */
             close(output_pipe[0]); // Close the read end of the pipe
             close(output_pipe[1]); // Close the write end of the pipe
@@ -50,6 +59,35 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         ProcessFunction module_function = pipeline->modules[i].module_function;
         // pick the module with selected effort level
         ModuleParameterList *module_config = &module_parameter_lists[module_param_id];
+
+        // printf("Here is the module config: Num params=%zu, Hash=%u, Latency=%u, Energy=%u\r\n",
+        //        module_config->n_parameters,
+        //        module_config->hash,
+        //        module_config->latency_cost,
+        //        module_config->energy_cost);
+        // for (size_t p = 0; p < module_config->n_parameters; ++p)
+        // {
+        //     ModuleParameter *param = module_config->parameters[p];
+        //     printf("Param %zu: Name=%s, Type=%d, Value=", p, param->key, param->value_case);
+        //     switch (param->value_case)
+        //     {
+        //     case BOOL_VALUE:
+        //         printf("%d\r\n", param->bool_value);
+        //         break;
+        //     case INT_VALUE:
+        //         printf("%d\r\n", param->int_value);
+        //         break;
+        //     case FLOAT_VALUE:
+        //         printf("%f\r\n", param->float_value);
+        //         break;
+        //     case STRING_VALUE:
+        //         printf("%s\r\n", param->string_value);
+        //         break;
+        //     default:
+        //         printf("Unknown parameter type\r\n");
+        //         break;
+        //     }
+        // }
 
         // measure time to execute the module
         struct timespec start, end;
@@ -65,9 +103,13 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             start_energy = get_energy_reading();
         }
 
+        // printf("Starting execution in process\r\n");
+        log_timestamp("Executing module in process");
         int module_status = execute_module_in_process(module_function, data, module_config);
+        log_timestamp("Finished execution in process");
+        // printf("Finished execution\r\n");
 
-        uint32_t energy_cost = 0;
+        float energy_cost = 0;
 
         // the profiling information is not found, collect it here
         if (lookup_result == FOUND_NOT_CACHED)
@@ -79,7 +121,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             end_energy = get_energy_reading();
 
             // Calculate energy cost (0 if readings failed)
-            energy_cost = (start_energy && end_energy) ? (end_energy - start_energy) : 0;
+            // energy_cost = (start_energy && end_energy) ? (end_energy - start_energy) : 0;
+            energy_cost = end_energy;
 
             elapsed_ns = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
         }
@@ -98,6 +141,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         if (lookup_result == FOUND_NOT_CACHED)
         {
             // Store both latency and energy cost in cache
+            printf("Inserting into cache. Latency=%ld ns, Energy=%.2f J\r\n", elapsed_ns, energy_cost);
             cost_store_impl->insert(cost_store, picked_hash, elapsed_ns, energy_cost);
         }
 
@@ -123,6 +167,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         data->shmid = result.shmid;
         strcpy(data->uuid, result.uuid);
         strcpy(data->filename, result.filename);
+
+        log_timestamp("Finished execution of module");
     }
 
     /* Close communication pipes */
@@ -130,6 +176,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
     close(output_pipe[1]); // Close the write end of the pipe
     close(error_pipe[0]);
     close(error_pipe[1]);
+
+    log_timestamp("Finished pipeline execution");
 
     return 0;
 }

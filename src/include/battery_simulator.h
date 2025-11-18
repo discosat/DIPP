@@ -1,0 +1,39 @@
+#ifndef DIPP_BATTERY_H
+#define DIPP_BATTERY_H
+
+#include <stdint.h>
+#include "dipp_paramids.h"
+
+typedef enum
+{
+    SUNLIT,
+    ECLIPSE
+} StateEnum;
+
+typedef struct
+{
+    // --- Battery Parameters ---
+    double total_capacity_Wh;
+    double min_capacity_Wh;
+    double max_capacity_Wh;
+    double current_capacity_Wh;
+    double soc; // State of Charge (0.0 to 1.0)
+
+    // --- Power Parameters ---
+    double power_generation_W;
+    double constant_load_W;
+
+    // --- Time & Orbit Parameters ---
+    int time_step_s;
+    int current_time_s;
+    int orbit_period_s;
+    int sunlit_duration_s;
+
+    // --- State ---
+    StateEnum current_state; // "SUNLIT" or "ECLIPSE"
+
+} CubeSatBatterySimulator;
+
+void simulate_battery();
+
+#endif // DIPP_BATTERY_H

@@ -38,6 +38,7 @@ sources = files(
 	'src/protobuf/metadata.pb-c.c',
 	'src/protobuf/dtpmetadata.pb-c.c',
 	'src/utils/murmur_hash.c',
+	'src/utils/timestamp.c',
 	'src/heuristics/best_effort_heuristic.c',
 	'src/heuristics/default_effort.c',
 	'src/heuristics/implementation_judge.c',
@@ -51,8 +52,8 @@ sources = files(
 	'src/pipeline/pipeline_executor.c',
 	'src/process/process_module.c',
 	'src/image/image_store.c',
-	'src/telemetry.c'
-
+	'src/telemetry.c',
+	'src/battery_simulator.c'
 )
 
 dirs = include_directories(
@@ -88,15 +89,5 @@ dipp = executable(
 	install: true,
 	#c_args: ['-g2', '-O0', '-Wall', '-Wextra'] + c_args,
 	c_args: c_args,
-	link_args: ['-ldl'],
-)
-
-mock_energy_server = executable(
-    'mock_energy_server',
-    'src/mock_energy_server.c',
-    include_directories: dirs,
-    dependencies: [csp_dep, param_dep, m_dep],
-    install: true,
-    c_args: c_args,
 	link_args: ['-ldl'],
 )

@@ -118,6 +118,8 @@ void setup_pipeline(param_t *param, int index)
     pipelines[pipeline_id].pipeline_id = pipeline_id + 1;
     pipelines[pipeline_id].num_modules = pdef->n_modules;
 
+    printf("Setting up pipeline ID %d with %zu modules\r\n", pipeline_id + 1, pdef->n_modules);
+
     for (size_t module_idx = 0; module_idx < pdef->n_modules; module_idx++)
     {
         ModuleDefinition *mdef = pdef->modules[module_idx];
@@ -138,16 +140,16 @@ void setup_pipeline(param_t *param, int index)
             switch (impl->effort_level)
             {
             case EFFORT_LEVEL__DEFAULT:
-                pipelines[pipeline_id].modules[module_idx].default_effort_param_id = impl->param_id;
+                pipelines[pipeline_id].modules[module_idx].default_effort_param_id = impl->param_id - 1; // Minus 1 to convert to zero-based index
                 break;
             case EFFORT_LEVEL__LOW:
-                pipelines[pipeline_id].modules[module_idx].low_effort_param_id = impl->param_id;
+                pipelines[pipeline_id].modules[module_idx].low_effort_param_id = impl->param_id - 1;
                 break;
             case EFFORT_LEVEL__MEDIUM:
-                pipelines[pipeline_id].modules[module_idx].medium_effort_param_id = impl->param_id;
+                pipelines[pipeline_id].modules[module_idx].medium_effort_param_id = impl->param_id - 1;
                 break;
             case EFFORT_LEVEL__HIGH:
-                pipelines[pipeline_id].modules[module_idx].high_effort_param_id = impl->param_id;
+                pipelines[pipeline_id].modules[module_idx].high_effort_param_id = impl->param_id - 1;
                 break;
             default:
                 // Handle unknown effort level

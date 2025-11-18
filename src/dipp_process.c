@@ -26,7 +26,7 @@
 #include "image_store.h"
 #include "image_batch.h"
 #include "vmem_upload_local.h"
-#include "heuristics.h"
+#include "utils/timestamp.h"
 
 PriorityQueue *ingest_pq = NULL;
 PriorityQueue *partially_processed_pq = NULL;
@@ -46,7 +46,10 @@ Heuristic *current_heuristic = NULL;
 // partially processed queue.
 void process(ImageBatch *input_batch)
 {
+    printf("Processing batch with pipeline ID %d, progress %d\r\n", input_batch->pipeline_id, input_batch->progress);
     int pipeline_result = load_pipeline_and_execute(input_batch);
+    printf("Pipeline execution returned %d\r\n", pipeline_result);
+    printf("Current progress after execution: %d\r\n", input_batch->progress);
 
     if (pipeline_result == FAILURE)
     {
@@ -142,6 +145,8 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
         return FAILURE;
     }
 
+    log_timestamp("Message received from queue");
+
     // Ensure that the received message size is not larger than the ImageBatch structure
     if (msg_size > sizeof(ImageBatch))
     {
@@ -194,14 +199,31 @@ void get_env_vars()
         }
         else
         {
-            printf("Unknown HEURISTIC '%s', defaulting to LOWEST_EFFORT\n", heuristic_str);
-            current_heuristic = &lowest_effort_heuristic;
+            printf("Unknown HEURISTIC '%s', defaulting to BEST_EFFORT\n", heuristic_str);
+            current_heuristic = &best_effort_heuristic;
         }
+    }
+}
+
+void update_heuristic(int ingest_queue_depth, int partial_queue_depth)
+{
+    int total_queue_depth = ingest_queue_depth + partial_queue_depth;
+    if (total_queue_depth < LOW_QUEUE_DEPTH_THRESHOLD && partial_queue_depth < PARTIAL_QUEUE_SIZE_THRESHOLD)
+    {
+        current_heuristic = &best_effort_heuristic;
+    }
+    else
+    {
+        // either the partially processed queue is almost full, or the total queue depth is high
+        current_heuristic = &lowest_effort_heuristic;
     }
 }
 
 void process_images_loop()
 {
+    current_heuristic = &best_effort_heuristic;
+    global_storage_mode = STORAGE_MMAP;
+
     get_env_vars();
 
     pq_impl = get_priority_queue_impl(global_storage_mode);
@@ -212,22 +234,6 @@ void process_images_loop()
     cost_store_impl = get_cost_store_impl(global_storage_mode);
     cost_store_impl->init(&cost_store, CACHE_FILE);
 
-    HEURISTIC_TYPE curr_heur = LOWEST_EFFORT;
-
-    // get the heuristic parameter
-    switch (curr_heur)
-    {
-    case LOWEST_EFFORT:
-        current_heuristic = &lowest_effort_heuristic;
-        break;
-    case BEST_EFFORT:
-        current_heuristic = &best_effort_heuristic;
-        break;
-    default:
-        current_heuristic = &lowest_effort_heuristic;
-        break;
-    }
-
     while (1)
     {
         // drain the message queue (nowait)
@@ -236,6 +242,7 @@ void process_images_loop()
         {
             // push data onto the ingest priority queue
             pq_impl->enqueue(ingest_pq, datarcv);
+            log_timestamp("Image batch enqueued to ingest priority queue");
         }
 
         // pull from the partially_processed_pq first
@@ -251,35 +258,37 @@ void process_images_loop()
             }
         }
 
-        // print the batch info for debugging
-        printf("----\r\n");
-        printf("Processing batch: \r\n");
-        printf("Number of images: %i\r\n", batch->num_images);
-        printf("Batch size: %i\r\n", batch->batch_size);
-        printf("Pipeline ID: %i\r\n", batch->pipeline_id);
-        printf("Priority: %i\r\n", batch->priority);
-        printf("Filename: %s\r\n", batch->filename);
-        printf("UUID: %s\r\n", batch->uuid);
-        printf("Progress: %i\r\n", batch->progress);
-        printf("Storage mode: %i\r\n", batch->storage_mode);
-        printf("----\r\n");
+        // // print the batch info for debugging
+        // printf("----\r\n");
+        // printf("Processing batch: \r\n");
+        // printf("Number of images: %i\r\n", batch->num_images);
+        // printf("Batch size: %i\r\n", batch->batch_size);
+        // printf("Pipeline ID: %i\r\n", batch->pipeline_id);
+        // printf("Priority: %i\r\n", batch->priority);
+        // printf("Filename: %s\r\n", batch->filename);
+        // printf("UUID: %s\r\n", batch->uuid);
+        // printf("Progress: %i\r\n", batch->progress);
+        // printf("Storage mode: %i\r\n", batch->storage_mode);
+        // printf("----\r\n");
 
-        // setup_cache_if_needed();
+        setup_cache_if_needed();
 
         // process the batch (maybe partially)
-        // process(batch);
+        log_timestamp("Start processing image batch");
+        process(batch);
+        log_timestamp("Finished processing image batch");
 
         // if partial not full (size<10 by default), pull data from ingest_pq
-        // size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
-        // if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
-        // {
-        //     ImageBatch *new_batch = pq_impl->dequeue(ingest_pq);
-        //     if (new_batch != NULL)
-        //     {
-        //         // process the batch (maybe partially)
-        //         process(new_batch);
-        //     }
-        // }
+        size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
+        if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
+        {
+            ImageBatch *new_batch = pq_impl->dequeue(ingest_pq);
+            if (new_batch != NULL)
+            {
+                // process the batch (maybe partially)
+                process(new_batch);
+            }
+        }
     }
 
     pq_impl->clean_up(ingest_pq);

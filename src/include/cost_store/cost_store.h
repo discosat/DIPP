@@ -17,8 +17,8 @@ typedef enum COST_MODEL_LOOKUP_RESULT
 typedef struct CostEntry
 {
     uint32_t hash;
-    uint16_t latency;
-    uint16_t energy;
+    uint32_t latency; // changed from uint16_t -> uint32_t for microsecond precision
+    float energy;     // changed from uint16_t -> float
     uint64_t timestamp;
     uint8_t valid;
 } CostEntry;
@@ -33,9 +33,9 @@ typedef struct CostStoreImpl
 {
     // init now takes CostStore ** so it can set the caller's pointer to mapped or allocated memory
     int (*init)(CostStore **store, char *filename);
-    void (*insert)(CostStore *store, uint32_t hash, uint16_t latency, uint16_t energy);
-    int (*lookup)(CostStore *store, uint32_t hash, uint16_t *latency, uint16_t *energy);
-    int (*clean_up)(CostStore *store); // free/munmap backend resources
+    void (*insert)(CostStore *store, uint32_t hash, uint32_t latency, float energy);
+    int (*lookup)(CostStore *store, uint32_t hash, uint32_t *latency, float *energy); // latency -> uint32_t*
+    int (*clean_up)(CostStore *store);                                                // free/munmap backend resources
 } CostStoreImpl;
 
 // extern pointer to the malloc'd outer CostStore (items[] inside are static)
@@ -44,8 +44,8 @@ extern CostStore *cost_store;
 CostStoreImpl *get_cost_store_impl(StorageMode storage_type);
 
 // updated prototypes
-int cache_lookup(CostStore *store, uint32_t hash, uint16_t *latency, uint16_t *energy);
-void cache_insert(CostStore *store, uint32_t hash, uint16_t latency, uint16_t energy);
+int cache_lookup(CostStore *store, uint32_t hash, uint32_t *latency, float *energy);
+void cache_insert(CostStore *store, uint32_t hash, uint32_t latency, float energy);
 int find_entry(CostStore *store, uint32_t hash);
 int find_lru_index(CostStore *store);
 

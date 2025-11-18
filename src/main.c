@@ -19,6 +19,7 @@
 #include <csp/drivers/can_socketcan.h>
 #include <dtp/dtp.h>
 #include "telemetry.h"
+#include "battery_simulator.h"
 
 void *vmem_server_task(void *param)
 {
@@ -51,6 +52,12 @@ void *dtp_indeces_server_task(void *param)
 void *process_images_task(void *param)
 {
 	process_images_loop();
+	return NULL;
+}
+
+void *battery_simulator_task(void *param)
+{
+	simulate_battery();
 	return NULL;
 }
 
@@ -163,7 +170,14 @@ int main(int argc, char *argv[])
 	vmem_file_init(&vmem_storage);
 	vmem_ring_init(&vmem_images);
 
-	initialize_telemetry();
+	// initialize_telemetry();
+
+	// telemetry_run_param_mode_tests();
+
+	// start_energy_measurement();
+	// sleep(10);
+	// float energy = get_energy_reading();
+	// printf("Initial energy reading: %.2f J\r\n", energy);
 
 	static pthread_t router_handle;
 	pthread_create(&router_handle, NULL, &router_task, NULL);
@@ -176,6 +190,9 @@ int main(int argc, char *argv[])
 
 	static pthread_t dtp_indeces_server_handle;
 	pthread_create(&dtp_indeces_server_handle, NULL, &dtp_indeces_server_task, NULL);
+
+	static pthread_t battery_simulator_handle;
+	pthread_create(&battery_simulator_handle, NULL, &battery_simulator_task, NULL);
 
 	static pthread_t process_images_handle;
 	pthread_create(&process_images_handle, NULL, &process_images_task, NULL);

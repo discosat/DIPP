@@ -1,4 +1,5 @@
 #include "priority_queue.h"
+#include "utils/timestamp.h"
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -127,6 +128,8 @@ ImageBatch *dequeue_mmap(PriorityQueue *pq)
         return NULL;
     }
 
+    log_timestamp("Image batch dequeued requested from priority queue");
+
     ImageBatch *item = &pq->items[0];
     pq->items[0] = pq->items[--pq->size];
     heapifyDown(pq, 0);
@@ -135,6 +138,8 @@ ImageBatch *dequeue_mmap(PriorityQueue *pq)
     msync(pq, sizeof(PriorityQueue), MS_SYNC);
 
     pthread_mutex_unlock(&pq->lock);
+
+    log_timestamp("Image batch dequeued from priority queue");
 
     return item;
 }

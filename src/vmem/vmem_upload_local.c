@@ -10,10 +10,12 @@
 #include "protobuf/metadata.pb-c.h"
 
 /* Local ring-buffer */
-void upload(unsigned char *data, int num, int len) 
+void upload(unsigned char *data, int num, int len)
 {
     uint8_t node = param_get_uint8(&radio_node_id);
     int timeout = 1000;
+
+    printf("Uploading batch size of %d bytes\n", len);
 
     uint32_t offset = 0;
     int image_index = 0;
@@ -24,8 +26,11 @@ void upload(unsigned char *data, int num, int len)
         uint32_t meta_size = *((uint32_t *)(data + offset));
         offset += sizeof(uint32_t); // Move the offset to the start of metadata
         Metadata *metadata = metadata__unpack(NULL, meta_size, data + offset);
-        offset += meta_size; // Move offset to start of image
+        offset += meta_size;      // Move offset to start of image
         offset += metadata->size; // Move the offset to the start of the next image block
+
+        printf("Uploading image %d: metadata size = %u, image size = %u\n",
+               image_index, meta_size, metadata->size);
 
         uint32_t end = offset;
         image_index++;

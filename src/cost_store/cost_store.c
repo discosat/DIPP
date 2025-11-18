@@ -48,13 +48,13 @@ int find_lru_index(CostStore *store)
 }
 
 // lookup remains shared
-int cache_lookup(CostStore *store, uint32_t hash, uint16_t *latency, uint16_t *energy)
+int cache_lookup(CostStore *store, uint32_t hash, uint32_t *latency, float *energy)
 {
     int idx = find_entry(store, hash);
     if (idx != -1)
     {
-        *latency = store->items[idx].latency;
-        *energy = store->items[idx].energy;
+        *latency = store->items[idx].latency; // now uint32_t (microseconds)
+        *energy = store->items[idx].energy;   // now float
         // Update timestamp for LRU
         store->items[idx].timestamp = ++global_time;
         return idx;

@@ -45,7 +45,7 @@ int cost_store_init_mem(CostStore **store, char *filename)
 }
 
 // mem-specific insert (same behavior as previous cache_insert)
-void insert_mem(CostStore *store, uint32_t hash, uint16_t latency, uint16_t energy)
+void insert_mem(CostStore *store, uint32_t hash, uint32_t latency, float energy)
 {
     global_time++;
     int idx = find_entry(store, hash);
@@ -54,7 +54,7 @@ void insert_mem(CostStore *store, uint32_t hash, uint16_t latency, uint16_t ener
         store->items[idx].latency = latency;
         store->items[idx].energy = energy;
         store->items[idx].timestamp = global_time;
-        printf("Updated existing entry.\n");
+        // printf("Updated existing entry.\n");
         return;
     }
 
@@ -67,7 +67,7 @@ void insert_mem(CostStore *store, uint32_t hash, uint16_t latency, uint16_t ener
             store->items[i].energy = energy;
             store->items[i].valid = 1;
             store->items[i].timestamp = global_time;
-            printf("Inserted into free slot.\n");
+            // printf("Inserted into free slot.\n");
             return;
         }
     }
@@ -80,7 +80,7 @@ void insert_mem(CostStore *store, uint32_t hash, uint16_t latency, uint16_t ener
         store->items[evict].energy = energy;
         store->items[evict].valid = 1;
         store->items[evict].timestamp = global_time;
-        printf("Evicted LRU and inserted.\n");
+        // printf("Evicted LRU and inserted.\n");
     }
 }
 

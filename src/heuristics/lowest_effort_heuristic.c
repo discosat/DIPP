@@ -3,6 +3,7 @@
 #include "pipeline_config.pb-c.h"
 #include "cost_store.h"
 #include <time.h>
+#include <stdbool.h>
 
 COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module, ImageBatch *data, size_t num_modules, int *module_param_id, uint32_t *picked_hash)
 {
@@ -13,12 +14,14 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
         return NOT_FOUND;
     }
 
-    size_t num_modules_left = num_modules - data->progress - 1; // number of modules left to process
-    // TODO: Check if the -1 is correct
+    size_t num_modules_left = num_modules - (data->progress + 1); // number of modules left to process
 
-    int latency_requirement = (data->priority - time.tv_sec) / num_modules_left; // how much time is there to process the rest of the stages on average
-    // TODO: Add a scaling factor to the lateny requirement (we should not use the whole time left to process the rest of the modules)
-    int energy_requirement = 0; // TODO: change this to the current energy battery level - MIN_BATTERY_LEVEL
+    /* latency in microseconds per remaining module */
+    uint32_t latency_requirement = (uint32_t)(((data->priority - time.tv_sec) * 1e9) / (int64_t)num_modules_left); // time left in nanoseconds divided by number of modules left
+    /* energy as float (e.g. battery remaining) */
+    float energy_requirement = 1000000.0f; // TODO: change this to the current energy battery level - MIN_BATTERY_LEVEL
+
+    // printf("Number of modules left: %zu, Latency requirement: %u, Energy requirement: %f\r\n", num_modules_left, latency_requirement, energy_requirement);
 
     // If there is only a single effort level, use that one
     if (module->default_effort_param_id != -1)
@@ -27,19 +30,32 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
     }
     else
     {
+        EffortLevel lowest_effort_level = EFFORT_LEVEL__LOW;
+        if (module->low_effort_param_id == -1)
+        {
+            lowest_effort_level = EFFORT_LEVEL__MEDIUM;
+        }
+        if (module->medium_effort_param_id == -1 && lowest_effort_level == EFFORT_LEVEL__LOW)
+        {
+            lowest_effort_level = EFFORT_LEVEL__HIGH;
+        }
+
         // start from the lightest and go up in the effort levels
         // (the first that fulfils the requiments is the one to use)
-        COST_MODEL_LOOKUP_RESULT result = judge_implementation(EFFORT_LEVEL__LOW, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash);
+        // printf("Checking the low effort\r\n");
+        COST_MODEL_LOOKUP_RESULT result = judge_implementation(EFFORT_LEVEL__LOW, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash, lowest_effort_level == EFFORT_LEVEL__LOW);
         if (result == FOUND_NOT_CACHED || result == FOUND_CACHED)
         {
             return result;
         }
-        result = judge_implementation(EFFORT_LEVEL__MEDIUM, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash);
+        // printf("Checking the medium effort\r\n");
+        result = judge_implementation(EFFORT_LEVEL__MEDIUM, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash, lowest_effort_level == EFFORT_LEVEL__MEDIUM);
         if (result == FOUND_NOT_CACHED || result == FOUND_CACHED)
         {
             return result;
         }
-        result = judge_implementation(EFFORT_LEVEL__HIGH, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash);
+        // printf("Checking the high effort\r\n");
+        result = judge_implementation(EFFORT_LEVEL__HIGH, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash, lowest_effort_level == EFFORT_LEVEL__HIGH);
         if (result == FOUND_NOT_CACHED || result == FOUND_CACHED)
         {
             return result;

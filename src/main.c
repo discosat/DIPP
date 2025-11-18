@@ -46,7 +46,7 @@ void *dtp_indeces_server_task(void *param)
 	return NULL;
 }
 
-static void iface_init(int argc, char *argv[])
+static void iface_init(int argc, char *argv[], char **vmem_dir)
 {
 	csp_iface_t *iface = NULL;
 	char *interface = "ZMQ";		  // Default interface
@@ -56,13 +56,13 @@ static void iface_init(int argc, char *argv[])
 	int pipeline_addr = 162;		  // Default pipeline address
 
 	int opt;
-	while ((opt = getopt(argc, argv, "i:p:a:")) != -1)
+	while ((opt = getopt(argc, argv, "i:p:a:v:")) != -1)
 	{
 		switch (opt)
 		{
 		case 'i':
 			// Use the provided interface instead of "ZMQ"
-			interface = optarg; 
+			interface = optarg;
 			break;
 		case 'p':
 			// Use the provided port/devices
@@ -74,8 +74,12 @@ static void iface_init(int argc, char *argv[])
 			// Use the pipeline address
 			pipeline_addr = atoi(optarg);
 			break;
+		case 'v':
+			// Set vmem directory path
+			*vmem_dir = optarg;
+			break;
 		default:
-			fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <pipeline_address<´>]\n", argv[0]);
+			fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <pipeline_address>] [-v <vmem_directory>]\n", argv[0]);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -138,8 +142,23 @@ int main(int argc, char *argv[])
 	csp_conf.hostname = HOSTNAME; // HOSTNAME defined in meson_options.txt
 	csp_init();
 
-	/* Interfaces */
-	iface_init(argc, argv);
+	/* Interfaces and vmem directory */
+	char *vmem_dir = NULL;
+	static char storage_vmem_path[512];
+	static char images_vmem_path[512];
+	iface_init(argc, argv, &vmem_dir);
+
+	// Set vmem directory path if provided
+	if (vmem_dir != NULL) {
+		snprintf(storage_vmem_path, sizeof(storage_vmem_path), "%s/storage.vmem", vmem_dir);
+		snprintf(images_vmem_path, sizeof(images_vmem_path), "%s/images.vmem", vmem_dir);
+		((vmem_file_driver_t *)vmem_storage.driver)->filename = storage_vmem_path;
+		((vmem_ring_driver_t *)vmem_images.driver)->filename = images_vmem_path;
+		printf("Using vmem directory: %s\n", vmem_dir);
+		printf("Storage vmem file: %s\n", storage_vmem_path);
+		printf("Images vmem file: %s\n", images_vmem_path);
+	}
+
 	csp_print("Connection table\r\n");
 	csp_conn_print_table();
 

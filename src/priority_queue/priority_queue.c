@@ -1,5 +1,6 @@
 #include "image_batch.h"
 #include "priority_queue.h"
+#include "utils/minitrace.h"
 
 PriorityQueueImpl *get_priority_queue_impl(StorageMode storage_type)
 {
@@ -76,8 +77,10 @@ void heapifyUp(PriorityQueue *pq, int index)
 
 size_t get_queue_size(PriorityQueue *pq)
 {
+    MTR_BEGIN_FUNC();
     pthread_mutex_lock(&pq->lock);
     size_t size = pq->size;
     pthread_mutex_unlock(&pq->lock);
+    MTR_END_FUNC();
     return size;
 }

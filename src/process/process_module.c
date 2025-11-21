@@ -10,6 +10,7 @@
 #include "dipp_config.h"
 #include "dipp_process_param.h"
 #include "dipp_error.h"
+#include "utils/minitrace.h"
 
 int output_pipe[2] = {-1, -1};
 int error_pipe[2] = {-1, -1};
@@ -25,6 +26,7 @@ void timeout_handler(int signum)
 
 int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModuleParameterList *config)
 {
+    MTR_BEGIN_FUNC();
     // Create a new process
     pid_t pid = fork();
 
@@ -67,6 +69,7 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
                 invalidate_cache();
 
                 fprintf(stderr, "Child process exited with non-zero status\n");
+                MTR_END_FUNC();
                 return -1;
             }
         }
@@ -77,9 +80,11 @@ int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModulePar
             // invalidate cache
             invalidate_cache();
             fprintf(stderr, "Child process did not exit normally\n");
+            MTR_END_FUNC();
             return -1;
         }
 
+        MTR_END_FUNC();
         return 0;
     }
 }

@@ -13,13 +13,14 @@
 #include "dipp_config.h"
 #include "image_batch.h"
 #include "dipp_error.h"
-#include "utils/timestamp.h"
+#include "utils/minitrace.h"
 
 // Execute the pipeline on the given batch. It picks up from the possibly partially executed state,
 // and for each module it picks the best effort level that fulfills the requirements based on the current state.
 // If no such effort level is found, it stops the execution and returns an error.
 int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 {
+    MTR_BEGIN_FUNC();
     /* Initiate communication pipes */
     if (pipe(output_pipe) == -1 || pipe(error_pipe) == -1)
     {
@@ -27,16 +28,15 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         return -1;
     }
 
-    printf("Starting pipeline execution from module %d out of %zu modules\r\n", data->progress + 1, pipeline->num_modules);
-    log_timestamp("Starting pipeline execution");
+    printf("Starting pipeline execution from module %d out of %zu modules\n", data->progress + 1, pipeline->num_modules);
 
     for (size_t i = data->progress + 1; i < pipeline->num_modules; ++i)
     {
+        MTR_BEGIN_I(__FILE__, "execute_module_loop", "module_index", i);
         int module_param_id = -1;
         uint32_t picked_hash;
 
-        printf("Starting the execution of %ldth module\r\n", i);
-        log_timestamp("Starting execution of module");
+        printf("Starting the execution of %ldth module\n", i);
 
         // printf("Looking up the best param_id using heuristic\r\n");
         // pick the module effort level using the currently set heuristic
@@ -52,6 +52,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             close(output_pipe[1]); // Close the write end of the pipe
             close(error_pipe[0]);
             close(error_pipe[1]);
+            MTR_END(__FILE__, "execute_module_loop");
+            MTR_END_FUNC();
             return 0;
         }
 
@@ -104,9 +106,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         }
 
         // printf("Starting execution in process\r\n");
-        log_timestamp("Executing module in process");
         int module_status = execute_module_in_process(module_function, data, module_config);
-        log_timestamp("Finished execution in process");
         // printf("Finished execution\r\n");
 
         float energy_cost = 0;
@@ -135,13 +135,15 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             close(output_pipe[1]); // Close the write end of the pipe
             close(error_pipe[0]);
             close(error_pipe[1]);
+            MTR_END(__FILE__, "execute_module_loop");
+            MTR_END_FUNC();
             return -1;
         }
 
         if (lookup_result == FOUND_NOT_CACHED)
         {
             // Store both latency and energy cost in cache
-            printf("Inserting into cache. Latency=%ld ns, Energy=%.2f J\r\n", elapsed_ns, energy_cost);
+            printf("Inserting into cache. Latency=%ld ns, Energy=%.2f J\n", elapsed_ns, energy_cost);
             cost_store_impl->insert(cost_store, picked_hash, elapsed_ns, energy_cost);
         }
 
@@ -150,11 +152,15 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         if (res == -1)
         {
             set_error_param(PIPE_READ);
+            MTR_END(__FILE__, "execute_module_loop");
+            MTR_END_FUNC();
             return -1;
         }
         if (res == 0)
         {
             set_error_param(PIPE_EMPTY);
+            MTR_END(__FILE__, "execute_module_loop");
+            MTR_END_FUNC();
             return -1;
         }
 
@@ -168,7 +174,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         strcpy(data->uuid, result.uuid);
         strcpy(data->filename, result.filename);
 
-        log_timestamp("Finished execution of module");
+        MTR_END(__FILE__, "execute_module_loop");
     }
 
     /* Close communication pipes */
@@ -177,7 +183,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
     close(error_pipe[0]);
     close(error_pipe[1]);
 
-    log_timestamp("Finished pipeline execution");
+    MTR_END_FUNC();
 
     return 0;
 }

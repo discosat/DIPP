@@ -11,6 +11,7 @@
 #include "module_config.pb-c.h"
 #include "pipeline_config.pb-c.h"
 #include "murmur_hash.h"
+#include "utils/minitrace.h"
 
 Pipeline pipelines[MAX_PIPELINES];
 ModuleParameterList module_parameter_lists[MAX_MODULES];
@@ -67,10 +68,13 @@ void *load_module(char *moduleName)
     char filename[256]; // Adjust the buffer size as needed
     snprintf(filename, sizeof(filename), "/usr/share/pipeline/%s.so", moduleName);
 
+    printf("Loading module from %s\r\n", filename);
+
     // Load the external library dynamically
     void *handle = dlopen(filename, RTLD_LAZY);
     if (handle == NULL)
     {
+        printf("Error loading module: %s\r\n", dlerror());
         set_error_param(INTERNAL_SO_NOT_FOUND);
         return NULL;
     }
@@ -291,8 +295,10 @@ void setup_cache_if_needed()
     {
         // Fetch and setup pipeline and module configurations if not done
         printf("rebuilding cache \r\n");
+        MTR_BEGIN_FUNC();
         setup_all_pipelines();
         setup_all_module_configs();
+        MTR_END_FUNC();
         is_setup = 1;
     }
 }
@@ -300,5 +306,6 @@ void setup_cache_if_needed()
 void invalidate_cache()
 {
     printf("invalidating cache \r\n");
+    MTR_INSTANT_FUNC();
     is_setup = 0;
 }

@@ -20,6 +20,7 @@
 #include <dtp/dtp.h>
 #include "telemetry.h"
 #include "battery_simulator.h"
+#include "utils/minitrace.h"
 
 void *vmem_server_task(void *param)
 {
@@ -69,9 +70,11 @@ static void iface_init(int argc, char *argv[])
 	char *kiss_device = "/dev/ttyS1"; // Default KISS device
 	char *can_device = "vcan0";		  // Default CAN device
 	int pipeline_addr = 162;		  // Default pipeline address
+	bool enable_tracing = false;
+	char *trace_file = "trace.json";
 
 	int opt;
-	while ((opt = getopt(argc, argv, "i:p:a:")) != -1)
+	while ((opt = getopt(argc, argv, "i:p:a:t:")) != -1)
 	{
 		switch (opt)
 		{
@@ -89,8 +92,14 @@ static void iface_init(int argc, char *argv[])
 			// Use the pipeline address
 			pipeline_addr = atoi(optarg);
 			break;
+		case 't':
+			// Enable tracing
+			enable_tracing = true;
+			trace_file = optarg;
+			printf("Trace file set to: %s\r\n", trace_file);
+			break;
 		default:
-			fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <pipeline_address<´>]\n", argv[0]);
+			fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <pipeline_address>] [-t <trace_file>]\n", argv[0]);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -136,6 +145,13 @@ static void iface_init(int argc, char *argv[])
 	iface->netmask = 8;
 	csp_rtable_set(0, 0, iface, CSP_NO_VIA_ADDRESS);
 	csp_iflist_add(iface);
+
+	if (enable_tracing)
+	{
+		printf("Enabling tracing to file: %s\r\n", trace_file);
+		mtr_init(trace_file);
+		mtr_register_sigint_handler();
+	}
 }
 
 int main(int argc, char *argv[])

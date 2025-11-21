@@ -26,7 +26,7 @@
 #include "image_store.h"
 #include "image_batch.h"
 #include "vmem_upload_local.h"
-#include "utils/timestamp.h"
+#include "utils/minitrace.h"
 
 PriorityQueue *ingest_pq = NULL;
 PriorityQueue *partially_processed_pq = NULL;
@@ -46,15 +46,17 @@ Heuristic *current_heuristic = NULL;
 // partially processed queue.
 void process(ImageBatch *input_batch)
 {
-    printf("Processing batch with pipeline ID %d, progress %d\r\n", input_batch->pipeline_id, input_batch->progress);
+    MTR_BEGIN_FUNC_S("batch_uuid", input_batch->uuid);
+    printf("Processing batch with pipeline ID %d, progress %d\n", input_batch->pipeline_id, input_batch->progress);
     int pipeline_result = load_pipeline_and_execute(input_batch);
-    printf("Pipeline execution returned %d\r\n", pipeline_result);
-    printf("Current progress after execution: %d\r\n", input_batch->progress);
+    printf("Pipeline execution returned %d\n", pipeline_result);
+    printf("Current progress after execution: %d\n", input_batch->progress);
 
     if (pipeline_result == FAILURE)
     {
         // Something went wrong during the execution.
         // TODO: Consider possible retries
+        MTR_END_FUNC();
         return;
     }
     else
@@ -63,6 +65,7 @@ void process(ImageBatch *input_batch)
         if (pipeline_length == FAILURE)
         {
             printf("Error getting pipeline length\n");
+            MTR_END_FUNC();
             return;
         }
         if (input_batch->progress == pipeline_length - 1)
@@ -73,6 +76,7 @@ void process(ImageBatch *input_batch)
             if (input_batch->data == NULL)
             {
                 printf("Error reading image data\n");
+                MTR_END_FUNC();
                 return;
             }
 
@@ -109,6 +113,7 @@ void process(ImageBatch *input_batch)
             if (pq_impl->enqueue(partially_processed_pq, *input_batch) != SUCCESS)
             {
                 printf("Error: Failed to enqueue batch to partially processed queue\n");
+                MTR_END_FUNC();
                 return;
             }
 
@@ -119,6 +124,7 @@ void process(ImageBatch *input_batch)
     // Reset err values
     err_current_pipeline = 0;
     err_current_module = 0;
+    MTR_END_FUNC();
 }
 
 // Pull data from the message queue, additionally setting the storage
@@ -145,13 +151,14 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
         return FAILURE;
     }
 
-    log_timestamp("Message received from queue");
+    MTR_BEGIN(__FILE__, "enqueue_onto_ingest");
 
     // Ensure that the received message size is not larger than the ImageBatch structure
     if (msg_size > sizeof(ImageBatch))
     {
         // set_error_param(MSGQ_EMPTY);
         printf("Received %ld bytes, expected %ld bytes\n", msg_size, sizeof(ImageBatch));
+        MTR_END(__FILE__, "enqueue_onto_ingest");
         return FAILURE;
     }
 
@@ -221,6 +228,8 @@ void update_heuristic(int ingest_queue_depth, int partial_queue_depth)
 
 void process_images_loop()
 {
+    MTR_BEGIN_FUNC();
+
     current_heuristic = &best_effort_heuristic;
     global_storage_mode = STORAGE_MMAP;
 
@@ -242,7 +251,7 @@ void process_images_loop()
         {
             // push data onto the ingest priority queue
             pq_impl->enqueue(ingest_pq, datarcv);
-            log_timestamp("Image batch enqueued to ingest priority queue");
+            MTR_END(__FILE__, "enqueue_onto_ingest");
         }
 
         // pull from the partially_processed_pq first
@@ -254,11 +263,12 @@ void process_images_loop()
             if (batch == NULL)
             {
                 // if empty, wait for new data
+                MTR_END(__FILE__, "process_images_loop_iteration");
                 continue;
             }
         }
 
-        // // print the batch info for debugging
+        // print the batch info for debugging
         // printf("----\r\n");
         // printf("Processing batch: \r\n");
         // printf("Number of images: %i\r\n", batch->num_images);
@@ -274,24 +284,41 @@ void process_images_loop()
         setup_cache_if_needed();
 
         // process the batch (maybe partially)
-        log_timestamp("Start processing image batch");
         process(batch);
-        log_timestamp("Finished processing image batch");
 
-        // if partial not full (size<10 by default), pull data from ingest_pq
-        size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
-        if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
+        if (batch != NULL)
         {
-            ImageBatch *new_batch = pq_impl->dequeue(ingest_pq);
-            if (new_batch != NULL)
-            {
-                // process the batch (maybe partially)
-                process(new_batch);
-            }
+            free(batch);
         }
+
+        // // if partial not full (size<10 by default), pull data from ingest_pq
+        // size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
+        // if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
+        // {
+        //     ImageBatch *new_batch = pq_impl->dequeue(ingest_pq);
+        //     if (new_batch != NULL)
+        //     {
+        //         // process the batch (maybe partially)
+        //         // print the batch info for debugging
+        //         printf("----\r\n");
+        //         printf("Processing batch: \r\n");
+        //         printf("Number of images: %i\r\n", batch->num_images);
+        //         printf("Batch size: %i\r\n", batch->batch_size);
+        //         printf("Pipeline ID: %i\r\n", batch->pipeline_id);
+        //         printf("Priority: %i\r\n", batch->priority);
+        //         printf("Filename: %s\r\n", batch->filename);
+        //         printf("UUID: %s\r\n", batch->uuid);
+        //         printf("Progress: %i\r\n", batch->progress);
+        //         printf("Storage mode: %i\r\n", batch->storage_mode);
+        //         printf("----\r\n");
+        //         setup_cache_if_needed();
+        //         process(new_batch);
+        //     }
+        // }
     }
 
     pq_impl->clean_up(ingest_pq);
     pq_impl->clean_up(partially_processed_pq);
     cost_store_impl->clean_up(cost_store);
+    MTR_END_FUNC();
 }

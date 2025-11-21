@@ -4,13 +4,16 @@
 #include "cost_store.h"
 #include <time.h>
 #include <stdbool.h>
+#include "utils/minitrace.h"
 
 COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module, ImageBatch *data, size_t num_modules, int *module_param_id, uint32_t *picked_hash)
 {
+    MTR_BEGIN_FUNC();
     struct timespec time;
     if (clock_gettime(CLOCK_MONOTONIC, &time) < 0)
     {
         printf("Error getting time\n");
+        MTR_END_FUNC();
         return NOT_FOUND;
     }
 
@@ -26,6 +29,7 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
     // If there is only a single effort level, use that one
     if (module->default_effort_param_id != -1)
     {
+        MTR_END_FUNC();
         return get_default_implementation(module, data, latency_requirement, energy_requirement, module_param_id, picked_hash);
     }
     else
@@ -46,21 +50,25 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
         COST_MODEL_LOOKUP_RESULT result = judge_implementation(EFFORT_LEVEL__LOW, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash, lowest_effort_level == EFFORT_LEVEL__LOW);
         if (result == FOUND_NOT_CACHED || result == FOUND_CACHED)
         {
+            MTR_END_FUNC();
             return result;
         }
         // printf("Checking the medium effort\r\n");
         result = judge_implementation(EFFORT_LEVEL__MEDIUM, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash, lowest_effort_level == EFFORT_LEVEL__MEDIUM);
         if (result == FOUND_NOT_CACHED || result == FOUND_CACHED)
         {
+            MTR_END_FUNC();
             return result;
         }
         // printf("Checking the high effort\r\n");
         result = judge_implementation(EFFORT_LEVEL__HIGH, module, data, latency_requirement, energy_requirement, module_param_id, picked_hash, lowest_effort_level == EFFORT_LEVEL__HIGH);
         if (result == FOUND_NOT_CACHED || result == FOUND_CACHED)
         {
+            MTR_END_FUNC();
             return result;
         }
         // The effort levels are either empty or none of them fulfill the requirements
+        MTR_END_FUNC();
         return NOT_FOUND;
     }
 }

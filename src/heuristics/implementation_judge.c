@@ -4,6 +4,7 @@
 #include "cost_store.h"
 #include "murmur_hash.h"
 #include "pipeline_config.pb-c.h"
+#include "utils/minitrace.h"
 
 // Decide whether the module effort level fulfills the latency and energy requirements.
 // It calculates a hash of the image batch metadata and module, and performs a lookup in the cost model.
@@ -13,12 +14,14 @@
 // effort level was not found or does not fulfill the requirements.
 COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module, ImageBatch *data, uint32_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash, bool is_lowest_effort)
 {
+    MTR_BEGIN_FUNC_I("effort_level", effort);
     int32_t module_id = -1;
 
     switch (effort)
     {
     case EFFORT_LEVEL__DEFAULT:
         printf("This function should not be called with DEFAULT effort level\n");
+        MTR_END_FUNC_I("result", NOT_FOUND);
         return NOT_FOUND;
         break;
     case EFFORT_LEVEL__LOW:
@@ -32,12 +35,14 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
         break;
     default:
         printf("Unknown effort level\n");
+        MTR_END_FUNC_I("result", NOT_FOUND);
         return NOT_FOUND;
     }
 
     if (module_id == -1)
     {
         // printf("Module %s does not have an implementation for effort level %d\n", module->module_name, effort);
+        MTR_END_FUNC_I("result", NOT_FOUND);
         return NOT_FOUND;
     }
 
@@ -62,6 +67,7 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
         if (latency <= latency_requirement && energy <= energy_requirement)
         {
             *module_param_id = module_id;
+            MTR_END_FUNC_I("result", FOUND_CACHED);
             return FOUND_CACHED;
         }
     }
@@ -80,10 +86,12 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
         if (latency <= latency_requirement && energy <= energy_requirement)
         {
             *module_param_id = module_id;
+            MTR_END_FUNC_I("result", FOUND_NOT_CACHED);
             return FOUND_NOT_CACHED;
         }
     }
 
     // Module does not fulfill the requirements
+    MTR_END_FUNC_I("result", NOT_FOUND);
     return NOT_FOUND;
 }

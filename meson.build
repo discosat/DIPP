@@ -25,7 +25,6 @@ sources = files(
 	'src/dipp_config.c',
 	'src/dipp_error.c',
 	'src/dipp_process.c',
-	'src/logger.c',
 	'src/main.c',
 	'src/serial.c',
 	'src/vmem/vmem_upload_local.c',
@@ -37,8 +36,8 @@ sources = files(
 	'src/protobuf/pipeline_config.pb-c.c',
 	'src/protobuf/metadata.pb-c.c',
 	'src/protobuf/dtpmetadata.pb-c.c',
+	'src/utils/minitrace.c',
 	'src/utils/murmur_hash.c',
-	'src/utils/timestamp.c',
 	'src/heuristics/best_effort_heuristic.c',
 	'src/heuristics/default_effort.c',
 	'src/heuristics/implementation_judge.c',
@@ -79,7 +78,10 @@ m_dep = meson.get_compiler('c').find_library('m', required : false)
 uuid_dep = meson.get_compiler('c').find_library('uuid', required: false)
 deps = [csp_dep,param_dep,dtp_server_dep,proto_c_dep,m_dep,brotli_dep, uuid_dep]
 
-c_args = ['-DHOSTNAME="@0@"'.format(get_option('hostname'))]
+c_args = [
+	'-DHOSTNAME="@0@"'.format(get_option('hostname')),
+	'-DMTR_ENABLED=1'
+	]
 
 dipp = executable(
 	'dipp',

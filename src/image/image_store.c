@@ -4,6 +4,7 @@
 #include "vmem_upload_local.h"
 #include <sys/mman.h>
 #include <sys/shm.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
@@ -188,19 +189,49 @@ int image_batch_read_data(ImageBatch *batch)
         else
         {
             // Memory-mapped file access
-            // Open writable and ensure file is large enough before mmap
-            int fd = open(batch->filename, O_RDWR | O_CREAT | O_TRUNC, 0644);
-            if (fd == -1)
+            // Open existing file without truncating it (don't erase persisted data).
+            // Create it only if it doesn't exist. If the file is smaller than the batch
+            // size, extend it.
+            int fd;
+            if (access(batch->filename, F_OK) == -1)
             {
-                set_error_param(MMAP_OPEN);
-                return FAILURE;
+                fd = open(batch->filename, O_RDWR | O_CREAT, 0644);
+                if (fd == -1)
+                {
+                    set_error_param(MMAP_OPEN);
+                    return FAILURE;
+                }
+                if (ftruncate(fd, batch->batch_size) == -1)
+                {
+                    close(fd);
+                    set_error_param(MMAP_OPEN);
+                    return FAILURE;
+                }
             }
-
-            if (ftruncate(fd, batch->batch_size) == -1)
+            else
             {
-                close(fd);
-                set_error_param(MMAP_OPEN);
-                return FAILURE;
+                fd = open(batch->filename, O_RDWR);
+                if (fd == -1)
+                {
+                    set_error_param(MMAP_OPEN);
+                    return FAILURE;
+                }
+                struct stat st;
+                if (fstat(fd, &st) == -1)
+                {
+                    close(fd);
+                    set_error_param(MMAP_OPEN);
+                    return FAILURE;
+                }
+                if ((size_t)st.st_size < batch->batch_size)
+                {
+                    if (ftruncate(fd, batch->batch_size) == -1)
+                    {
+                        close(fd);
+                        set_error_param(MMAP_OPEN);
+                        return FAILURE;
+                    }
+                }
             }
 
             batch->data = mmap(NULL, batch->batch_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);

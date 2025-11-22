@@ -148,7 +148,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             cost_store_impl->insert(cost_store, picked_hash, elapsed_us, energy_cost);
             MTR_INSTANT_I(__FILE__, "latency cache update", "latency_us", (int)elapsed_us);
             MTR_INSTANT_I(__FILE__, "energy cache update", "energy_mwh", (int)energy_cost);
-            put_load_on_battery(energy_cost * 100.0f); // scale to fit simulation step size
+            put_load_on_battery(energy_cost * SIMULATION_STEPS_PER_UPDATE); // scale to fit simulation step size
         }
 
         ImageBatch result;

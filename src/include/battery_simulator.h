@@ -4,7 +4,10 @@
 #include <stdint.h>
 #include "dipp_paramids.h"
 
-#define BATTERY_SAFETY_MARGIN_WH 64.4f // Safety margin in Watt-hours (70% of 92 Wh total capacity)
+#define BATTERY_SAFETY_MARGIN_WH 64.4f    // Safety margin in Watt-hours (70% of 92 Wh total capacity)
+#define SIMULATION_UPDATE_PERIOD_US 10000 // Update every 10 milliseconds
+#define SIMULATION_STEP_US 1000000        // One step represents one second in simulation
+#define SIMULATION_STEPS_PER_UPDATE (SIMULATION_STEP_US / SIMULATION_UPDATE_PERIOD_US)
 
 typedef enum
 {

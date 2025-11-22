@@ -5,6 +5,7 @@
 #include "murmur_hash.h"
 #include "pipeline_config.pb-c.h"
 #include "utils/minitrace.h"
+#include "battery_simulator.h"
 
 // Decide whether the module effort level fulfills the latency and energy requirements.
 // It calculates a hash of the image batch metadata and module, and performs a lookup in the cost model.
@@ -64,6 +65,10 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
     if (cost_store_impl->lookup(cost_store, *picked_hash, &latency, &energy) != -1)
     {
         // printf("Found in cost store with latency=%u, energy=%f\r\n", latency, energy);
+
+        // scale to fit simulation step size
+        energy = energy * SIMULATION_STEPS_PER_UPDATE;
+
         if (latency <= latency_requirement && energy <= energy_requirement)
         {
             *module_param_id = module_id;
@@ -82,6 +87,9 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
             latency = DEFAULT_EFFORT_LATENCY;
         if (energy == 0.0f)
             energy = DEFAULT_EFFORT_ENERGY;
+
+        // scale to fit simulation step size
+        energy = energy * SIMULATION_STEPS_PER_UPDATE;
 
         if (latency <= latency_requirement && energy <= energy_requirement)
         {

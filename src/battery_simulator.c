@@ -107,7 +107,7 @@ void simulator_step(CubeSatBatterySimulator *sim)
 
 void simulate_battery()
 {
-    const int TIME_STEP_S = 1;
+    const int TIME_STEP_S = SIMULATION_STEP_US / 1000000;
     const double ORBIT_PERIOD_MIN = 98.0;
 
     CubeSatBatterySimulator sim;
@@ -127,7 +127,7 @@ void simulate_battery()
     while (1)
     {
         simulator_step(&sim);
-        usleep(10000);
+        usleep(SIMULATION_UPDATE_PERIOD_US);
     }
 }
 

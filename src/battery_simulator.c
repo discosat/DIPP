@@ -36,7 +36,7 @@ void simulator_init(CubeSatBatterySimulator *sim,
     sim->total_capacity_Wh = total_capacity_Wh;
     sim->min_capacity_Wh = total_capacity_Wh * min_soc_limit;
     sim->max_capacity_Wh = total_capacity_Wh * max_soc_limit;
-    sim->current_capacity_Wh = total_capacity_Wh * initial_soc;
+    // sim->current_capacity_Wh = total_capacity_Wh * initial_soc;
     sim->soc = initial_soc;
 
     // --- Power ---
@@ -51,6 +51,9 @@ void simulator_init(CubeSatBatterySimulator *sim,
 
     // --- State ---
     sim->current_state = SUNLIT;
+
+    float initial_capacity = total_capacity_Wh * initial_soc;
+    param_set_float(&battery_level, initial_capacity);
 }
 
 /**
@@ -59,7 +62,7 @@ void simulator_init(CubeSatBatterySimulator *sim,
  * @param sim Pointer to the simulator structure to update.
  * @param log_file File pointer to the open CSV log.
  */
-float simulator_step(CubeSatBatterySimulator *sim)
+void simulator_step(CubeSatBatterySimulator *sim)
 {
     // 1. Determine orbital state (SUNLIT or ECLIPSE)
     int time_in_orbit_s = sim->current_time_s % sim->orbit_period_s;
@@ -86,20 +89,20 @@ float simulator_step(CubeSatBatterySimulator *sim)
     double energy_change_Wh = (net_power_W * sim->time_step_s) / 3600.0;
 
     // 5. Update battery capacity
-    sim->current_capacity_Wh += energy_change_Wh;
-
-    // 6. Clamp battery capacity to its defined limits
-    sim->current_capacity_Wh = fmax(
+    float battery_level_wh = get_battery_level_wh();
+    float new_capacity = battery_level_wh + energy_change_Wh;
+    new_capacity = fmax(
         sim->min_capacity_Wh,
-        fmin(sim->max_capacity_Wh, sim->current_capacity_Wh));
+        fmin(sim->max_capacity_Wh, new_capacity));
 
-    // 7. Update SoC
-    sim->soc = sim->current_capacity_Wh / sim->total_capacity_Wh;
+    param_set_float(&battery_level, new_capacity);
+    // sim->current_capacity_Wh += energy_change_Wh;
 
-    // 8. Advance time
+    // 6. Update SoC
+    sim->soc = new_capacity / sim->total_capacity_Wh;
+
+    // 7. Advance time
     sim->current_time_s += sim->time_step_s;
-
-    return (float)sim->current_capacity_Wh;
 }
 
 void simulate_battery()
@@ -112,7 +115,7 @@ void simulate_battery()
         &sim,
         92.0, // total_capacity_Wh
         0.7,  // initial_soc
-        17.5, // constant_load_W
+        17.0, // constant_load_W
         26.0, // power_generation_W
         ORBIT_PERIOD_MIN,
         33.0, // eclipse_duration_min
@@ -123,8 +126,7 @@ void simulate_battery()
 
     while (1)
     {
-        float new_capacity = simulator_step(&sim);
-        param_set_float(&battery_level, new_capacity);
+        simulator_step(&sim);
         usleep(10000);
     }
 }
@@ -132,4 +134,11 @@ void simulate_battery()
 float get_battery_level_wh()
 {
     return param_get_float(&battery_level);
+}
+
+void put_load_on_battery(float load_mWh)
+{
+    float battery_level_wh = get_battery_level_wh();
+    float new_capacity = fmax(0.0, battery_level_wh - (load_mWh / 1000.0));
+    param_set_float(&battery_level, new_capacity);
 }

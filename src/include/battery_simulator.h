@@ -18,7 +18,7 @@ typedef struct
     double total_capacity_Wh;
     double min_capacity_Wh;
     double max_capacity_Wh;
-    double current_capacity_Wh;
+    // double current_capacity_Wh;
     double soc; // State of Charge (0.0 to 1.0)
 
     // --- Power Parameters ---
@@ -39,5 +39,7 @@ typedef struct
 void simulate_battery();
 
 float get_battery_level_wh();
+
+void put_load_on_battery(float load_mWh);
 
 #endif // DIPP_BATTERY_H

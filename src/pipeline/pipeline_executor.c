@@ -14,6 +14,7 @@
 #include "image_batch.h"
 #include "dipp_error.h"
 #include "utils/minitrace.h"
+#include "battery_simulator.h"
 
 // Execute the pipeline on the given batch. It picks up from the possibly partially executed state,
 // and for each module it picks the best effort level that fulfills the requirements based on the current state.
@@ -143,10 +144,11 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         if (lookup_result == FOUND_NOT_CACHED)
         {
             // Store both latency and energy cost in cache
-            printf("Inserting into cache. Latency=%ld us, Energy=%.2f J\n", elapsed_us, energy_cost);
+            printf("Inserting into cache. Latency=%ld us, Energy=%.2f mWh\n", elapsed_us, energy_cost);
             cost_store_impl->insert(cost_store, picked_hash, elapsed_us, energy_cost);
             MTR_INSTANT_I(__FILE__, "latency cache update", "latency_us", (int)elapsed_us);
             MTR_INSTANT_I(__FILE__, "energy cache update", "energy_mwh", (int)energy_cost);
+            put_load_on_battery(energy_cost * 100.0f); // scale to fit simulation step size
         }
 
         ImageBatch result;

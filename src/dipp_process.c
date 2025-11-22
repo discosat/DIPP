@@ -281,7 +281,7 @@ void process_images_loop()
             if (batch == NULL)
             {
                 // if empty, wait for new data
-                MTR_END(__FILE__, "process_images_loop_iteration");
+                usleep(1000); // sleep for 1ms before continuing
                 continue;
             }
         }
@@ -310,6 +310,8 @@ void process_images_loop()
         {
             free(batch);
         }
+
+        mtr_flush();
 
         // // if partial not full (size<10 by default), pull data from ingest_pq
         // size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);

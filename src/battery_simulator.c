@@ -104,16 +104,16 @@ float simulator_step(CubeSatBatterySimulator *sim)
 
 void simulate_battery()
 {
-    const int TIME_STEP_S = 100;
+    const int TIME_STEP_S = 1;
     const double ORBIT_PERIOD_MIN = 98.0;
 
     CubeSatBatterySimulator sim;
     simulator_init(
         &sim,
-        35.0, // total_capacity_Wh
+        92.0, // total_capacity_Wh
         0.7,  // initial_soc
-        2.0,  // constant_load_W
-        12.0, // power_generation_W
+        17.5, // constant_load_W
+        26.0, // power_generation_W
         ORBIT_PERIOD_MIN,
         33.0, // eclipse_duration_min
         TIME_STEP_S,
@@ -125,6 +125,11 @@ void simulate_battery()
     {
         float new_capacity = simulator_step(&sim);
         param_set_float(&battery_level, new_capacity);
-        sleep(1);
+        usleep(10000);
     }
+}
+
+float get_battery_level_wh()
+{
+    return param_get_float(&battery_level);
 }

@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "dipp_paramids.h"
 
+#define BATTERY_SAFETY_MARGIN_WH 64.4f // Safety margin in Watt-hours (70% of 92 Wh total capacity)
+
 typedef enum
 {
     SUNLIT,
@@ -35,5 +37,7 @@ typedef struct
 } CubeSatBatterySimulator;
 
 void simulate_battery();
+
+float get_battery_level_wh();
 
 #endif // DIPP_BATTERY_H

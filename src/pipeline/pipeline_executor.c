@@ -94,7 +94,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         // measure time to execute the module
         struct timespec start, end;
         uint32_t start_energy = 0, end_energy = 0;
-        long elapsed_ns = 0;
+        long elapsed_us = 0;
 
         // the profiling information is not found, collect it here
         if (lookup_result == FOUND_NOT_CACHED)
@@ -118,13 +118,13 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             clock_gettime(CLOCK_MONOTONIC, &end);
 
             // Get ending energy reading
-            end_energy = get_energy_reading();
+            // end_energy = get_energy_reading();
 
             // Calculate energy cost (0 if readings failed)
             // energy_cost = (start_energy && end_energy) ? (end_energy - start_energy) : 0;
-            energy_cost = end_energy;
+            energy_cost = module_config->energy_cost; // Use estimated energy cost from module config for now
 
-            elapsed_ns = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
+            elapsed_us = (end.tv_sec - start.tv_sec) * 1000000L + (end.tv_nsec - start.tv_nsec) / 1000L;
         }
 
         // error encountered, clean up
@@ -143,8 +143,10 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         if (lookup_result == FOUND_NOT_CACHED)
         {
             // Store both latency and energy cost in cache
-            printf("Inserting into cache. Latency=%ld ns, Energy=%.2f J\n", elapsed_ns, energy_cost);
-            cost_store_impl->insert(cost_store, picked_hash, elapsed_ns, energy_cost);
+            printf("Inserting into cache. Latency=%ld us, Energy=%.2f J\n", elapsed_us, energy_cost);
+            cost_store_impl->insert(cost_store, picked_hash, elapsed_us, energy_cost);
+            MTR_INSTANT_I(__FILE__, "latency cache update", "latency_us", (int)elapsed_us);
+            MTR_INSTANT_I(__FILE__, "energy cache update", "energy_mwh", (int)energy_cost);
         }
 
         ImageBatch result;

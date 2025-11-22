@@ -5,6 +5,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include "utils/minitrace.h"
+#include "battery_simulator.h"
 
 COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module, ImageBatch *data, size_t num_modules, int *module_param_id, uint32_t *picked_hash)
 {
@@ -20,9 +21,14 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
     size_t num_modules_left = num_modules - (data->progress + 1); // number of modules left to process
 
     /* latency in microseconds per remaining module */
-    uint32_t latency_requirement = (uint32_t)(((data->priority - time.tv_sec) * 1e9) / (int64_t)num_modules_left); // time left in nanoseconds divided by number of modules left
-    /* energy as float (e.g. battery remaining) */
-    float energy_requirement = 1000000.0f; // TODO: change this to the current energy battery level - MIN_BATTERY_LEVEL
+    uint32_t latency_requirement = (uint32_t)(((data->priority - time.tv_sec) * 1e6) / (int64_t)num_modules_left); // time left in microseconds divided by number of modules left
+    float battery_level_wh = get_battery_level_wh();
+    float energy_requirement = (battery_level_wh - BATTERY_SAFETY_MARGIN_WH) * 1000.0f; // current battery level minus safety margin (milliwatt-hours)
+
+    MTR_COUNTER("main", "battery_level_mwh", (int)(battery_level_wh * 1000.0f));
+
+    MTR_INSTANT_I(__FILE__, "best_effort_heuristic", "latency_requirement (us)", latency_requirement);
+    MTR_INSTANT_I(__FILE__, "best_effort_heuristic", "energy_requirement (mWh)", (int)energy_requirement);
 
     // printf("Number of modules left: %zu, Latency requirement: %u, Energy requirement: %f\r\n", num_modules_left, latency_requirement, energy_requirement);
 

@@ -214,6 +214,11 @@ void get_env_vars()
 
 void update_heuristic(int ingest_queue_depth, int partial_queue_depth)
 {
+    Heuristic *previous_heuristic = current_heuristic;
+
+    MTR_COUNTER(__FILE__, "ingest_queue_depth", ingest_queue_depth);
+    MTR_COUNTER(__FILE__, "partial_queue_depth", partial_queue_depth);
+
     int total_queue_depth = ingest_queue_depth + partial_queue_depth;
     if (total_queue_depth < LOW_QUEUE_DEPTH_THRESHOLD && partial_queue_depth < PARTIAL_QUEUE_SIZE_THRESHOLD)
     {
@@ -223,6 +228,19 @@ void update_heuristic(int ingest_queue_depth, int partial_queue_depth)
     {
         // either the partially processed queue is almost full, or the total queue depth is high
         current_heuristic = &lowest_effort_heuristic;
+    }
+
+    // log in case of change
+    if (previous_heuristic != current_heuristic)
+    {
+        if (current_heuristic == &best_effort_heuristic)
+        {
+            MTR_INSTANT_C(__FILE__, "update_heuristc", "heuristic", "BEST_EFFORT");
+        }
+        else
+        {
+            MTR_INSTANT_C(__FILE__, "update_heuristc", "heuristic", "LOWEST_EFFORT");
+        }
     }
 }
 
@@ -282,6 +300,8 @@ void process_images_loop()
         // printf("----\r\n");
 
         setup_cache_if_needed();
+
+        update_heuristic(pq_impl->get_queue_size(ingest_pq), pq_impl->get_queue_size(partially_processed_pq));
 
         // process the batch (maybe partially)
         process(batch);

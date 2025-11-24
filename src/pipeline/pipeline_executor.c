@@ -144,10 +144,10 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         if (lookup_result == FOUND_NOT_CACHED)
         {
             // Store both latency and energy cost in cache
-            printf("Inserting into cache. Latency=%ld us, Energy=%.2f mWh\n", elapsed_us, energy_cost);
+            printf("Inserting into cache. Latency=%ld us, Energy=%.2f uWh\n", elapsed_us, energy_cost);
             cost_store_impl->insert(cost_store, picked_hash, elapsed_us, energy_cost);
             MTR_INSTANT_I(__FILE__, "latency cache update", "latency_us", (int)elapsed_us);
-            MTR_INSTANT_I(__FILE__, "energy cache update", "energy_mwh", (int)(energy_cost * SIMULATION_STEPS_PER_UPDATE));
+            MTR_INSTANT_I(__FILE__, "energy cache update", "energy_uwh", (int)(energy_cost * SIMULATION_STEPS_PER_UPDATE));
             put_load_on_battery(energy_cost * SIMULATION_STEPS_PER_UPDATE); // scale to fit simulation step size
         }
 

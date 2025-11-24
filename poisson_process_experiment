@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Configuration
+EVENTS=300
+MEAN_INTERVAL=2 # 1/lambda (If lambda is 0.5, mean is 2)
+
+# We use awk to generate the stream of delay times.
+# This is much faster and more accurate than calling python or bc in a loop.
+awk -v n="$EVENTS" -v mu="$MEAN_INTERVAL" 'BEGIN {
+    # Seed the random number generator
+    srand();
+
+    # 1. The first offset is 0 (Immediate trigger)
+    print 0;
+
+    # 2. Generate n-1 remaining offsets using Inverse Transform Sampling
+    for(i=1; i<n; i++) {
+        # Generate a random number U between 0 and 1
+        u = rand();
+
+        # Safety check: log(0) is undefined, though rand() rarely hits exact 0.
+        if (u == 0) u = 0.000001;
+
+        # Formula: -mean * ln(U)
+        val = -mu * log(u);
+
+        print val;
+    }
+}' | while read -r sleep_time; do
+    # 3. Sleep and execute
+    # GNU sleep supports floating point numbers (e.g., sleep 0.423)
+    sleep "$sleep_time"
+    ./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG
+done

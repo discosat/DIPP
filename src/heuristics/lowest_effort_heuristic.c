@@ -23,12 +23,12 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
     /* latency in microseconds per remaining module */
     uint32_t latency_requirement = (uint32_t)(((data->priority - time.tv_sec) * 1e6) / (int64_t)num_modules_left); // time left in microseconds divided by number of modules left
     float battery_level_wh = get_battery_level_wh();
-    float energy_requirement = (battery_level_wh - BATTERY_SAFETY_MARGIN_WH) * 1000.0f; // current battery level minus safety margin (milliwatt-hours)
+    float energy_requirement = (battery_level_wh - BATTERY_SAFETY_MARGIN_WH) * 1000000.0f; // current battery level minus safety margin (microwatt-hours)
 
-    MTR_COUNTER("main", "battery_level_mwh", (int)(battery_level_wh * 1000.0f));
+    MTR_COUNTER("main", "battery_level_uwh", (int)(battery_level_wh * 1000000.0f));
 
     MTR_INSTANT_I(__FILE__, "best_effort_heuristic", "latency_requirement (us)", latency_requirement);
-    MTR_INSTANT_I(__FILE__, "best_effort_heuristic", "energy_requirement (mWh)", (int)energy_requirement);
+    MTR_INSTANT_I(__FILE__, "best_effort_heuristic", "energy_requirement (uWh)", (int)energy_requirement);
 
     // printf("Number of modules left: %zu, Latency requirement: %u, Energy requirement: %f\r\n", num_modules_left, latency_requirement, energy_requirement);
 
@@ -40,14 +40,14 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
     }
     else
     {
-        EffortLevel lowest_effort_level = EFFORT_LEVEL__LOW;
-        if (module->low_effort_param_id == -1)
+        EffortLevel lowest_effort_level = EFFORT_LEVEL__HIGH;
+        if (module->medium_effort_param_id != -1)
         {
             lowest_effort_level = EFFORT_LEVEL__MEDIUM;
         }
-        if (module->medium_effort_param_id == -1 && lowest_effort_level == EFFORT_LEVEL__LOW)
+        if (module->low_effort_param_id != -1)
         {
-            lowest_effort_level = EFFORT_LEVEL__HIGH;
+            lowest_effort_level = EFFORT_LEVEL__LOW;
         }
 
         // start from the lightest and go up in the effort levels

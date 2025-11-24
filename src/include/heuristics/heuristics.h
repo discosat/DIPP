@@ -17,6 +17,9 @@
 #define HIGH_EFFORT_LATENCY 4000
 #define HIGH_EFFORT_ENERGY 4.0f
 
+#define BEST_EFFORT_MAX_LATENCY_MEDIUM_EFFORT 3000000 // 3 seconds maximum per module latency to be considered for medium effort
+#define BEST_EFFORT_MAX_LATENCY_LOW_EFFORT 1000000    // 1 second maximum per module latency to be considered for low effort
+
 typedef enum HEURISTIC_TYPE
 {
     LOWEST_EFFORT = 0,

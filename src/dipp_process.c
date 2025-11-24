@@ -220,7 +220,9 @@ void update_heuristic(int ingest_queue_depth, int partial_queue_depth)
     MTR_COUNTER(__FILE__, "partial_queue_depth", partial_queue_depth);
 
     int total_queue_depth = ingest_queue_depth + partial_queue_depth;
-    if (total_queue_depth < LOW_QUEUE_DEPTH_THRESHOLD && partial_queue_depth < PARTIAL_QUEUE_SIZE_THRESHOLD)
+    if (total_queue_depth < LOW_QUEUE_DEPTH_THRESHOLD
+        // && partial_queue_depth < PARTIAL_QUEUE_SIZE_THRESHOLD
+        )
     {
         current_heuristic = &best_effort_heuristic;
     }
@@ -261,6 +263,9 @@ void process_images_loop()
     cost_store_impl = get_cost_store_impl(global_storage_mode);
     cost_store_impl->init(&cost_store, CACHE_FILE);
 
+    // Track last flush time to ensure mtr_flush is called at most once per 100ms
+    struct timespec last_mtr_flush = {0, 0};
+
     while (1)
     {
         // drain the message queue (nowait)
@@ -271,6 +276,20 @@ void process_images_loop()
             pq_impl->enqueue(ingest_pq, datarcv);
             MTR_END(__FILE__, "enqueue_onto_ingest");
         }
+
+        // // Only flush tracing if at least 100ms elapsed since last flush
+        // {
+        //     struct timespec now;
+        //     clock_gettime(CLOCK_MONOTONIC, &now);
+        //     long elapsed_ms = (last_mtr_flush.tv_sec == 0)
+        //                           ? LONG_MAX
+        //                           : (now.tv_sec - last_mtr_flush.tv_sec) * 1000 + (now.tv_nsec - last_mtr_flush.tv_nsec) / 1000000;
+        //     if (last_mtr_flush.tv_sec == 0 || elapsed_ms >= 100)
+        //     {
+        //         mtr_flush();
+        //         last_mtr_flush = now;
+        //     }
+        // }
 
         // pull from the partially_processed_pq first
         ImageBatch *batch = pq_impl->dequeue(partially_processed_pq);
@@ -286,19 +305,6 @@ void process_images_loop()
             }
         }
 
-        // print the batch info for debugging
-        // printf("----\r\n");
-        // printf("Processing batch: \r\n");
-        // printf("Number of images: %i\r\n", batch->num_images);
-        // printf("Batch size: %i\r\n", batch->batch_size);
-        // printf("Pipeline ID: %i\r\n", batch->pipeline_id);
-        // printf("Priority: %i\r\n", batch->priority);
-        // printf("Filename: %s\r\n", batch->filename);
-        // printf("UUID: %s\r\n", batch->uuid);
-        // printf("Progress: %i\r\n", batch->progress);
-        // printf("Storage mode: %i\r\n", batch->storage_mode);
-        // printf("----\r\n");
-
         setup_cache_if_needed();
 
         update_heuristic(pq_impl->get_queue_size(ingest_pq), pq_impl->get_queue_size(partially_processed_pq));
@@ -311,32 +317,30 @@ void process_images_loop()
             free(batch);
         }
 
-        mtr_flush();
+        // // // if partial not full (size<10 by default), pull data from ingest_pq
+        ImageBatch *new_batch = NULL;
+        size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
+        if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
+        {
+            new_batch = pq_impl->dequeue(ingest_pq);
+            if (new_batch == NULL)
+            {
+                usleep(1000); // sleep for 1ms before continuing
+                continue;
+            }
 
-        // // if partial not full (size<10 by default), pull data from ingest_pq
-        // size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
-        // if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
-        // {
-        //     ImageBatch *new_batch = pq_impl->dequeue(ingest_pq);
-        //     if (new_batch != NULL)
-        //     {
-        //         // process the batch (maybe partially)
-        //         // print the batch info for debugging
-        //         printf("----\r\n");
-        //         printf("Processing batch: \r\n");
-        //         printf("Number of images: %i\r\n", batch->num_images);
-        //         printf("Batch size: %i\r\n", batch->batch_size);
-        //         printf("Pipeline ID: %i\r\n", batch->pipeline_id);
-        //         printf("Priority: %i\r\n", batch->priority);
-        //         printf("Filename: %s\r\n", batch->filename);
-        //         printf("UUID: %s\r\n", batch->uuid);
-        //         printf("Progress: %i\r\n", batch->progress);
-        //         printf("Storage mode: %i\r\n", batch->storage_mode);
-        //         printf("----\r\n");
-        //         setup_cache_if_needed();
-        //         process(new_batch);
-        //     }
-        // }
+            setup_cache_if_needed();
+
+            update_heuristic(pq_impl->get_queue_size(ingest_pq), pq_impl->get_queue_size(partially_processed_pq));
+
+            // process the batch (maybe partially)
+            process(new_batch);
+
+            if (new_batch != NULL)
+            {
+                free(new_batch);
+            }
+        }
     }
 
     pq_impl->clean_up(ingest_pq);

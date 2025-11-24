@@ -5,7 +5,7 @@
 #include "dipp_paramids.h"
 
 #define BATTERY_SAFETY_MARGIN_WH 64.4f    // Safety margin in Watt-hours (70% of 92 Wh total capacity)
-#define SIMULATION_UPDATE_PERIOD_US 10000 // Update every 10 milliseconds
+#define SIMULATION_UPDATE_PERIOD_US 10000 // 10000 // Update every 10 milliseconds
 #define SIMULATION_STEP_US 1000000        // One step represents one second in simulation
 #define SIMULATION_STEPS_PER_UPDATE (SIMULATION_STEP_US / SIMULATION_UPDATE_PERIOD_US)
 
@@ -43,6 +43,6 @@ void simulate_battery();
 
 float get_battery_level_wh();
 
-void put_load_on_battery(float load_mWh);
+void put_load_on_battery(float load_uWh);
 
 #endif // DIPP_BATTERY_H

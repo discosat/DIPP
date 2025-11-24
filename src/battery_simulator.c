@@ -115,7 +115,7 @@ void simulate_battery()
         &sim,
         92.0, // total_capacity_Wh
         0.7,  // initial_soc
-        17.0, // constant_load_W
+        16.5, // constant_load_W
         26.0, // power_generation_W
         ORBIT_PERIOD_MIN,
         33.0, // eclipse_duration_min
@@ -136,9 +136,9 @@ float get_battery_level_wh()
     return param_get_float(&battery_level);
 }
 
-void put_load_on_battery(float load_mWh)
+void put_load_on_battery(float load_uWh)
 {
     float battery_level_wh = get_battery_level_wh();
-    float new_capacity = fmax(0.0, battery_level_wh - (load_mWh / 1000.0));
+    float new_capacity = fmax(0.0, battery_level_wh - (load_uWh / 1000000.0));
     param_set_float(&battery_level, new_capacity);
 }

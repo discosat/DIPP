@@ -9,7 +9,7 @@
 // Define maximum size of the priority queue
 #define MAX_QUEUE_SIZE 100
 #define MAX_PARTIAL_QUEUE_SIZE 10
-#define LOW_QUEUE_DEPTH_THRESHOLD 60
+#define LOW_QUEUE_DEPTH_THRESHOLD 30
 #define PARTIAL_QUEUE_SIZE_THRESHOLD 5
 
 // Define PriorityQueue structure

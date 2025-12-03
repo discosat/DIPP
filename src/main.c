@@ -18,14 +18,12 @@
 #include <csp/drivers/can_socketcan.h>
 #include <dtp/dtp.h>
 
-void *vmem_server_task(void *param)
-{
+void *vmem_server_task(void *param) {
 	vmem_server_loop(param);
 	return NULL;
 }
 
-void *router_task(void *param)
-{
+void *router_task(void *param) {
 	while (1)
 	{
 		csp_route_work();
@@ -33,8 +31,7 @@ void *router_task(void *param)
 	return NULL;
 }
 
-void *dtp_server_task(void *param)
-{
+void *dtp_server_task(void *param) {
 	bool keep_running = true;
 	dtp_server_main(&keep_running);
 	return NULL;
@@ -46,17 +43,18 @@ void *dtp_indeces_server_task(void *param)
 	return NULL;
 }
 
-static void iface_init(int argc, char *argv[], char **vmem_dir)
-{
+static void iface_init(int argc, char *argv[], char **vmem_dir) {
 	csp_iface_t *iface = NULL;
 	char *interface = "ZMQ";		  // Default interface
 	char *port = "localhost";		  // Default port
 	char *kiss_device = "/dev/ttyS1"; // Default KISS device
 	char *can_device = "vcan0";		  // Default CAN device
 	int pipeline_addr = 162;		  // Default pipeline address
+    uint32_t baudrate = 115200;       // Default baudrate
 
 	int opt;
-	while ((opt = getopt(argc, argv, "i:p:a:v:")) != -1)
+	// Added 'b:' to getopt string
+	while ((opt = getopt(argc, argv, "i:p:a:v:b:")) != -1)
 	{
 		switch (opt)
 		{
@@ -78,8 +76,12 @@ static void iface_init(int argc, char *argv[], char **vmem_dir)
 			// Set vmem directory path
 			*vmem_dir = optarg;
 			break;
+        case 'b':
+            // Set baudrate
+            baudrate = atoi(optarg);
+            break;
 		default:
-			fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <pipeline_address>] [-v <vmem_directory>]\n", argv[0]);
+			fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <pipeline_address>] [-v <vmem_directory>] [-b <baudrate>]\n", argv[0]);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -95,15 +97,15 @@ static void iface_init(int argc, char *argv[], char **vmem_dir)
 		/* KISS setup */
 		csp_usart_conf_t conf = {
 			.device = kiss_device,
-			.baudrate = 115200,
+			.baudrate = baudrate, // Use parsed variable
 			.databits = 8,
 			.stopbits = 1,
-			.paritysetting = 0};  
+			.paritysetting = 0};   
 
 		int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, pipeline_addr, &iface);
 		if (error != CSP_ERR_NONE)
 		{
-			csp_print("failed to add KISS interface [%s], error: %d\n", kiss_device, error);
+			csp_print("failed to add KISS interface [%s], baudrate %u, error: %d\n", kiss_device, baudrate, error);
 			exit(1);
 		}
 
@@ -127,8 +129,7 @@ static void iface_init(int argc, char *argv[], char **vmem_dir)
 	csp_iflist_add(iface);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	printf("argc %u", argc);
 
 	printf("\nbootmsg\n");

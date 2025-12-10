@@ -44,89 +44,94 @@ void *dtp_indeces_server_task(void *param)
 }
 
 static void iface_init(int argc, char *argv[], char **vmem_dir) {
-	csp_iface_t *iface = NULL;
-	char *interface = "ZMQ";		  // Default interface
-	char *port = "localhost";		  // Default port
-	char *kiss_device = "/dev/ttyS1"; // Default KISS device
-	char *can_device = "vcan0";		  // Default CAN device
-	int pipeline_addr = 162;		  // Default pipeline address
+    csp_iface_t *iface = NULL;
+    char *interface = "ZMQ";          // Default interface
+    char *port = "localhost";         // Default port
+    char *kiss_device = "/dev/ttyS1"; // Default KISS device
+    char *can_device = "vcan0";       // Default CAN device
+    int pipeline_addr = 162;          // Default pipeline address
     uint32_t baudrate = 115200;       // Default baudrate
+    int netmask = 8;                  // Default netmask (added)
 
-	int opt;
-	// Added 'b:' to getopt string
-	while ((opt = getopt(argc, argv, "i:p:a:v:b:")) != -1)
-	{
-		switch (opt)
-		{
-		case 'i':
-			// Use the provided interface instead of "ZMQ"
-			interface = optarg;
-			break;
-		case 'p':
-			// Use the provided port/devices
-			port = optarg;
-			kiss_device = optarg;
-			can_device = optarg;
-			break;
-		case 'a':
-			// Use the pipeline address
-			pipeline_addr = atoi(optarg);
-			break;
-		case 'v':
-			// Set vmem directory path
-			*vmem_dir = optarg;
-			break;
+    int opt;
+    // Added 'm:' to getopt string for netmask
+    while ((opt = getopt(argc, argv, "i:p:a:v:b:m:")) != -1)
+    {
+        switch (opt)
+        {
+        case 'i':
+            // Use the provided interface instead of "ZMQ"
+            interface = optarg;
+            break;
+        case 'p':
+            // Use the provided port/devices
+            port = optarg;
+            kiss_device = optarg;
+            can_device = optarg;
+            break;
+        case 'a':
+            // Use the pipeline address
+            pipeline_addr = atoi(optarg);
+            break;
+        case 'v':
+            // Set vmem directory path
+            *vmem_dir = optarg;
+            break;
         case 'b':
             // Set baudrate
             baudrate = atoi(optarg);
             break;
-		default:
-			fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <pipeline_address>] [-v <vmem_directory>] [-b <baudrate>]\n", argv[0]);
-			exit(EXIT_FAILURE);
-		}
-	}
+        case 'm':
+            // Set netmask
+            netmask = atoi(optarg);
+            break;
+        default:
+            fprintf(stderr, "Usage: %s [-i <interface>] [-p <port/device>] [-a <pipeline_address>] [-v <vmem_directory>] [-b <baudrate>] [-m <netmask>]\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+    }
 
-	if (strcmp(interface, "ZMQ") == 0)
-	{
-		/* ZMQ setup */
-		csp_zmqhub_init_filter2("ZMQ", port, 3, 8, true, &iface, NULL, CSP_ZMQPROXY_SUBSCRIBE_PORT, CSP_ZMQPROXY_PUBLISH_PORT);
-		iface->name = "zmq";
-	}
-	else if (strcmp(interface, "KISS") == 0)
-	{
-		/* KISS setup */
-		csp_usart_conf_t conf = {
-			.device = kiss_device,
-			.baudrate = baudrate, // Use parsed variable
-			.databits = 8,
-			.stopbits = 1,
-			.paritysetting = 0};   
+    if (strcmp(interface, "ZMQ") == 0)
+    {
+        /* ZMQ setup */
+        csp_zmqhub_init_filter2("ZMQ", port, 3, 8, true, &iface, NULL, CSP_ZMQPROXY_SUBSCRIBE_PORT, CSP_ZMQPROXY_PUBLISH_PORT);
+        iface->name = "zmq";
+    }
+    else if (strcmp(interface, "KISS") == 0)
+    {
+        /* KISS setup */
+        csp_usart_conf_t conf = {
+            .device = kiss_device,
+            .baudrate = baudrate, // Use parsed variable
+            .databits = 8,
+            .stopbits = 1,
+            .paritysetting = 0};   
 
-		int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, pipeline_addr, &iface);
-		if (error != CSP_ERR_NONE)
-		{
-			csp_print("failed to add KISS interface [%s], baudrate %u, error: %d\n", kiss_device, baudrate, error);
-			exit(1);
-		}
+        int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, pipeline_addr, &iface);
+        if (error != CSP_ERR_NONE)
+        {
+            csp_print("failed to add KISS interface [%s], baudrate %u, error: %d\n", kiss_device, baudrate, error);
+            exit(1);
+        }
 
-		iface->name = "KISS";
-	}
-	else if (strcmp(interface, "CAN") == 0)
-	{
-		int error = csp_can_socketcan_open_and_add_interface(can_device, "CAN", pipeline_addr, 1000000, 0, &iface);
-		if (error != CSP_ERR_NONE)
-		{
-			csp_print("failed to add CAN interface [%s], error: %d\n", can_device, error);
-			return;
-		}
+        iface->name = "KISS";
+    }
+    else if (strcmp(interface, "CAN") == 0)
+    {
+        int error = csp_can_socketcan_open_and_add_interface(can_device, "CAN", pipeline_addr, 1000000, 0, &iface);
+        if (error != CSP_ERR_NONE)
+        {
+            csp_print("failed to add CAN interface [%s], error: %d\n", can_device, error);
+            return;
+        }
 
-		iface->name = "CAN";
-	}
+        iface->name = "CAN";
+    }
 
-	iface->addr = pipeline_addr;
-	iface->netmask = 8;
-	csp_rtable_set(0, 0, iface, CSP_NO_VIA_ADDRESS);
-	csp_iflist_add(iface);
+    iface->addr = pipeline_addr;
+    iface->netmask = netmask; // Applied configurable netmask here
+    csp_rtable_set(0, 0, iface, CSP_NO_VIA_ADDRESS);
+    csp_iflist_add(iface);
 }
 
 int main(int argc, char *argv[]) {

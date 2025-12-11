@@ -103,7 +103,7 @@ static void iface_init(int argc, char *argv[], char **vmem_dir) {
         csp_usart_conf_t conf = {
             .device = kiss_device,
             .baudrate = baudrate, // Use parsed variable
-            .databits = 8,
+            .databits = netmask,
             .stopbits = 1,
             .paritysetting = 0};   
 

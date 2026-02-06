@@ -45,10 +45,6 @@ typedef struct ImageBatch {
     long mtype;          /* message type to read from the message queue */
     int num_images;      /* amount of images */
     int batch_size;      /* size of the image batch */
-    int shmid;           /* id of shared memory segment with image data */
-    int pipeline_id;     /* id of pipeline to utilize for processing */
-    int obid;            /* id for each image batch */
-    unsigned char *data; /* address to image data (in shared memory) */
 } ImageBatch;
 ```
 Modules will receive and return image batches of this format.

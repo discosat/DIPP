@@ -139,3 +139,19 @@ SIGTERM, not just SIGINT" is confirmed as necessary.
   the right parameters.
 - `ipcs` does not exist on the board; read `/proc/sysvipc/shm` instead. Update
   the Stage 4 harness accordingly.
+
+## Persisted queue sample
+
+`queue_file` and `partially_processed_queue_file` are the mmap-backed priority
+queues as left by the final run, both exactly **20,056 bytes** — the whole
+structure that `msync` writes as a unit, which is what A7's torn-write concern
+is about.
+
+| File | md5 | Non-zero bytes |
+|---|---|---|
+| `queue_file` | `5f17134ba3787d94c55d40d5c90953e7` | 16,189 / 20,056 |
+| `partially_processed_queue_file` | `64ebf94c99b88f15dc1970104dcd610b` | 1,622 / 20,056 |
+
+The ingest queue was **not empty** when the run ended. Kept as a real sample
+of the on-disk format for writing the Stage 3 recovery path and orphan scan,
+and for testing the decoder offline without occupying the board.

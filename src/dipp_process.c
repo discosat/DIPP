@@ -320,8 +320,24 @@ static void reclaim_orphaned_batch_files(void)
         else if (remove(g.gl_pathv[i]) == 0)
         {
             removed++;
+            printf("ORPHAN_REMOVE %s\n", g.gl_pathv[i]);
         }
     }
+    /* Log what the queues actually reference, so "kept 0 referenced" can be told
+       apart from "the queues were empty". Getting that wrong would make this
+       scan delete a file a queued batch still needs. */
+    for (int q = 0; q < 2; q++)
+    {
+        PriorityQueue *qq = (q == 0) ? ingest_pq : partially_processed_pq;
+        if (!qq)
+            continue;
+        size_t n = pq_impl->get_queue_size(qq);
+        for (size_t k = 0; k < n; k++)
+            printf("ORPHAN_SCAN_REF queue=%s uuid=%s progress=%d filename=%s\n",
+                   (q == 0) ? "ingest" : "partial", qq->items[k].uuid,
+                   qq->items[k].progress, qq->items[k].filename);
+    }
+
     globfree(&g);
     if (removed || kept)
         printf("Orphan scan: removed %zu unreferenced batch files, kept %zu referenced\n",

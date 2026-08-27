@@ -77,3 +77,65 @@ Trace names give the experiment matrix: `decomposed-{mem,mmap}-{high,low}`,
   rely on md5.
 - `/mnt/flash` is `/dev/sda1` and is not mounted at boot:
   `mount -o ro /dev/sda1 /mnt/flash`.
+
+## Bench verification, 2026-08-27
+
+Ran with CAN up at 1 Mbit/s, sample-point 0.750, ERROR-ACTIVE, zero error
+counters on every register.
+
+**The CSP path works end to end.** This matters because the historical
+telemetry failure was never diagnosed:
+
+```
+ping 5423                  -> Reply in 2 [ms]
+list download 5423         -> Received 31 parameters, of which 0 were skipped
+```
+
+Registered params include `module_param_1..12` at 188 bytes each (matching
+`DATA_PARAM_SIZE`), plus `log_status`, `serial0`, `radio_node_id`,
+`module_timeout` and `battery_level`. So the transport and the param server
+are both healthy — consistent with the diagnosis that the failure was
+unregistered params / `promisc = 0` / blocking pulls, not the wire.
+
+**`module_timeout = 0` confirmed twice, independently:** the raw
+`/storage.vmem` byte at `0x131D`, and `get -n 5423 module_timeout` over CSP.
+Live values read at the same time:
+
+| Param | Value |
+|---|---|
+| `module_timeout` | **0** |
+| `battery_level` | 74.128899 |
+| `radio_node_id` | 0 |
+| `log_status` | 200000 |
+
+`log_status = 200000` decodes through `code*1000 + pipeline*100 + module` to
+code **200 = `MSGQ_NOT_FOUND`** — expected with no producer running.
+
+**The A8 leak, quantified.** Clearing one run's leftovers took the filesystem
+from 3.2 G used (59%) to 621 M (11%): **412 orphaned files were holding
+2.6 GB, 46% of the 5.7 GB partition.** At that rate the device fills after
+roughly two runs. Good numbers for C9/C12.
+
+**The idle spin loop is hot.** With no producer, the daemon logged
+`Error: 200000` at roughly 600–900 lines/second — 148,371 lines in a single
+short session. Confirms A5's "stop tracing the idle spin loop".
+
+**`SIGINT` is not enough.** `kill -INT` did **not** stop the daemon when
+tracing was disabled (the handler is only registered under `-t`); `kill -TERM`
+did. The harness must send SIGTERM for untraced runs, and A5's "handle
+SIGTERM, not just SIGINT" is confirmed as necessary.
+
+### Host-side notes
+
+- `csh` needs a TTY — drive it through a pty or it fails with "Failed to init
+  slash". A working driver is in the scratchpad.
+- Syntax is `csp add can -d <addr>`; passing a device name is rejected with
+  "Addr argument 'can0' is not an integer".
+- Use **`csh-new/csh/can.csh`** (host node **5411**). The copy in
+  `dipp2-experiments/csh/init/can.csh` uses node 15, which is outside the
+  board's subnet (netmask 8 -> 5376..5439) and will not route to 5423.
+- csh tries to reconfigure `can0` and prints "RTNETLINK answers: Operation not
+  permitted" unless run as root. Harmless if the interface is already up with
+  the right parameters.
+- `ipcs` does not exist on the board; read `/proc/sysvipc/shm` instead. Update
+  the Stage 4 harness accordingly.

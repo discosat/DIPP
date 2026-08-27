@@ -151,6 +151,9 @@ static void iface_init(int argc, char *argv[])
 		printf("Enabling tracing to file: %s\r\n", trace_file);
 		mtr_init(trace_file);
 		mtr_register_sigint_handler();
+		/* Record the build in the trace itself, so a trace file is
+		   self-describing even if the console log is lost. */
+		MTR_META_PROCESS_NAME("dipp " BUILD_ID);
 	}
 }
 
@@ -159,6 +162,7 @@ int main(int argc, char *argv[])
 	printf("argc %u", argc);
 
 	printf("\nbootmsg\n");
+	printf("SIPP build: %s\r\n", BUILD_ID);
 
 	srand(time(NULL));
 

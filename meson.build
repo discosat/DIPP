@@ -78,9 +78,22 @@ m_dep = meson.get_compiler('c').find_library('m', required : false)
 uuid_dep = meson.get_compiler('c').find_library('uuid', required: false)
 deps = [csp_dep,param_dep,dtp_server_dep,proto_c_dep,m_dep,brotli_dep, uuid_dep]
 
+# Build identifier: git describe + submodule SHAs, compiled in so every run
+# and every trace can be tied back to an exact source state.
+build_id = 'unknown'
+build_id_prog = find_program('tools/build_id.sh', required: false)
+if build_id_prog.found()
+	build_id_res = run_command(build_id_prog, check: false)
+	if build_id_res.returncode() == 0 and build_id_res.stdout().strip() != ''
+		build_id = build_id_res.stdout().strip()
+	endif
+endif
+message('BUILD_ID: ' + build_id)
+
 c_args = [
 	'-DHOSTNAME="@0@"'.format(get_option('hostname')),
-	'-DMTR_ENABLED=1'
+	'-DMTR_ENABLED=1',
+	'-DBUILD_ID="@0@"'.format(build_id),
 	]
 
 dipp = executable(

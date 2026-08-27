@@ -36,6 +36,9 @@
 // By default, will collect up to 1000000 events, then you must flush.
 // It's recommended that you simply call mtr_flush on a background thread
 // occasionally. It's safe...ish.
+/* Default event-buffer capacity; override at runtime with MTR_BUFFER_EVENTS.
+   Two buffers of this many ~64-byte events are allocated, so 1,000,000
+   reserves ~128 MB that every forked module child inherits copy-on-write. */
 #define INTERNAL_MINITRACE_BUFFER_SIZE 1000000
 
 #ifdef __cplusplus
@@ -50,6 +53,9 @@ extern "C"
     // fopen(). It should be opened for writing, preferably in binary mode to avoid
     // processing of line endings (i.e. the "wb" mode).
     MINITRACE_EXPORT void mtr_init_from_stream(void *stream);
+/* Number of events discarded because the buffer was full; non-zero means the
+   trace is truncated and must not be treated as a complete record. */
+uint64_t mtr_dropped_events(void);
 
     // Shuts down minitrace cleanly, flushing the trace buffer.
     MINITRACE_EXPORT void mtr_shutdown(void);

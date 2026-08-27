@@ -61,6 +61,14 @@ typedef struct raw_event
 
 static raw_event_t *event_buffer;
 static raw_event_t *flush_buffer;
+/* Capacity is chosen at init instead of being fixed at 1,000,000 events.
+   Two buffers of 1M x ~64 B reserve ~128 MB, which every one of the ~500
+   forked module children then inherits copy-on-write. */
+static size_t buffer_capacity = INTERNAL_MINITRACE_BUFFER_SIZE;
+/* Events discarded because the buffer was full. Previously these were dropped
+   silently, so a truncated trace was indistinguishable from a complete one --
+   one archived trace hit the cap and nothing said so. */
+static uint64_t dropped_events = 0;
 static volatile int event_count;
 static int is_tracing = FALSE;
 static int is_flushing = FALSE;
@@ -114,7 +122,10 @@ static BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 {
     if (is_tracing && fdwCtrlType == CTRL_C_EVENT)
     {
-        printf("Ctrl-C detected! Flushing trace and shutting down.\n\n");
+        printf("Ctrl-C detected: flushing trace and shutting down.\n");
+        if (dropped_events)
+            printf("WARNING: %llu trace events were dropped (buffer full).\n",
+                   (unsigned long long)dropped_events);
         mtr_flush();
         mtr_shutdown();
     }
@@ -163,10 +174,12 @@ double mtr_time_s()
 static void termination_handler(int signum) ATTR_NORETURN;
 static void termination_handler(int signum)
 {
-    (void)signum;
     if (is_tracing)
     {
-        printf("Ctrl-C detected! Flushing trace and shutting down.\n\n");
+        printf("Signal %d: flushing trace and shutting down.\n", signum);
+        if (dropped_events)
+            printf("WARNING: %llu trace events were dropped (buffer full).\n",
+                   (unsigned long long)dropped_events);
         mtr_flush();
         fwrite("\n]}\n", 1, 4, f);
         fclose(f);
@@ -182,23 +195,47 @@ void mtr_register_sigint_handler()
     // Avoid altering set-to-be-ignored handlers while registering.
     if (signal(SIGINT, &termination_handler) == SIG_IGN)
         signal(SIGINT, SIG_IGN);
+    /* SIGTERM too: the trace is only written by this handler, and a harness
+       that stops the daemon with SIGTERM (or systemd doing so) would otherwise
+       produce no trace at all. */
+    if (signal(SIGTERM, &termination_handler) == SIG_IGN)
+        signal(SIGTERM, SIG_IGN);
 }
 
 #endif
+
+uint64_t mtr_dropped_events(void)
+{
+    return dropped_events;
+}
 
 void mtr_init_from_stream(void *stream)
 {
 #ifndef MTR_ENABLED
     return;
 #endif
-    event_buffer = (raw_event_t *)malloc(INTERNAL_MINITRACE_BUFFER_SIZE * sizeof(raw_event_t));
-    flush_buffer = (raw_event_t *)malloc(INTERNAL_MINITRACE_BUFFER_SIZE * sizeof(raw_event_t));
+    const char *cap_env = getenv("MTR_BUFFER_EVENTS");
+    buffer_capacity = INTERNAL_MINITRACE_BUFFER_SIZE;
+    if (cap_env)
+    {
+        long long v = atoll(cap_env);
+        if (v > 0)
+            buffer_capacity = (size_t)v;
+    }
+    dropped_events = 0;
+    event_buffer = (raw_event_t *)malloc(buffer_capacity * sizeof(raw_event_t));
+    flush_buffer = (raw_event_t *)malloc(buffer_capacity * sizeof(raw_event_t));
     is_flushing = FALSE;
     is_tracing = 1;
     event_count = 0;
     f = (FILE *)stream;
     const char *header = "{\"traceEvents\":[\n";
     fwrite(header, 1, strlen(header), f);
+    /* Flush immediately. The daemon forks a child per module execution, and a
+       child exiting via exit() flushes the stdio buffers it inherited -- so an
+       unflushed header was re-emitted by every one of ~500 children, which is
+       why the archived traces are not valid JSON. */
+    fflush(f);
     time_offset = (uint64_t)(mtr_time_s() * 1000000);
     first_line = 1;
     pthread_mutex_init(&mutex, 0);
@@ -423,8 +460,10 @@ void internal_mtr_raw_event(const char *category, const char *name, char ph, voi
     return;
 #endif
     pthread_mutex_lock(&mutex);
-    if (!is_tracing || event_count >= INTERNAL_MINITRACE_BUFFER_SIZE)
+    if (!is_tracing || (size_t)event_count >= buffer_capacity)
     {
+        if (is_tracing)
+            ++dropped_events;
         pthread_mutex_unlock(&mutex);
         return;
     }
@@ -487,8 +526,10 @@ void internal_mtr_raw_event_arg(const char *category, const char *name, char ph,
     return;
 #endif
     pthread_mutex_lock(&mutex);
-    if (!is_tracing || event_count >= INTERNAL_MINITRACE_BUFFER_SIZE)
+    if (!is_tracing || (size_t)event_count >= buffer_capacity)
     {
+        if (is_tracing)
+            ++dropped_events;
         pthread_mutex_unlock(&mutex);
         return;
     }

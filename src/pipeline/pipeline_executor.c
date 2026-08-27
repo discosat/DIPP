@@ -15,6 +15,9 @@
 #include "dipp_error.h"
 #include "utils/minitrace.h"
 #include "battery_simulator.h"
+#include "dipp_process.h"
+#include "priority_queue.h"
+#include <time.h>
 
 // Execute the pipeline on the given batch. It picks up from the possibly partially executed state,
 // and for each module it picks the best effort level that fulfills the requirements based on the current state.
@@ -92,40 +95,37 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         //     }
         // }
 
-        // measure time to execute the module
+        /* Always time the module. Previously this ran only on a cache miss, so
+           499 of every 500 executions produced no latency sample at all. */
         struct timespec start, end;
-        uint32_t start_energy = 0, end_energy = 0;
         long elapsed_us = 0;
-
-        // the profiling information is not found, collect it here
-        if (lookup_result == FOUND_NOT_CACHED)
-        {
-            clock_gettime(CLOCK_MONOTONIC, &start);
-
-            // Get starting energy reading
-            start_energy = get_energy_reading();
-        }
+        clock_gettime(CLOCK_MONOTONIC, &start);
 
         // printf("Starting execution in process\r\n");
         int module_status = execute_module_in_process(module_function, data, module_config);
         // printf("Finished execution\r\n");
 
-        float energy_cost = 0;
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        elapsed_us = (end.tv_sec - start.tv_sec) * 1000000L + (end.tv_nsec - start.tv_nsec) / 1000L;
 
-        // the profiling information is not found, collect it here
-        if (lookup_result == FOUND_NOT_CACHED)
+        /* Energy debited to the battery for THIS execution.
+           Sources, in order of preference:
+             - the cost store, once an entry exists for this (module, config,
+               input size) -- seeded from the offline Otii characterisation;
+             - otherwise the YAML hint, which is all that is available on the
+               first execution of a given key.
+           This is deliberately a separate path from the value the heuristic
+           uses to predict: the store's estimate drives selection, this drives
+           the battery, and C7e needs to perturb one without the other. */
+        float energy_cost;
         {
-            // measure time to execute the module
-            clock_gettime(CLOCK_MONOTONIC, &end);
-
-            // Get ending energy reading
-            // end_energy = get_energy_reading();
-
-            // Calculate energy cost (0 if readings failed)
-            // energy_cost = (start_energy && end_energy) ? (end_energy - start_energy) : 0;
-            energy_cost = module_config->energy_cost; // Use estimated energy cost from module config for now
-
-            elapsed_us = (end.tv_sec - start.tv_sec) * 1000000L + (end.tv_nsec - start.tv_nsec) / 1000L;
+            uint32_t cached_latency_us;
+            float cached_energy_uwh;
+            if (cost_store_impl->lookup(cost_store, picked_hash,
+                                        &cached_latency_us, &cached_energy_uwh) != -1)
+                energy_cost = cached_energy_uwh;
+            else
+                energy_cost = (float)module_config->energy_cost;
         }
 
         // error encountered, clean up
@@ -143,12 +143,47 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 
         if (lookup_result == FOUND_NOT_CACHED)
         {
-            // Store both latency and energy cost in cache
+            // First execution of this key: record what it actually cost.
             printf("Inserting into cache. Latency=%ld us, Energy=%.2f uWh\n", elapsed_us, energy_cost);
             cost_store_impl->insert(cost_store, picked_hash, elapsed_us, energy_cost);
             MTR_INSTANT_I(__FILE__, "latency cache update", "latency_us", (int)elapsed_us);
             MTR_INSTANT_I(__FILE__, "energy cache update", "energy_uwh", (int)energy_cost);
-            put_load_on_battery(energy_cost);
+        }
+
+        /* Charge the battery for EVERY execution. This used to sit inside the
+           cache-miss branch above, so a 100-batch run drew energy 19 times
+           instead of 500 and "mission completion under energy constraints" was
+           measuring an almost-unloaded battery. */
+        put_load_on_battery(energy_cost);
+        MTR_COUNTER("main", "energy_debited_uwh", (int)energy_cost);
+
+        /* One structured record per module execution.
+           Deliberately a plain greppable line rather than a trace event:
+           minitrace carries at most one argument per event, and this must
+           survive a truncated or unflushed trace. B4 parses these, keyed to
+           RUN.json, to regenerate the tables. */
+        {
+            struct timespec now_ts;
+            clock_gettime(CLOCK_MONOTONIC, &now_ts);
+            int64_t now_us = (int64_t)now_ts.tv_sec * 1000000 + (int64_t)now_ts.tv_nsec / 1000;
+            printf("EXEC uuid=%s pipeline=%d module_index=%zu module=%s param_id=%d "
+                   "num_images=%d batch_bytes=%d cached=%d "
+                   "latency_pred_us=%u latency_meas_us=%ld "
+                   "energy_pred_uwh=%u energy_debited_uwh=%.3f "
+                   "battery_wh=%.6f deadline_us=%lld slack_us=%lld "
+                   "ingest_depth=%ld partial_depth=%ld heuristic=%s\n",
+                   data->uuid, data->pipeline_id, i,
+                   pipeline->modules[i].module_name ? pipeline->modules[i].module_name : "?",
+                   module_param_id,
+                   data->num_images, data->batch_size,
+                   (lookup_result == FOUND_CACHED) ? 1 : 0,
+                   module_config->latency_cost, elapsed_us,
+                   module_config->energy_cost, energy_cost,
+                   get_battery_level_wh(),
+                   (long long)data->priority, (long long)(data->priority - now_us),
+                   pq_impl ? (long)pq_impl->get_queue_size(ingest_pq) : -1L,
+                   pq_impl ? (long)pq_impl->get_queue_size(partially_processed_pq) : -1L,
+                   (current_heuristic == &best_effort_heuristic) ? "BEST_EFFORT" : "LOWEST_EFFORT");
         }
 
         ImageBatch result;

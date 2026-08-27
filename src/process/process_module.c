@@ -27,6 +27,15 @@ void timeout_handler(int signum)
 int execute_module_in_process(ProcessFunction func, ImageBatch *input, ModuleParameterList *config)
 {
     MTR_BEGIN_FUNC();
+
+    /* Drain every stdio buffer before forking. The child exits via exit(),
+       which flushes the buffers it inherited, so anything still pending in the
+       parent at fork time is written out again by each of the ~500 children.
+       That is how the trace file acquired ~501 copies of its header and stopped
+       being valid JSON. Flushing here keeps the child's own output intact,
+       which _exit() in the child would discard. */
+    fflush(NULL);
+
     // Create a new process
     pid_t pid = fork();
 

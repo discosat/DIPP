@@ -27,6 +27,7 @@
 #include "image_batch.h"
 #include "vmem_upload_local.h"
 #include "utils/minitrace.h"
+#include <limits.h>
 
 PriorityQueue *ingest_pq = NULL;
 PriorityQueue *partially_processed_pq = NULL;
@@ -134,9 +135,20 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
     int msg_queue_id;
     if ((msg_queue_id = msgget(MSG_QUEUE_KEY, 0)) == -1)
     {
-        set_error_param(MSGQ_NOT_FOUND);
+        /* Report the transition, not every poll. This is the normal state
+           before any producer has run, and the loop spins at ~1 kHz, so
+           reporting unconditionally emitted 600-900 lines per second (148,371
+           in one short idle session) and rewrote the log_status param just as
+           often. */
+        static int msgq_absent_reported = 0;
+        if (!msgq_absent_reported)
+        {
+            set_error_param(MSGQ_NOT_FOUND);
+            msgq_absent_reported = 1;
+        }
         return FAILURE;
     }
+
 
     struct
     {
@@ -277,19 +289,22 @@ void process_images_loop()
             MTR_END(__FILE__, "enqueue_onto_ingest");
         }
 
-        // // Only flush tracing if at least 100ms elapsed since last flush
-        // {
-        //     struct timespec now;
-        //     clock_gettime(CLOCK_MONOTONIC, &now);
-        //     long elapsed_ms = (last_mtr_flush.tv_sec == 0)
-        //                           ? LONG_MAX
-        //                           : (now.tv_sec - last_mtr_flush.tv_sec) * 1000 + (now.tv_nsec - last_mtr_flush.tv_nsec) / 1000000;
-        //     if (last_mtr_flush.tv_sec == 0 || elapsed_ms >= 100)
-        //     {
-        //         mtr_flush();
-        //         last_mtr_flush = now;
-        //     }
-        // }
+        /* Flush the trace at most every 100 ms. Re-enabled: with this commented
+           out the trace was written only by the signal handler, so any run that
+           ended another way -- a crash, a kill, a power cut, which is precisely
+           what C3 exercises -- produced no trace at all. */
+        {
+            struct timespec now;
+            clock_gettime(CLOCK_MONOTONIC, &now);
+            long elapsed_ms = (last_mtr_flush.tv_sec == 0)
+                                  ? LONG_MAX
+                                  : (now.tv_sec - last_mtr_flush.tv_sec) * 1000 + (now.tv_nsec - last_mtr_flush.tv_nsec) / 1000000;
+            if (last_mtr_flush.tv_sec == 0 || elapsed_ms >= 100)
+            {
+                mtr_flush();
+                last_mtr_flush = now;
+            }
+        }
 
         // pull from the partially_processed_pq first
         ImageBatch *batch = pq_impl->dequeue(partially_processed_pq);

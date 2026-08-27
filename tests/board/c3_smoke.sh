@@ -93,4 +93,19 @@ echo "duplicate_completions=$((DONE_ALL - DONE_U))"
 echo "missing_file_errors=$(grep -c 'refusing to fabricate' c3.log)"
 echo "short_file_errors=$(grep -c 'refusing to pad' c3.log)"
 echo "orphan_files=$(ls /usr/share/dipp/data/ 2>/dev/null | grep -c .)"
+echo "queue_selects=$(grep -c '^QUEUE_SELECT' c3.log)"
+echo "queue_removes=$(grep -c '^QUEUE_REMOVE' c3.log)"
+echo "queue_mismatches=$(grep -c '^QUEUE_MISMATCH' c3.log)"
+echo "ingest_rejects=$(grep -c '^INGEST_REJECT' c3.log)"
+echo "removes_by_reason:"
+grep -oE 'reason=[a-z_]+' c3.log | sort | uniq -c
+echo "never_seen_by_daemon:"
+for u in $(sed 's/.*uuid=\([^ ]*\).*/\1/' c3_fed.txt | sort -u); do
+    grep -q "$u" c3.log || echo "  NEVER_SEEN $u"
+done
+echo "seen_but_incomplete:"
+grep 'Pipeline fully executed' c3.log | sed 's/.*uuid=\([^ ]*\).*/\1/' | sort -u > /tmp/c3_done
+for u in $(sed 's/.*uuid=\([^ ]*\).*/\1/' c3_fed.txt | sort -u); do
+    if grep -q "$u" c3.log && ! grep -q "$u" /tmp/c3_done; then echo "  INCOMPLETE $u"; fi
+done
 echo "concurrent_daemon_warnings=$(grep -c 'WARNING: daemon already running' c3_result.txt 2>/dev/null || echo 0)"

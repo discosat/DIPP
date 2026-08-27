@@ -74,27 +74,35 @@ simply never finished within the drain window.
 
 They failed for **different** reasons, and neither is the mechanism fixed above.
 
-### 1. `c9ff2224-…` — never reached the daemon at all
+### 1. `c9ff2224-…` — never reached the daemon: OUT OF SCOPE
 
 Its UUID appears nowhere in the daemon log. It was fed successfully by
 `emulate_camera`, so the message reached the SysV queue, but the daemon never
 recorded it.
 
-`get_message_from_queue` does `msgrcv` — which **removes** the message from the
-kernel queue — and only then `enqueue`s into the durable priority queue. A kill
-between those two loses the batch outright: gone from the kernel queue, never
-written to the persisted one.
+`get_message_from_queue` calls `msgrcv`, which **removes** the message from the
+kernel queue, and only then enqueues into the durable priority queue. A kill
+between those two loses the batch: gone from the kernel queue, never written to
+the persisted one.
 
-This is a genuine gap and it lies **outside** the priority queue's durability
-entirely, so no amount of queue-commit ordering fixes it. It is also not
-trivially fixable: SysV message queues have no peek-then-commit, so the options
-are to accept and document the window, to have the producer retain and re-send
-until acknowledged, or to replace the ingest IPC.
+**This is deliberately out of DIPP's scope.** DIPP's durability contract begins
+when a batch is *accepted into its queue*; getting a batch as far as that queue
+belongs to the producer — on the flight system, the camera control software,
+which owns the image until DIPP acknowledges it. SysV message queues offer no
+peek-then-commit, so no change inside DIPP can close the window; only a
+producer that retains and re-sends until acknowledged can.
 
-Note the return value of `image_batch_setup_storage()` — which is what persists
-the data — is currently **discarded** in `get_message_from_queue`, so an ingest
-that fails to persist is enqueued anyway. That is a separate defect on the same
-path and should be fixed regardless.
+State the boundary explicitly in W4/W5 rather than leaving it implicit: *DIPP
+guarantees no loss of any batch it has accepted; delivery to DIPP is the
+producer's responsibility.* That is a normal interface contract, and it makes
+the persistence claim precise instead of overreaching.
+
+**One part of this path WAS in scope and is fixed.** The return value of
+`image_batch_setup_storage()` was discarded, so a batch whose data failed to
+persist was enqueued anyway and then failed later at module 0, looking exactly
+like a durability bug. It is now rejected at ingest with an `INGEST_REJECT` log
+line, which keeps the queue's invariant honest: everything in it has its data on
+storage.
 
 ### 2. `6b7cb736-…` — progressed to 3 of 5, then vanished
 

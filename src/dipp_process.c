@@ -180,8 +180,21 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
     // Copy the data to the datarcv buffer
     memcpy(datarcv, &msg_buffer, msg_size);
 
-    // set storage attribute on the image batch
-    image_batch_setup_storage(datarcv, global_storage_mode);
+    /* Persist the payload before accepting the batch. The return value used to
+       be discarded, so a batch whose data failed to persist was enqueued anyway
+       and then failed later at module 0 looking like a durability bug. Refusing
+       it here keeps the queue's invariant honest: everything in it has its data
+       on storage.
+
+       Note the message has already been consumed by msgrcv at this point, so a
+       rejected batch is gone. That window -- kernel queue to durable queue -- is
+       the producer's to close, not DIPP's: see the scope note in
+       analysis/stage3-c3/README.md. */
+    if (image_batch_setup_storage(datarcv, global_storage_mode) != SUCCESS)
+    {
+        printf("INGEST_REJECT uuid=%s reason=persist_failed\n", datarcv->uuid);
+        return FAILURE;
+    }
 
     return SUCCESS;
 }
@@ -315,6 +328,26 @@ static void reclaim_orphaned_batch_files(void)
                removed, kept);
 }
 
+
+/* Every removal from a durable queue goes through here, so a batch cannot leave
+   one unlogged. Logs the batch we intended to remove alongside the one actually
+   removed: dequeue() takes the heap root, and if that is ever a different batch
+   than the one just processed, this is what shows it. */
+static void remove_from_queue(PriorityQueue *src, const char *expect_uuid, const char *reason)
+{
+    ImageBatch *removed = pq_impl->dequeue(src);
+    printf("QUEUE_REMOVE queue=%s reason=%s expect_uuid=%s removed_uuid=%s\n",
+           (src == ingest_pq) ? "ingest" : "partial",
+           reason, expect_uuid,
+           removed ? removed->uuid : "NONE");
+    if (removed)
+    {
+        if (strcmp(removed->uuid, expect_uuid) != 0)
+            printf("QUEUE_MISMATCH expected=%s removed=%s\n", expect_uuid, removed->uuid);
+        free(removed);
+    }
+}
+
 /* Run at most one batch from `src`, using peek-process-commit.
  *
  * The batch stays in its durable queue for the whole time it is being
@@ -350,11 +383,13 @@ static int run_one_batch(PriorityQueue *src)
     {
         printf("Batch %s was already uploaded before a reset; removing without re-upload\n",
                batch.uuid);
-        ImageBatch *removed = pq_impl->dequeue(src);
-        if (removed)
-            free(removed);
+        remove_from_queue(src, batch.uuid, "already_uploaded");
         return 1;
     }
+
+    printf("QUEUE_SELECT queue=%s uuid=%s progress=%d depth=%ld\n",
+           (src == ingest_pq) ? "ingest" : "partial", batch.uuid, batch.progress,
+           (long)pq_impl->get_queue_size(src));
 
     current_batch_source = src;
 
@@ -379,9 +414,7 @@ static int run_one_batch(PriorityQueue *src)
             batch.progress = pipeline_len;
             pq_impl->commit_head(src, &batch);
         }
-        ImageBatch *removed = pq_impl->dequeue(src);
-        if (removed)
-            free(removed);
+        remove_from_queue(src, batch.uuid, "complete");
         break;
     }
     case BATCH_PARTIAL:
@@ -398,9 +431,7 @@ static int run_one_batch(PriorityQueue *src)
                 printf("Partial queue full; leaving batch %s in ingest\n", batch.uuid);
                 break;
             }
-            ImageBatch *removed = pq_impl->dequeue(src);
-            if (removed)
-                free(removed);
+            remove_from_queue(src, batch.uuid, "moved_to_partial");
         }
         break;
     case BATCH_FAILED:
@@ -409,9 +440,7 @@ static int run_one_batch(PriorityQueue *src)
         /* Drop it, as before, but say so. A8 replaces this with a quarantine
            queue carrying a retry counter and an error code. */
         printf("Batch %s FAILED; dropping (A8 will quarantine instead)\n", batch.uuid);
-        ImageBatch *removed = pq_impl->dequeue(src);
-        if (removed)
-            free(removed);
+        remove_from_queue(src, batch.uuid, "failed");
         break;
     }
     }

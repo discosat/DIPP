@@ -122,16 +122,19 @@ int enqueue_mmap(PriorityQueue *pq, ImageBatch item)
 // Define dequeue function to remove an item from the queue
 ImageBatch *dequeue_mmap(PriorityQueue *pq)
 {
-    MTR_BEGIN_FUNC();
+    /* Deliberately NOT traced before the emptiness check. The main loop polls
+       both queues at ~1 kHz, so tracing every empty poll produced ~2,000 noise
+       events per second -- 76 MB of trace for a two-minute run, and 99.29% of
+       the events in one archived trace. Only an actual dequeue is an event. */
     pthread_mutex_lock(&pq->lock);
 
     if (!pq->size)
     {
         pthread_mutex_unlock(&pq->lock);
-        // printf("Priority queue is empty\n");
-        MTR_END_FUNC();
         return NULL;
     }
+
+    MTR_BEGIN_FUNC();
 
     // allocate a stable copy for the caller (so returned pointer isn't into the mmap region)
     ImageBatch *res = malloc(sizeof(ImageBatch));

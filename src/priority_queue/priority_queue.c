@@ -77,10 +77,12 @@ void heapifyUp(PriorityQueue *pq, int index)
 
 size_t get_queue_size(PriorityQueue *pq)
 {
-    MTR_BEGIN_FUNC();
+    /* Not traced: this is a trivial accessor called several times per poll of a
+       ~1 kHz loop, so tracing it is pure noise. Queue depths are already
+       recorded as MTR counters in update_heuristic and in the per-execution
+       EXEC record. */
     pthread_mutex_lock(&pq->lock);
     size_t size = pq->size;
     pthread_mutex_unlock(&pq->lock);
-    MTR_END_FUNC();
     return size;
 }

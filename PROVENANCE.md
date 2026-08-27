@@ -122,12 +122,30 @@ binary:
 | `get_message_from_queue` 3rd arg | absent | absent |
 | `image_batch_setup_storage` call sites | 2 | 2 |
 
-## Still outstanding
+## Board scripts — recovered 2026-08-27
 
-The board's real `poisson_process_experiment` and `populate_queue` are **not
-yet committed**. The copies in `/home/roba/dipp2-experiments/2025-11-18/` are
-stale (300 events, `MEAN_INTERVAL=2`, unseeded `srand()`, 3-argument
-`populate_queue`); the versions actually used (1000 events, `MEAN_INTERVAL=3`,
-`srand(43)`, pipeline 3, 4-argument `populate_queue`) exist only on the
-device. The board was powered off during Stage 0 and must be brought up to
-recover them.
+Done. The real `poisson_process_experiment` and `populate_queue` were pulled
+from the live board over the serial console, md5-verified at both ends, and
+committed under `experiments/board/` with a README. The archived copies were
+indeed stale; the board's history shows the scripts were copied off the flash
+and then edited in place.
+
+Also confirmed on the live board:
+
+- `/mnt/flash/2025-11-18/dipp` is `139a974989235f2a8c577e1e9f1e6ed2` —
+  **identical to the host archive**, so the artefact this reconstruction was
+  verified against is the genuine experiment binary. `dipp-old` and
+  `emulate_camera` match the archive as well.
+- `/usr/bin/dipp` is *not* the experiment build; it symlinks `dipp-10-31`
+  (`4bcef27e…`). The experiment binary exists only on the USB flash.
+- `module_timeout = 0` at `VMEM_MODULE_TIMEOUT` (`0x131D`) — open question U1
+  answered: the module timeout is disabled.
+- 412 orphaned files in `/usr/share/dipp/data/`; both queue files exactly
+  20,056 bytes. A8's leak and A7's write granularity confirmed on hardware.
+
+**Caveat on dates.** On-board mtimes are unreliable (the RTC is unset and the
+author notes timestamps were not kept current), so every conclusion here rests
+on md5 and disassembly rather than timestamps. The one date-derived inference
+— that the 2025-12-02 build predates the 2025-12-30 commit `f21f22a` — is
+independently confirmed by the binary's code shape (two-argument
+`get_message_from_queue`), so it does not depend on the timestamp.

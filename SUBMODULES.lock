@@ -1,0 +1,19 @@
+# Submodule lock for the SIPP IoT-J resubmission
+#
+# Generated 2026-08-27T12:18:34Z on branch resubmission
+# Superproject: a41b2465790270749657e9ec41a4756f2f9771ca
+# Baseline tag: paper-experiments -> 577c2253878a705fd8f897d239a56e7a7622db7b
+#
+# These are the pins recorded by 577c225 AND independently confirmed to be
+# what the deployed experiment binary was built from, by comparing DWARF
+# line numbers against each candidate commit. See PROVENANCE.md.
+#
+# path                sha                                       describe
+lib/csp              8cc13c663c6db1d333bd1af6546d1f7fc2599770   (2.5-17-g8cc13c66)
+lib/dtp              504e2cd3bdffeec7b092895c564b6af947a6008f   (504e2cd)
+lib/libdtp           504e2cd3bdffeec7b092895c564b6af947a6008f   (504e2cd)
+lib/param            768970c6320a455250ddd88903bbd9f58db81216   (remotes/origin/HEAD)
+
+# Toolchain
+sdk                  /opt/fus-imx-disco/5.15-kirkstone
+cross_file           yocto_cross.ini

@@ -48,6 +48,29 @@ def drain(fd, secs):
             except BlockingIOError: pass
     return out
 
+def settle(fd, quiet_for=0.6, timeout=10.0):
+    """Wait until the console has been silent for `quiet_for` seconds.
+
+    Sending the receive command while earlier output is still draining
+    interleaves the console echo with the payload. That corrupts the file
+    WITHOUT changing its length -- bytes get substituted, not dropped -- so only
+    the md5 catches it. Observed in practice; do not remove.
+    """
+    end = time.time() + timeout
+    last = time.time()
+    while time.time() < end:
+        r, _, _ = select.select([fd], [], [], 0.1)
+        if r:
+            try:
+                if os.read(fd, 8192):
+                    last = time.time()
+            except BlockingIOError:
+                pass
+        if time.time() - last >= quiet_for:
+            return True
+    return False
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("local"); ap.add_argument("remote")
@@ -64,8 +87,10 @@ def main():
     n = len(data)
 
     fd = open_port()
-    drain(fd, 0.5)
-    os.write(fd, b"\r"); drain(fd, 1.0)
+    settle(fd)
+    os.write(fd, b"\r")
+    if not settle(fd):
+        print("  warning: console did not go quiet; transfer may interleave")
 
     cmd = (f"stty raw -echo -ixon -ixoff; "
            f"dd of={a.remote} bs=1 count={n} 2>/dev/null; stty sane\r")

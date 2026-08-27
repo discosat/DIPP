@@ -71,7 +71,7 @@ BatchOutcome process(ImageBatch *input_batch)
         }
         if (input_batch->progress == pipeline_length - 1)
         {
-            printf("Pipeline fully executed successfully\n");
+            printf("Pipeline fully executed successfully uuid=%s\n", input_batch->uuid);
 
             if (image_batch_read_data(input_batch) != SUCCESS || input_batch->data == NULL)
             {
@@ -112,7 +112,7 @@ BatchOutcome process(ImageBatch *input_batch)
         }
         else
         {
-            printf("Pipeline partially executed successfully\n");
+            printf("Pipeline partially executed successfully uuid=%s progress=%d\n", input_batch->uuid, input_batch->progress);
             err_current_pipeline = 0;
             err_current_module = 0;
             MTR_END_FUNC();
@@ -258,6 +258,59 @@ void update_heuristic(int ingest_queue_depth, int partial_queue_depth)
 }
 
 
+
+/* Remove persisted batch files that no queue entry references.
+ *
+ * Failed or abandoned batches used to leave their data files behind forever:
+ * persist_data_if_necessary() IPC_RMIDs the shared-memory segment before the
+ * enqueue, and the cleanup glob in process() is commented out, so nothing ever
+ * reclaimed them. Measured on the board, one run left 412 files holding 2.6 GB
+ * -- 46% of the 5.7 GB partition, enough to fill the device in about two runs.
+ *
+ * Runs once at startup, after the queues are mapped, so "referenced" means
+ * referenced by a batch that survived the last shutdown. Anything else is
+ * unreachable by definition: filenames are UUID-based and never regenerated.
+ */
+static void reclaim_orphaned_batch_files(void)
+{
+    glob_t g;
+    if (glob("/usr/share/dipp/data/batch_*", 0, NULL, &g) != 0)
+        return;
+
+    size_t removed = 0, kept = 0;
+    for (size_t i = 0; i < g.gl_pathc; i++)
+    {
+        int referenced = 0;
+        PriorityQueue *queues[2] = {ingest_pq, partially_processed_pq};
+        for (int q = 0; q < 2 && !referenced; q++)
+        {
+            if (!queues[q])
+                continue;
+            size_t n = pq_impl->get_queue_size(queues[q]);
+            for (size_t k = 0; k < n; k++)
+            {
+                if (strcmp(queues[q]->items[k].filename, g.gl_pathv[i]) == 0)
+                {
+                    referenced = 1;
+                    break;
+                }
+            }
+        }
+        if (referenced)
+        {
+            kept++;
+        }
+        else if (remove(g.gl_pathv[i]) == 0)
+        {
+            removed++;
+        }
+    }
+    globfree(&g);
+    if (removed || kept)
+        printf("Orphan scan: removed %zu unreferenced batch files, kept %zu referenced\n",
+               removed, kept);
+}
+
 /* Run at most one batch from `src`, using peek-process-commit.
  *
  * The batch stays in its durable queue for the whole time it is being
@@ -348,6 +401,11 @@ void process_images_loop()
 
     cost_store_impl = get_cost_store_impl(global_storage_mode);
     cost_store_impl->init(&cost_store, CACHE_FILE);
+
+    /* Both queues are mapped now, so anything on disk they do not reference is
+       unreachable and can be reclaimed. */
+    if (global_storage_mode == STORAGE_MMAP)
+        reclaim_orphaned_batch_files();
 
     // Track last flush time to ensure mtr_flush is called at most once per 100ms
     struct timespec last_mtr_flush = {0, 0};

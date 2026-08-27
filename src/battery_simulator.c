@@ -115,7 +115,7 @@ void simulate_battery()
         &sim,
         92.0, // total_capacity_Wh
         0.7,  // initial_soc
-        16.5, // constant_load_W
+        13.07, // constant_load_W (DISCO-2 bus only, SI-DISCOII-DR-001 Table 6)
         26.0, // power_generation_W
         ORBIT_PERIOD_MIN,
         33.0, // eclipse_duration_min

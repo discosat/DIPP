@@ -122,3 +122,60 @@ The per-module checkpointing fix is sound and eliminated the mechanism that
 lost 9 batches. What remains is **two different, smaller holes** — one at the
 ingest IPC boundary that the queue design cannot cover, one still undiagnosed.
 Stage 3's gate stays open.
+
+
+## Run 3 — with full queue instrumentation
+
+Same shape: 20 batches, 20 kill cycles, pipeline 2.
+
+| | |
+|---|---|
+| fed | 20 |
+| completed (unique) | 18 |
+| duplicated | **0** |
+| queue_mismatches | **0** |
+| removes by reason | 18 complete, 18 moved_to_partial, **0 failed** |
+| ingest_rejects | 0 |
+| never seen by daemon | **0** (hole 1 did not fire this run) |
+| seen but incomplete | 2 |
+
+`queue_mismatches=0` across every run rules out a heap-ordering bug: `dequeue()`
+has never removed a batch other than the one just processed.
+
+### The orphan scan is EXONERATED
+
+The leading hypothesis was that `reclaim_orphaned_batch_files()` was deleting
+files a queued batch still needed. It is not. Comparing every `ORPHAN_REMOVE`
+path against every `ORPHAN_SCAN_REF` filename:
+
+    removed_paths=13  referenced_paths=28  overlap=0
+
+Zero intersection. The scan has never removed a referenced file.
+
+### Two corrections to earlier readings in this file
+
+1. **"kept 0 referenced" did not mean the scan was misbehaving.** It means no
+   file on disk matched a queue entry at that moment, which is the normal state
+   when the queues are empty.
+2. **"No orphan-scan line at startup" does not mean the daemon is stuck.** The
+   scan only logs `if (removed || kept)`, so a clean start with empty queues and
+   an empty data directory logs nothing at all. A bisect that started the daemon
+   with fresh queue files and saw no scan line therefore proved nothing; thread
+   states confirmed `process_images_loop` was simply idling in its `usleep`
+   poll, not deadlocked.
+
+### What is actually established
+
+The last observed state of a lost batch is consistent across runs: selected from
+the partial queue at `progress=3`, the daemon killed during module 4, and
+afterwards the batch is not in either queue and never completes. It is not
+removed by any logged path — `QUEUE_REMOVE` accounts for exactly 36 removals,
+all of them `complete` or `moved_to_partial`.
+
+So a batch leaves the partial queue without going through `dequeue()`. The next
+instrumentation step is to log both queue sizes at every startup and after every
+`commit_head`, which distinguishes "the entry was never written durably" from
+"the entry was written and later lost".
+
+**Stage 3 gate remains open at 18/20**, with the systemic 9-batch loss fixed and
+duplication at zero throughout.

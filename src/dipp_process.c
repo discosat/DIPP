@@ -336,6 +336,22 @@ static int run_one_batch(PriorityQueue *src)
     if (pq_impl->peek_copy(src, &batch) != 0)
         return 0;
 
+    /* Idempotent upload. Completion marks the batch durably (progress set one
+       past the last module) BEFORE it is removed from the queue, so a reset in
+       that window leaves a batch that is still queued but already downlinked.
+       Re-running it would double-downlink -- which is exactly what R1.2 asks
+       about -- so recognise the mark and just drop it. */
+    int pipeline_len = get_pipeline_length(batch.pipeline_id);
+    if (pipeline_len != FAILURE && batch.progress >= pipeline_len)
+    {
+        printf("Batch %s was already uploaded before a reset; removing without re-upload\n",
+               batch.uuid);
+        ImageBatch *removed = pq_impl->dequeue(src);
+        if (removed)
+            free(removed);
+        return 1;
+    }
+
     setup_cache_if_needed();
     update_heuristic(pq_impl->get_queue_size(ingest_pq),
                      pq_impl->get_queue_size(partially_processed_pq));
@@ -346,6 +362,16 @@ static int run_one_batch(PriorityQueue *src)
     {
     case BATCH_COMPLETE:
     {
+        /* Mark as uploaded durably first, then remove. If the reset lands
+           between these two, the batch is still queued but carries the mark and
+           the check at the top of this function drops it without re-uploading.
+           Doing the removal first instead would leave a window where a reset
+           re-runs an already-downlinked batch. */
+        if (pipeline_len != FAILURE)
+        {
+            batch.progress = pipeline_len;
+            pq_impl->commit_head(src, &batch);
+        }
         ImageBatch *removed = pq_impl->dequeue(src);
         if (removed)
             free(removed);

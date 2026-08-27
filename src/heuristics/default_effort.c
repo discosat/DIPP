@@ -5,7 +5,7 @@
 #include "utils/minitrace.h"
 #include "battery_simulator.h"
 
-COST_MODEL_LOOKUP_RESULT get_default_implementation(Module *module, ImageBatch *data, uint32_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash)
+COST_MODEL_LOOKUP_RESULT get_default_implementation(Module *module, ImageBatch *data, int64_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash)
 {
     MTR_BEGIN_FUNC_C("effort_level", "default");
     uint32_t param_hash = module_parameter_lists[module->default_effort_param_id].hash;
@@ -20,8 +20,6 @@ COST_MODEL_LOOKUP_RESULT get_default_implementation(Module *module, ImageBatch *
     if (cost_store_impl->lookup(cost_store, *picked_hash, &latency, &energy) != -1)
     {
         // printf("Found in cost store with latency=%u and energy=%f\r\n", latency, energy);
-        // scale to fit simulation step size
-        energy = energy * SIMULATION_STEPS_PER_UPDATE;
         if (energy <= energy_requirement)
         {
             *module_param_id = module->default_effort_param_id;
@@ -36,9 +34,6 @@ COST_MODEL_LOOKUP_RESULT get_default_implementation(Module *module, ImageBatch *
 
         if (energy == 0.0f)
             energy = (float)DEFAULT_EFFORT_ENERGY;
-
-        // scale to fit simulation step size
-        energy = energy * SIMULATION_STEPS_PER_UPDATE;
 
         if (energy <= energy_requirement)
         {

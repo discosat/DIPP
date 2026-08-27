@@ -35,9 +35,10 @@ typedef struct Heuristic
     COST_MODEL_LOOKUP_RESULT (*heuristic_function)(Module *module, ImageBatch *data, size_t num_modules, int *module_param_id, uint32_t *picked_hash);
 } Heuristic;
 
-/* Updated prototypes: latency is uint32_t (microseconds), energy is float */
-COST_MODEL_LOOKUP_RESULT get_default_implementation(Module *module, ImageBatch *data, uint32_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash);
-COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module, ImageBatch *data, uint32_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash, bool is_lowest_effort);
+/* latency_requirement is SIGNED int64 microseconds: negative means the deadline
+   has already passed, which callers need to see rather than have clamped. */
+COST_MODEL_LOOKUP_RESULT get_default_implementation(Module *module, ImageBatch *data, int64_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash);
+COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module, ImageBatch *data, int64_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash, bool is_lowest_effort);
 
 extern Heuristic best_effort_heuristic;
 extern Heuristic lowest_effort_heuristic;

@@ -13,7 +13,7 @@
 // the latency and energy requirements, FOUND_NOT_CACHED if no matching entry is found but the
 // default latency and energy values fit within the requirements, or NOT_FOUND in case the module
 // effort level was not found or does not fulfill the requirements.
-COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module, ImageBatch *data, uint32_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash, bool is_lowest_effort)
+COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module, ImageBatch *data, int64_t latency_requirement, float energy_requirement, int *module_param_id, uint32_t *picked_hash, bool is_lowest_effort)
 {
     MTR_BEGIN_FUNC_I("effort_level", effort);
     int32_t module_id = -1;
@@ -59,17 +59,14 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
     {
         // In lowest effort, we ignore latency requirements and only make sure that energy fits
         // This is in the case when we have already missed the deadline and want to just finish processing
-        latency_requirement = UINT32_MAX;
+        latency_requirement = INT64_MAX;
     }
 
     if (cost_store_impl->lookup(cost_store, *picked_hash, &latency, &energy) != -1)
     {
         // printf("Found in cost store with latency=%u, energy=%f\r\n", latency, energy);
 
-        // scale to fit simulation step size
-        energy = energy * SIMULATION_STEPS_PER_UPDATE;
-
-        if (latency <= latency_requirement && energy <= energy_requirement)
+        if ((int64_t)latency <= latency_requirement && energy <= energy_requirement)
         {
             *module_param_id = module_id;
             MTR_END_FUNC_I("result", FOUND_CACHED);
@@ -88,10 +85,7 @@ COST_MODEL_LOOKUP_RESULT judge_implementation(EffortLevel effort, Module *module
         if (energy == 0.0f)
             energy = DEFAULT_EFFORT_ENERGY;
 
-        // scale to fit simulation step size
-        energy = energy * SIMULATION_STEPS_PER_UPDATE;
-
-        if (latency <= latency_requirement && energy <= energy_requirement)
+        if ((int64_t)latency <= latency_requirement && energy <= energy_requirement)
         {
             *module_param_id = module_id;
             MTR_END_FUNC_I("result", FOUND_NOT_CACHED);

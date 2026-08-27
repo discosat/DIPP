@@ -1,6 +1,7 @@
 #ifndef DIPP_IMAGE_BATCH_H
 #define DIPP_IMAGE_BATCH_H
 
+#include <stdint.h>
 #include "dipp_config.h"
 
 typedef enum StorageMode
@@ -16,7 +17,8 @@ typedef struct ImageBatch
     int num_images;           /* amount of images */
     int batch_size;           /* size of the image batch */
     int pipeline_id;          /* id of pipeline to utilize for processing */
-    int priority;             /* priority of the image batch, e.g. max_latency from SLOs */
+    int64_t priority;         /* absolute deadline, CLOCK_MONOTONIC MICROSECONDS.
+                                 Signed so a missed deadline stays negative and measurable. */
     unsigned char *data;      /* address to image data (in shared memory) */
     char filename[111];       /* filename of the image data */
     int shmid;                /* shared memory id for the image data */

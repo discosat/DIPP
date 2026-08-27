@@ -5,9 +5,17 @@
 #include "dipp_paramids.h"
 
 #define BATTERY_SAFETY_MARGIN_WH 64.4f    // Safety margin in Watt-hours (70% of 92 Wh total capacity)
-#define SIMULATION_UPDATE_PERIOD_US 10000 // 10000 // Update every 10 milliseconds
-#define SIMULATION_STEP_US 1000000        // One step represents one second in simulation
-#define SIMULATION_STEPS_PER_UPDATE (SIMULATION_STEP_US / SIMULATION_UPDATE_PERIOD_US)
+#define SIMULATION_UPDATE_PERIOD_US 10000 // Wall-clock period between simulator steps (10 ms)
+
+/* Simulated time advances 1:1 with wall-clock time.
+ *
+ * Previously one 10 ms update advanced the simulation by a full second, a 100x
+ * acceleration, and every energy figure was multiplied by SIMULATION_STEPS_PER_UPDATE
+ * to compensate. That kept power self-consistent but compressed throughput against
+ * orbital dynamics by 100x: a pipeline that occupies 0.155% of an orbit appeared to
+ * occupy 15.5% of one. Goodput per orbit is exactly what the paper claims to measure,
+ * so the acceleration has been removed rather than compensated for. */
+#define SIMULATION_STEP_S (SIMULATION_UPDATE_PERIOD_US / 1000000.0)
 
 typedef enum
 {
@@ -29,8 +37,8 @@ typedef struct
     double constant_load_W;
 
     // --- Time & Orbit Parameters ---
-    int time_step_s;
-    int current_time_s;
+    double time_step_s;
+    double current_time_s;
     int orbit_period_s;
     int sunlit_duration_s;
 

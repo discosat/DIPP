@@ -28,7 +28,7 @@ void simulator_init(CubeSatBatterySimulator *sim,
                     double power_generation_W,
                     double orbit_period_min,
                     double eclipse_duration_min,
-                    int time_step_s,
+                    double time_step_s,
                     double min_soc_limit,
                     double max_soc_limit)
 {
@@ -45,7 +45,7 @@ void simulator_init(CubeSatBatterySimulator *sim,
 
     // --- Time & Orbit ---
     sim->time_step_s = time_step_s;
-    sim->current_time_s = 0;
+    sim->current_time_s = 0.0;
     sim->orbit_period_s = (int)(orbit_period_min * 60);
     sim->sunlit_duration_s = (int)((orbit_period_min - eclipse_duration_min) * 60);
 
@@ -65,10 +65,10 @@ void simulator_init(CubeSatBatterySimulator *sim,
 void simulator_step(CubeSatBatterySimulator *sim)
 {
     // 1. Determine orbital state (SUNLIT or ECLIPSE)
-    int time_in_orbit_s = sim->current_time_s % sim->orbit_period_s;
+    double time_in_orbit_s = fmod(sim->current_time_s, (double)sim->orbit_period_s);
     double power_in_W;
 
-    if (time_in_orbit_s >= 0 && time_in_orbit_s < sim->sunlit_duration_s)
+    if (time_in_orbit_s >= 0.0 && time_in_orbit_s < (double)sim->sunlit_duration_s)
     {
         sim->current_state = SUNLIT;
         power_in_W = sim->power_generation_W;
@@ -107,7 +107,8 @@ void simulator_step(CubeSatBatterySimulator *sim)
 
 void simulate_battery()
 {
-    const int TIME_STEP_S = SIMULATION_STEP_US / 1000000;
+    /* One step of simulated time per wall-clock update period: 1:1, no acceleration. */
+    const double TIME_STEP_S = SIMULATION_STEP_S;
     const double ORBIT_PERIOD_MIN = 98.0;
 
     CubeSatBatterySimulator sim;

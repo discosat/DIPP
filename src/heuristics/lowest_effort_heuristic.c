@@ -20,14 +20,20 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
 
     size_t num_modules_left = num_modules - (data->progress + 1); // number of modules left to process
 
-    /* latency in microseconds per remaining module */
-    uint32_t latency_requirement = (uint32_t)(((data->priority - time.tv_sec) * 1e6) / (int64_t)num_modules_left); // time left in microseconds divided by number of modules left
+    /* Time left until the batch deadline, split evenly across the remaining
+       modules. Signed: a passed deadline gives a negative budget, which the
+       lowest-effort bypass then overrides. The previous version computed this
+       in whole seconds and cast to uint32_t, so on AArch64 fcvtzu SATURATED a
+       missed deadline to 0 -- which is why the reported "25 violations" carried
+       no magnitude. */
+    int64_t now_us = (int64_t)time.tv_sec * 1000000 + (int64_t)time.tv_nsec / 1000;
+    int64_t latency_requirement = (data->priority - now_us) / (int64_t)num_modules_left;
     float battery_level_wh = get_battery_level_wh();
     float energy_requirement = (battery_level_wh - BATTERY_SAFETY_MARGIN_WH) * 1000000.0f; // current battery level minus safety margin (microwatt-hours)
 
     MTR_COUNTER("main", "battery_level_uwh", (int)(battery_level_wh * 1000000.0f));
 
-    MTR_INSTANT_I(__FILE__, "best_effort_heuristic", "latency_requirement (us)", latency_requirement);
+    MTR_INSTANT_I(__FILE__, "best_effort_heuristic", "latency_requirement (us)", (int)latency_requirement);
     MTR_INSTANT_I(__FILE__, "best_effort_heuristic", "energy_requirement (uWh)", (int)energy_requirement);
 
     // printf("Number of modules left: %zu, Latency requirement: %u, Energy requirement: %f\r\n", num_modules_left, latency_requirement, energy_requirement);

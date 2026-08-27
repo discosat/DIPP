@@ -130,10 +130,27 @@ int clean_up_pq_mem(PriorityQueue *pq)
     return 0;
 }
 
+/* In-memory queues have nothing to sync, but the head must still be updated in
+   place so both backends behave identically. */
+int commit_head_mem(PriorityQueue *pq, const ImageBatch *item)
+{
+    pthread_mutex_lock(&pq->lock);
+    if (!pq->size)
+    {
+        pthread_mutex_unlock(&pq->lock);
+        return -1;
+    }
+    pq->items[0] = *item;
+    pthread_mutex_unlock(&pq->lock);
+    return 0;
+}
+
 PriorityQueueImpl priority_queue_mem = {
     .init = init_pq_mem,
     .enqueue = enqueue_mem,
     .dequeue = dequeue_mem,
     .peek = peek,
+    .peek_copy = peek_copy_generic,
+    .commit_head = commit_head_mem,
     .get_queue_size = get_queue_size,
     .clean_up = clean_up_pq_mem};

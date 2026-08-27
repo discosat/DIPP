@@ -89,6 +89,18 @@ int persist_data_if_necessary(ImageBatch *batch)
             // Clear the shared memory ID
             batch->shmid = -1;
 
+            /* Flush to storage BEFORE claiming the data is persisted. munmap does
+               not imply durability -- it only drops the mapping, leaving the
+               pages dirty in the page cache under a 30 s writeback expiry. The
+               shared-memory segment has already been IPC_RMID'd above, so until
+               this msync returns the batch exists in exactly one place: volatile
+               page cache. A reset here lost the image outright. */
+            if (msync(batch->data, batch->batch_size, MS_SYNC) == -1)
+            {
+                set_error_param(MMAP_UNMAP);
+                return FAILURE;
+            }
+
             // detach the mmaped data as it is now persisted
             if (munmap(batch->data, batch->batch_size) == -1)
             {
@@ -189,49 +201,50 @@ int image_batch_read_data(ImageBatch *batch)
         else
         {
             // Memory-mapped file access
-            // Open existing file without truncating it (don't erase persisted data).
-            // Create it only if it doesn't exist. If the file is smaller than the batch
-            // size, extend it.
+            // Open the existing persisted file. A missing or short file is an
+            // error, never something to paper over by creating/extending it:
+            // both would yield zeros that read as valid image data downstream.
             int fd;
             if (access(batch->filename, F_OK) == -1)
             {
-                fd = open(batch->filename, O_RDWR | O_CREAT, 0644);
-                if (fd == -1)
-                {
-                    set_error_param(MMAP_OPEN);
-                    return FAILURE;
-                }
-                if (ftruncate(fd, batch->batch_size) == -1)
-                {
-                    close(fd);
-                    set_error_param(MMAP_OPEN);
-                    return FAILURE;
-                }
+                /* The batch names a file that is not there. Creating it and
+                   ftruncate()ing to batch_size yields a mapping full of zeros,
+                   which used to be handed onward as if it were image data --
+                   the pipeline then "succeeded" and uploaded nothing. Fail
+                   loudly instead: a missing file is a durability bug, and
+                   silently substituting zeros is what hid it. */
+                printf("ERROR: batch %s references missing file %s (%d bytes expected); "
+                       "refusing to fabricate zero-filled data\n",
+                       batch->uuid, batch->filename, batch->batch_size);
+                set_error_param(MMAP_NOT_FOUND);
+                return FAILURE;
             }
-            else
+            fd = open(batch->filename, O_RDWR);
+            if (fd == -1)
             {
-                fd = open(batch->filename, O_RDWR);
-                if (fd == -1)
-                {
-                    set_error_param(MMAP_OPEN);
-                    return FAILURE;
-                }
-                struct stat st;
-                if (fstat(fd, &st) == -1)
-                {
-                    close(fd);
-                    set_error_param(MMAP_OPEN);
-                    return FAILURE;
-                }
-                if ((size_t)st.st_size < batch->batch_size)
-                {
-                    if (ftruncate(fd, batch->batch_size) == -1)
-                    {
-                        close(fd);
-                        set_error_param(MMAP_OPEN);
-                        return FAILURE;
-                    }
-                }
+                set_error_param(MMAP_OPEN);
+                return FAILURE;
+            }
+
+            struct stat st;
+            if (fstat(fd, &st) == -1)
+            {
+                close(fd);
+                set_error_param(MMAP_OPEN);
+                return FAILURE;
+            }
+            if ((size_t)st.st_size < batch->batch_size)
+            {
+                /* Short file: the previous stage did not finish writing it.
+                   Extending it would pad with zeros and hide the truncation,
+                   so treat it the same as a missing file. */
+                printf("ERROR: batch %s file %s is %lld bytes, expected %d; "
+                       "refusing to pad with zeros\n",
+                       batch->uuid, batch->filename,
+                       (long long)st.st_size, batch->batch_size);
+                close(fd);
+                set_error_param(MMAP_NOT_FOUND);
+                return FAILURE;
             }
 
             batch->data = mmap(NULL, batch->batch_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);

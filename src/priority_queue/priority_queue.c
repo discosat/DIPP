@@ -42,6 +42,22 @@ ImageBatch *peek(PriorityQueue *pq)
     return item;
 }
 
+/* Copy the head out under the lock. Unlike peek(), this never hands the caller
+   a pointer into the mapped region, so the copy cannot be torn by a concurrent
+   heapify or invalidated by a remap. */
+int peek_copy_generic(PriorityQueue *pq, ImageBatch *out)
+{
+    pthread_mutex_lock(&pq->lock);
+    if (!pq->size)
+    {
+        pthread_mutex_unlock(&pq->lock);
+        return -1;
+    }
+    *out = pq->items[0];
+    pthread_mutex_unlock(&pq->lock);
+    return 0;
+}
+
 // Define heapifyDown function to maintain heap property
 // during deletion
 void heapifyDown(PriorityQueue *pq, int index)

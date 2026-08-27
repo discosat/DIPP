@@ -168,10 +168,31 @@ int clean_up_pq_mmap(PriorityQueue *pq)
     return 0;
 }
 
+/* Record an updated head in place and force it to storage. */
+int commit_head_mmap(PriorityQueue *pq, const ImageBatch *item)
+{
+    MTR_BEGIN_FUNC();
+    pthread_mutex_lock(&pq->lock);
+    if (!pq->size)
+    {
+        pthread_mutex_unlock(&pq->lock);
+        MTR_END_FUNC();
+        return -1;
+    }
+    pq->items[0] = *item;
+    pq->items[0].data = NULL; /* pointers never survive a restart */
+    msync(pq, sizeof(PriorityQueue), MS_SYNC);
+    pthread_mutex_unlock(&pq->lock);
+    MTR_END_FUNC();
+    return 0;
+}
+
 PriorityQueueImpl priority_queue_mmap = {
     .init = init_pq_mmap,
     .enqueue = enqueue_mmap,
     .dequeue = dequeue_mmap,
     .peek = peek,
+    .peek_copy = peek_copy_generic,
+    .commit_head = commit_head_mmap,
     .get_queue_size = get_queue_size,
     .clean_up = clean_up_pq_mmap};

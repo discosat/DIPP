@@ -12,6 +12,17 @@
 #define SUCCESS 0
 #define FAILURE -1
 
+/* What happened to a batch, so the caller can decide how to commit it. process()
+   deliberately does not touch the queues itself: whether a batch is removed,
+   updated in place, or moved between queues is a durability decision and
+   belongs with the code that owns the commit ordering. */
+typedef enum BatchOutcome
+{
+    BATCH_COMPLETE = 0, /* pipeline finished and the result was uploaded */
+    BATCH_PARTIAL,      /* progressed but not finished; must stay queued */
+    BATCH_FAILED        /* execution error */
+} BatchOutcome;
+
 extern PriorityQueue *ingest_pq;
 extern PriorityQueue *partially_processed_pq;
 extern CostStore *cost_store;

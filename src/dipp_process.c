@@ -45,7 +45,7 @@ Heuristic *current_heuristic = NULL;
 // on the available resources. Based on this, it either uploads
 // and cleans up the image batch, or pushes the image batch onto the
 // partially processed queue.
-void process(ImageBatch *input_batch)
+BatchOutcome process(ImageBatch *input_batch)
 {
     MTR_BEGIN_FUNC_S("batch_uuid", input_batch->uuid);
     printf("Processing batch with pipeline ID %d, progress %d\n", input_batch->pipeline_id, input_batch->progress);
@@ -56,9 +56,9 @@ void process(ImageBatch *input_batch)
     if (pipeline_result == FAILURE)
     {
         // Something went wrong during the execution.
-        // TODO: Consider possible retries
+        // TODO (A8): quarantine with a retry counter instead of dropping.
         MTR_END_FUNC();
-        return;
+        return BATCH_FAILED;
     }
     else
     {
@@ -67,18 +67,17 @@ void process(ImageBatch *input_batch)
         {
             printf("Error getting pipeline length\n");
             MTR_END_FUNC();
-            return;
+            return BATCH_FAILED;
         }
         if (input_batch->progress == pipeline_length - 1)
         {
             printf("Pipeline fully executed successfully\n");
 
-            image_batch_read_data(input_batch);
-            if (input_batch->data == NULL)
+            if (image_batch_read_data(input_batch) != SUCCESS || input_batch->data == NULL)
             {
-                printf("Error reading image data\n");
+                printf("Error reading image data for batch %s\n", input_batch->uuid);
                 MTR_END_FUNC();
-                return;
+                return BATCH_FAILED;
             }
 
             upload(input_batch->data, input_batch->num_images, input_batch->batch_size);
@@ -105,20 +104,19 @@ void process(ImageBatch *input_batch)
             // {
             //     printf("Error deleting files\n");
             // }
+
+            err_current_pipeline = 0;
+            err_current_module = 0;
+            MTR_END_FUNC();
+            return BATCH_COMPLETE;
         }
         else
         {
             printf("Pipeline partially executed successfully\n");
-
-            // push the batch to the partial queue
-            if (pq_impl->enqueue(partially_processed_pq, *input_batch) != SUCCESS)
-            {
-                printf("Error: Failed to enqueue batch to partially processed queue\n");
-                MTR_END_FUNC();
-                return;
-            }
-
-            printf("Batch pushed to partially processed queue\n");
+            err_current_pipeline = 0;
+            err_current_module = 0;
+            MTR_END_FUNC();
+            return BATCH_PARTIAL;
         }
     }
 
@@ -126,6 +124,7 @@ void process(ImageBatch *input_batch)
     err_current_pipeline = 0;
     err_current_module = 0;
     MTR_END_FUNC();
+    return BATCH_FAILED;
 }
 
 // Pull data from the message queue, additionally setting the storage
@@ -258,6 +257,81 @@ void update_heuristic(int ingest_queue_depth, int partial_queue_depth)
     }
 }
 
+
+/* Run at most one batch from `src`, using peek-process-commit.
+ *
+ * The batch stays in its durable queue for the whole time it is being
+ * processed. Previously the loop dequeued first, so between the pop and the
+ * upload the batch existed only in a malloc'd struct: a reset there lost it
+ * outright, and with a 9 s high-effort pipeline against 3.6 s arrivals there was
+ * almost always one batch in that state.
+ *
+ * Commit ordering is chosen so a crash duplicates work rather than losing it:
+ *   - complete  -> upload, THEN remove from the queue. A reset in between
+ *                  re-runs the batch, which is why image_batch_read_data must
+ *                  fail loudly on a missing file rather than upload zeros.
+ *   - partial   -> if it came from the partial queue, update it in place, which
+ *                  avoids two entries for the same batch; if it came from
+ *                  ingest, enqueue to partial FIRST and only then remove from
+ *                  ingest. The reverse order has a window that loses the batch.
+ *
+ * Returns 1 if a batch was processed, 0 if the queue was empty.
+ */
+static int run_one_batch(PriorityQueue *src)
+{
+    ImageBatch batch;
+    if (pq_impl->peek_copy(src, &batch) != 0)
+        return 0;
+
+    setup_cache_if_needed();
+    update_heuristic(pq_impl->get_queue_size(ingest_pq),
+                     pq_impl->get_queue_size(partially_processed_pq));
+
+    BatchOutcome outcome = process(&batch);
+
+    switch (outcome)
+    {
+    case BATCH_COMPLETE:
+    {
+        ImageBatch *removed = pq_impl->dequeue(src);
+        if (removed)
+            free(removed);
+        break;
+    }
+    case BATCH_PARTIAL:
+        if (src == partially_processed_pq)
+        {
+            pq_impl->commit_head(src, &batch);
+        }
+        else
+        {
+            if (pq_impl->enqueue(partially_processed_pq, batch) != SUCCESS)
+            {
+                /* Partial queue full: leave the batch in ingest and retry later
+                   rather than dropping it. */
+                printf("Partial queue full; leaving batch %s in ingest\n", batch.uuid);
+                break;
+            }
+            ImageBatch *removed = pq_impl->dequeue(src);
+            if (removed)
+                free(removed);
+        }
+        break;
+    case BATCH_FAILED:
+    default:
+    {
+        /* Drop it, as before, but say so. A8 replaces this with a quarantine
+           queue carrying a retry counter and an error code. */
+        printf("Batch %s FAILED; dropping (A8 will quarantine instead)\n", batch.uuid);
+        ImageBatch *removed = pq_impl->dequeue(src);
+        if (removed)
+            free(removed);
+        break;
+    }
+    }
+    return 1;
+}
+
 void process_images_loop()
 {
     MTR_BEGIN_FUNC();
@@ -306,56 +380,20 @@ void process_images_loop()
             }
         }
 
-        // pull from the partially_processed_pq first
-        ImageBatch *batch = pq_impl->dequeue(partially_processed_pq);
-        if (batch == NULL)
+        // Prefer the partially processed queue, then fall back to ingest.
+        int did_work = run_one_batch(partially_processed_pq);
+        if (!did_work)
+            did_work = run_one_batch(ingest_pq);
+        if (!did_work)
         {
-            // if empty, pull from the ingest_pq
-            batch = pq_impl->dequeue(ingest_pq);
-            if (batch == NULL)
-            {
-                // if empty, wait for new data
-                usleep(1000); // sleep for 1ms before continuing
-                continue;
-            }
+            usleep(1000); // nothing queued; wait for new data
+            continue;
         }
 
-        setup_cache_if_needed();
-
-        update_heuristic(pq_impl->get_queue_size(ingest_pq), pq_impl->get_queue_size(partially_processed_pq));
-
-        // process the batch (maybe partially)
-        process(batch);
-
-        if (batch != NULL)
-        {
-            free(batch);
-        }
-
-        // // // if partial not full (size<10 by default), pull data from ingest_pq
-        ImageBatch *new_batch = NULL;
-        size_t queue_size = pq_impl->get_queue_size(partially_processed_pq);
-        if (queue_size < MAX_PARTIAL_QUEUE_SIZE)
-        {
-            new_batch = pq_impl->dequeue(ingest_pq);
-            if (new_batch == NULL)
-            {
-                usleep(1000); // sleep for 1ms before continuing
-                continue;
-            }
-
-            setup_cache_if_needed();
-
-            update_heuristic(pq_impl->get_queue_size(ingest_pq), pq_impl->get_queue_size(partially_processed_pq));
-
-            // process the batch (maybe partially)
-            process(new_batch);
-
-            if (new_batch != NULL)
-            {
-                free(new_batch);
-            }
-        }
+        // Keep ingest draining even while the partial queue has work, so a
+        // steady stream of partially processed batches cannot starve arrivals.
+        if (pq_impl->get_queue_size(partially_processed_pq) < MAX_PARTIAL_QUEUE_SIZE)
+            run_one_batch(ingest_pq);
     }
 
     pq_impl->clean_up(ingest_pq);

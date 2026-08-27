@@ -1,0 +1,7 @@
+pipeline:
+- name: libsingle_module
+  implementations:
+  - param_id: 9
+    effort_level: low
+  - param_id: 10
+    effort_level: high

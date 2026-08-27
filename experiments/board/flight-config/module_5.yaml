@@ -1,0 +1,9 @@
+latency_cost: 1560000
+energy_cost: 3180
+parameters:
+- key: model_filename
+  type: 5
+  value: /usr/share/models/mobilenetv2_14_landcover.tflite
+- key: class_index
+  type: 3
+  value: 7

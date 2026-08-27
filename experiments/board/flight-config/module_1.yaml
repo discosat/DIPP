@@ -1,0 +1,6 @@
+latency_cost: 373000
+energy_cost: 718
+parameters:
+- key: normalization_value
+  type: 3
+  value: 255

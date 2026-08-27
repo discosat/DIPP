@@ -1,0 +1,15 @@
+latency_cost: 10
+energy_cost: 5
+parameters:
+- key: model_filename_classifier
+  type: 5
+  value: /home/root/models/landcover-s.tflite
+- key: model_filename_segmentation
+  type: 5
+  value: /home/root/models/unet-s.tflite
+- key: threshold_percentage
+  type: 4
+  value: 0.05000000074505806
+- key: effort_level
+  type: 3
+  value: 1

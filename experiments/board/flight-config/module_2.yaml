@@ -1,0 +1,9 @@
+latency_cost: 143000
+energy_cost: 264
+parameters:
+- key: tile_height
+  type: 3
+  value: 224
+- key: tile_width
+  type: 3
+  value: 224

@@ -1,0 +1,6 @@
+latency_cost: 10
+energy_cost: 5
+parameters:
+- key: fail_case
+  type: 3
+  value: 1

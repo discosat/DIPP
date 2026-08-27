@@ -1,0 +1,24 @@
+pipelines:
+  1: pipeline_1.yaml
+  2: pipeline_2.yaml
+  3: pipeline_3.yaml
+  4: pipeline_4.yaml
+  5: pipeline_5.yaml
+modules:
+  1: module_1.yaml
+  2: module_2.yaml
+  3: module_3.yaml
+  4: module_4.yaml
+  5: module_5.yaml
+  6: module_6.yaml
+  7: module_7.yaml
+  8: module_8.yaml
+  9: module_9.yaml
+  10: module_10.yaml
+  11: module_11.yaml
+  12: module_12.yaml
+  13: module_13.yaml
+  14: module_14.yaml
+  15: module_15.yaml
+radio_node_id: 0
+module_timeout: 0

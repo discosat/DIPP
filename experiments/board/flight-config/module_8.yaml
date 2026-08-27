@@ -1,0 +1,9 @@
+latency_cost: 100
+energy_cost: 59
+parameters:
+- key: target_size
+  type: 3
+  value: 128
+- key: save_og_image
+  type: 2
+  value: false

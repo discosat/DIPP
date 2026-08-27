@@ -1,0 +1,21 @@
+pipeline:
+- name: libdemosaic
+  implementations:
+  - param_id: 1
+    effort_level: default
+- name: libtile
+  implementations:
+  - param_id: 2
+    effort_level: default
+- name: libtflite_classification
+  implementations:
+  - param_id: 5
+    effort_level: default
+- name: libtflite_binary_segmentation
+  implementations:
+  - param_id: 7
+    effort_level: default
+- name: libjpegxl_module
+  implementations:
+  - param_id: 13
+    effort_level: default

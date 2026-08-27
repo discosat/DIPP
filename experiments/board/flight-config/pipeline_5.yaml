@@ -1,0 +1,9 @@
+pipeline:
+- name: libdemosaic
+  implementations:
+  - param_id: 1
+    effort_level: default
+- name: libjpegxl_module
+  implementations:
+  - param_id: 13
+    effort_level: default

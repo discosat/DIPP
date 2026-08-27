@@ -1,0 +1,6 @@
+latency_cost: 149000
+energy_cost: 264
+parameters:
+- key: effort_level
+  type: 3
+  value: 1

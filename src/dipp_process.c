@@ -39,6 +39,10 @@ CostStore *cost_store = NULL;
 StorageMode global_storage_mode = STORAGE_MMAP;
 
 Heuristic *current_heuristic = NULL;
+/* The queue the batch currently being executed came from, so pipeline_executor
+   can checkpoint progress into it after every module. Single-threaded: only
+   run_one_batch sets it. */
+PriorityQueue *current_batch_source = NULL;
 
 // Process a single image batch, either fully or partially
 // It executes the pipeline, either fully or partially, depending
@@ -352,11 +356,14 @@ static int run_one_batch(PriorityQueue *src)
         return 1;
     }
 
+    current_batch_source = src;
+
     setup_cache_if_needed();
     update_heuristic(pq_impl->get_queue_size(ingest_pq),
                      pq_impl->get_queue_size(partially_processed_pq));
 
     BatchOutcome outcome = process(&batch);
+    current_batch_source = NULL;
 
     switch (outcome)
     {

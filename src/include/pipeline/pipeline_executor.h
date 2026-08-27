@@ -6,6 +6,8 @@
 #include "heuristics.h"
 
 extern Heuristic *current_heuristic;
+struct PriorityQueue;
+extern struct PriorityQueue *current_batch_source;
 
 // Retrieve the pipeline assigned to the image batch and
 // process the batch using this pipeline

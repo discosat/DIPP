@@ -204,6 +204,10 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         }
 
         // update the image batch metadata before the next module
+        char previous_filename[sizeof(data->filename)];
+        strncpy(previous_filename, data->filename, sizeof(previous_filename) - 1);
+        previous_filename[sizeof(previous_filename) - 1] = '\0';
+
         data->num_images = result.num_images;
         data->batch_size = result.batch_size;
         data->pipeline_id = result.pipeline_id;
@@ -212,6 +216,35 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         data->shmid = result.shmid;
         strcpy(data->uuid, result.uuid);
         strcpy(data->filename, result.filename);
+
+        /* Checkpoint after EVERY module, not once per pipeline.
+         *
+         * The module has already msync'd its output, so the successor is on
+         * storage. Recording (progress, filename) in the queue now makes that
+         * durable too, and only then is the predecessor safe to unlink.
+         *
+         * Committing once per pipeline instead -- which is what this used to do
+         * -- left a window spanning the whole pipeline where the queue entry
+         * named a file the previous module had already deleted. A kill in that
+         * window stranded the batch: on restart the first module could not open
+         * its input and the batch was dropped. Measured at 9 of 20 batches lost
+         * across 20 kill cycles.
+         *
+         * Ordering is what matters: commit the successor, THEN drop the
+         * predecessor. The reverse loses the batch; this way the worst case is
+         * an unreferenced file, which the startup orphan scan reclaims.
+         */
+        if (data->storage_mode == STORAGE_MMAP && current_batch_source != NULL &&
+            pq_impl != NULL && pq_impl->commit_head != NULL)
+        {
+            pq_impl->commit_head((PriorityQueue *)current_batch_source, data);
+
+            if (previous_filename[0] != '\0' &&
+                strcmp(previous_filename, data->filename) != 0)
+            {
+                remove(previous_filename);
+            }
+        }
 
         MTR_END(__FILE__, "execute_module_loop");
     }

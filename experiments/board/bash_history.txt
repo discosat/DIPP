@@ -1,0 +1,500 @@
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 
+cd ..
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/dipp .
+cd ..
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+ls
+mkdir traces
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-high.json 
+ls
+cd traces/
+ls
+ls
+ls
+cd ..
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/dipp .
+cd ..
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./emulate_camera 1 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-high.json 
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t=traces/decomposed-mem-high.json 
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/dipp .
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t=traces/decomposed-mem-high.json 
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-high.json 
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/dipp .
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-high.json 
+ll traces
+ls -lah traces
+rm -f traces/decomposed-mem-high.json 
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/dipp .
+cd ..
+cp /mnt/flash/2025-11-18/populate_queue .
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+vi populate_queue 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-low.json
+ls -lah traces
+cp /mnt/flash/2025-11-18/dipp .
+rm -f traces/decomposed-mem-low.json 
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-low.json
+ls -lah traces
+mkdir /mnt/flash/traces
+mv traces/decomposed-mem-low.json /mnt/flash/traces/
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mmap-low.json
+mv traces/decomposed-mmap-low.json /mnt/flash/traces/
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-high.json
+mv traces/decomposed-mem-high.json /mnt/flash/traces/
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mmap-high.json
+mv traces/decomposed-mmap-high.json /mnt/flash/traces/
+ls -lah /mnt/flash/traces/
+df -h
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/single-mem-low.json
+mv traces/single-mem-low.json /mnt/flash/traces/
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/single-mmap-low.json
+mv traces/single-mmap-low.json /mnt/flash/traces/
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/single-mem-high.json
+rm -f traces/
+rm -f traces/*
+free -h
+reboot
+mount /dev/sda1 /mnt/flash
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/single-mem-high.json
+mv traces/single-mem-high.json /mnt/flash/traces/
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 -t traces/single-mmap-high.json
+mv traces/single-mmap-high.json /mnt/flash/traces/
+ls -lah /mnt/flash/traces/
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash/
+cp /mnt/flash/2025-11-18/dipp .
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/single-temp.json
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+rm traces/*
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/single-temp.json
+umount /mnt/flash
+rm traces/*
+mount /dev/sda1 /mnt/flash
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+cp /mnt/flash/2025-11-18/dipp .
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/single-temp.json
+mv traces/single-temp.json /mnt/flash/traces/
+umount /mnt/flash/
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/dipp .
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+rm traces/*
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/single-temp.json
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/single-temp-mmap.json
+mv traces/* /mnt/flash/traces/
+umount /mnt/flash/
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/modules/* ../pipeline/
+cd ..
+cd /mnt/flash/traces/
+ls
+mkdir old-traces
+mv *json old-traces/
+ls
+cd ..
+cd 
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+reboot
+mount /dev/sda1 /mnt/flash
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+cd traces
+ls
+cd ..
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-low.json
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mmap-low.json
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-high.json
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mmap-high.json
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mmap-high.json
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+free -h
+reboot
+mount /dev/sda1 /mnt/flash/
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/single-mem-low.json
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/single-mmap-low.json
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/single-mem-high.json
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 -t traces/single-mmap-high.json
+mv traces/* /mnt/flash/traces/
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/decomposed-mem-low.json
+mv traces/decomposed-mem-low.json /mnt/flash/traces/
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/modules/libcrash_and_burn.so ../pipeline/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 
+free -h
+cd ..
+./populate_queue 2 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./populate_queue 1 5 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./populate_queue 2 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/crash-mem.json
+cd ..
+./populate_queue 2 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./populate_queue 1 5 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+./populate_queue 2 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/crash-mmap.json
+mv traces/* /mnt/flash/traces/
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/emulate_camera .
+rm emulate_camera 
+cd ..
+cp /mnt/flash/2025-11-18/emulate_camera .
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/temp-mem.json
+cp /mnt/flash/2025-11-18/dipp .
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 -t traces/dynamic-mem-low.json
+mv traces/* /mnt/flash/traces/
+df -h
+umount /mnt/flash
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 
+reboot
+mount /dev/sda1 /mnt/flash
+cd tmp-experiments/
+cp /mnt/flash/2025-11-18/dipp-old .
+cd ..
+./populate_queue 5 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp -i CAN -p can0 -a 5423 
+cd ..
+./populate_queue 5 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp-old -i CAN -p can0 -a 5423 
+free -h
+cd ..
+./populate_queue 5 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp-old -i CAN -p can0 -a 5423 
+STORAGE_MODE=MEM ./dipp-old -i CAN -p can0 -a 5423 
+free -h
+cd ..
+./populate_queue 5 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp-old -i CAN -p can0 -a 5423 
+rm -rf /mnt/flash/traces/*
+reboot
+cd tmp-experiments/
+clear
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp-old -i CAN -p can0 -a 5423 
+cd ..
+mount /dev/sda1 /mnt/flash
+clear
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp-old -i CAN -p can0 -a 5423 -t traces/decomposed-mem-high.json
+mv traces/decomposed-mem-high.json /mnt/flash/traces/
+umount /mnt/flash
+cd ..
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/emulate_camera .
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp-old -i CAN -p can0 -a 5423 -t traces/decomposed-mem-high.json
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp-old -i CAN -p can0 -a 5423 -t traces/decomposed-mmap-high.json
+free -h
+mv traces/* /mnt/flash/traces/
+reboot
+mount /dev/sda1 /mnt/flash
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp-old -i CAN -p can0 -a 5423 -t traces/single-mem-low.json
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp-old -i CAN -p can0 -a 5423 -t traces/single-mmap-low.json
+free -h
+cd ..
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp-old -i CAN -p can0 -a 5423 -t traces/single-mem-high.json
+cd ..
+free -h
+./populate_queue 10 4 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp-old -i CAN -p can0 -a 5423 -t traces/single-mmap-high.json
+free -h
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM HEURISTIC=LOWEST_EFFORT ./dipp-old -i CAN -p can0 -a 5423 -t traces/decomposed-mem-low.json
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP HEURISTIC=LOWEST_EFFORT ./dipp-old -i CAN -p can0 -a 5423 -t traces/decomposed-mmap-low.json
+free -h
+df -h
+mkdir /mnt/flash/new-traces
+mv traces/* /mnt/flash/new-traces/
+ls -lah /mnt/flash/new-traces
+umount /mnt/flash
+reboot
+mount /dev/sda1 /mnt/flash
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp-old -i CAN -p can0 -a 5423 -t traces/decomposed-mem-high.json
+cd ..
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp-old -i CAN -p can0 -a 5423 -t traces/decomposed-mmap-high.json
+mv traces/* /mnt/flash/new-traces/
+umount /mnt/flash
+STORAGE_MODE=MEM ./dipp-old -i CAN -p can0 -a 5423 
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/dipp .
+cd ..
+cp /mnt/flash/2025-11-18/emulate_camera .
+cp /mnt/flash//2025-11-18/poisson_process_experiment .
+free -h
+ls
+vi poisson_process_experiment 
+./poisson_process_experiment 
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 
+cd ..
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mem.json
+fee -h
+free -h
+mv traces/poisson-mem.json /mnt/flash/new-traces/
+ls -lah /mnt/flash/new-traces/
+umount /mnt/flash/
+reboot
+mount /dev/sda1 /mnt/flash
+./poisson_process_experiment &
+cd tmp-experiments/
+reboot
+./poisson_process_experiment &
+killall poisson_process_experiment
+mount /dev/sda1 /mnt/flash
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mem.json
+cp /mnt/flash/2025-11-18/dipp .
+reboot
+mount /dev/sda1 /mnt/flash
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mem.json
+reboot
+vi poisson_process_experiment 
+mount /dev/sda1 /mnt/flash/
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mem.json
+ls -lah traces/
+mv traces/* /mnt/flash/new-traces/
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cd ..
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mem.json
+cd ..
+cp /mnt/flash/2025-11-18/dipp tmp-experiments/
+free -h
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mem.json
+mv traces/* /mnt/flash/new-traces/
+umount /mnt/flash
+reboot
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/dipp tmp-experiments/
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mem.json
+mv traces/* /mnt/flash/new-traces/
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cp /mnt/flash/2025-11-18/dipp .
+cd ..
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mem.json
+mv traces/* /mnt/flash/new-traces/
+umount /mnt/flash
+mount /dev/sda1 /mnt/flash
+cd ..
+vi poisson_process_experiment 
+free -h
+reboot
+mount /dev/sda1 /mnt/flash
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MEM ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mem-long.json
+killall poisson_process_experiment
+free -h
+reboot
+mount /dev/sda1 /mnt/flash
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mmap-long.json
+killall poisson_process_experiment
+cd ..
+vi poisson_process_experiment 
+reboot
+mount /dev/sda1 /mnt/flash
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mmap-long.json
+killall poisson_process_experiment
+cd ..
+ls
+cd dipp
+ls
+rm *
+rm -f data/*
+ls
+cd ..
+./poisson_process_experiment &
+ cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mmap-long.json
+free -h
+cd ..
+cd dipp/
+ls
+rm -f *
+rm -f data/*
+ls
+cd ..
+vi poisson_process_experiment 
+./poisson_process_experiment &
+cd tmp-experiments/
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423 -t traces/poisson-mmap-long.json
+umout /mnt/flash
+umount /mnt/flash
+reboot
+mount /dev/sda1 /mnt/flash
+ls
+history
+ls
+cat populate_queue 
+history | grep populate
+./populate_queue 10 1 123 /mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG 
+cd tmp-experiments/
+ls
+STORAGE_MODE=MMAP ./dipp -i CAN -p can0 -a 5423
+umount /mnt/flash
+reboot

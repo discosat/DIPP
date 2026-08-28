@@ -214,3 +214,52 @@ Consequences:
 Neither constant is wrong on its own — 64.4 Wh is 70% of 92 Wh, which is the
 documented margin — but their coincidence makes the start of every run a
 special case, and nothing in the manuscript says so.
+
+## Final run — the gate is met
+
+20 batches, 20 SIGKILL/restart cycles, pipeline 2, with stdout line-buffered
+and the classifier corrected.
+
+| | |
+|---|---|
+| fed | 20 |
+| reached DIPP's queue | 19 |
+| completed | 19 |
+| **lost, in scope** | **0** |
+| **duplicated** | **0** |
+| never reached the queue (out of scope) | 1 |
+
+**Every batch DIPP accepted into its queue completed exactly once, across 20
+kill cycles.** The one that did not was lost in the ingest window — `msgrcv`
+consumed the message and `image_batch_setup_storage` persisted the data, then
+SIGKILL landed before `enqueue`. Its only trace in the whole log is the
+`ORPHAN_REMOVE` line where the startup scan correctly reclaimed the stranded
+file. That is the producer-side boundary recorded above, not a DIPP defect.
+
+## Two measurement bugs had to be fixed first, and both were mine
+
+Neither of the earlier "losses" was real.
+
+**1. stdout block buffering destroyed the evidence.** `c3_smoke.sh` runs the
+daemon without `-t`, so tracing is off, so `mtr_register_sigint_handler()` is
+never called and SIGTERM keeps its default disposition — the process dies
+without flushing. stdout is redirected to a file, hence 4 KB block-buffered, so
+up to a full block of already-printed lines was discarded on every kill,
+including `Pipeline fully executed` and `QUEUE_REMOVE`. Completed batches
+therefore looked like they had vanished without a trace. Fixed with
+`setvbuf(stdout, NULL, _IOLBF, 0)`.
+
+This also twice made an idling daemon look stuck during initialisation: the
+unconditional `STARTUP_QUEUES` line was sitting in the buffer. Feeding a single
+batch forced a `fork()`, which ran the pre-fork `fflush(NULL)`, and 214 lines
+appeared at once.
+
+**2. The classifier counted an `ORPHAN_REMOVE` line as evidence the daemon had
+seen the batch.** It greps the log for the UUID, and that line names the
+batch's data file — so a batch that never reached a queue was reported as
+"seen but incomplete", i.e. an in-scope loss. It now classifies against queue
+events only (`QUEUE_SELECT`, `QUEUE_REMOVE`, `EXEC`).
+
+The irony is not lost: this revision exists partly because the original traces
+were invalid, and the same class of defect — an instrument discarding its own
+output — cost three runs here before it was spotted.

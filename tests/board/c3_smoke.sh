@@ -99,13 +99,29 @@ echo "queue_mismatches=$(grep -c '^QUEUE_MISMATCH' c3.log)"
 echo "ingest_rejects=$(grep -c '^INGEST_REJECT' c3.log)"
 echo "removes_by_reason:"
 grep -oE 'reason=[a-z_]+' c3.log | sort | uniq -c
-echo "never_seen_by_daemon:"
+# Classify against QUEUE EVENTS only. Grepping the whole log counts an
+# ORPHAN_REMOVE line -- which names the batch's data file -- as evidence the
+# daemon saw the batch, when it means the exact opposite: the file was created
+# at ingest, the batch never reached a queue, and the scan reclaimed it.
+grep -E '^QUEUE_SELECT|^QUEUE_REMOVE|^EXEC ' c3.log > /tmp/c3_queue_events 2>/dev/null
+echo "never_reached_queue (ingest window, out of DIPP scope):"
+NR_Q=0
 for u in $(sed 's/.*uuid=\([^ ]*\).*/\1/' c3_fed.txt | sort -u); do
-    grep -q "$u" c3.log || echo "  NEVER_SEEN $u"
+    if ! grep -q "$u" /tmp/c3_queue_events; then
+        echo "  NEVER_QUEUED $u"
+        NR_Q=$((NR_Q + 1))
+    fi
 done
-echo "seen_but_incomplete:"
+echo "never_reached_queue_count=$NR_Q"
+echo "queued_but_incomplete (IN SCOPE -- these are real losses):"
 grep 'Pipeline fully executed' c3.log | sed 's/.*uuid=\([^ ]*\).*/\1/' | sort -u > /tmp/c3_done
+IN_SCOPE_LOST=0
 for u in $(sed 's/.*uuid=\([^ ]*\).*/\1/' c3_fed.txt | sort -u); do
-    if grep -q "$u" c3.log && ! grep -q "$u" /tmp/c3_done; then echo "  INCOMPLETE $u"; fi
+    if grep -q "$u" /tmp/c3_queue_events && ! grep -q "$u" /tmp/c3_done; then
+        echo "  INCOMPLETE $u"
+        IN_SCOPE_LOST=$((IN_SCOPE_LOST + 1))
+    fi
 done
+echo "IN_SCOPE_LOST=$IN_SCOPE_LOST"
+echo "IN_SCOPE_DUPLICATED=$((DONE_ALL - DONE_U))"
 echo "concurrent_daemon_warnings=$(grep -c 'WARNING: daemon already running' c3_result.txt 2>/dev/null || echo 0)"

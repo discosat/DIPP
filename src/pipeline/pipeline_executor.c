@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <sys/resource.h>
 #include "pipeline_executor.h"
 #include "process_module.h"
 #include "cost_store.h"
@@ -18,6 +19,68 @@
 #include "dipp_process.h"
 #include "priority_queue.h"
 #include <time.h>
+
+
+/* Resource sampling for C9 (deployment envelope) and C12 (eMMC wear).
+ *
+ * Nothing else in the system records memory or storage traffic, so both of
+ * those analyses had no data source at all. Sampling here puts them on the same
+ * per-execution record as everything else, which means one parser and one CSV.
+ *
+ * Cost is two small /proc reads and a syscall against modules that run for
+ * 150 ms to 9 s, so it is not measurable in the latency figures.
+ *
+ * io_write_bytes is bytes actually sent to the block device, which is exactly
+ * what the wear calculation needs -- page-cache writes that never reach storage
+ * would flatter it.
+ */
+typedef struct ResourceSample
+{
+    long rss_kb;             /* current resident set */
+    long peak_rss_kb;        /* this process, high-water */
+    long child_peak_rss_kb;  /* largest reaped child -- the module processes */
+    unsigned long long io_read_bytes;
+    unsigned long long io_write_bytes;
+} ResourceSample;
+
+static void sample_resources(ResourceSample *out)
+{
+    memset(out, 0, sizeof(*out));
+
+    FILE *f = fopen("/proc/self/statm", "r");
+    if (f)
+    {
+        unsigned long size_pages = 0, resident_pages = 0;
+        if (fscanf(f, "%lu %lu", &size_pages, &resident_pages) == 2)
+        {
+            long ps = sysconf(_SC_PAGESIZE);
+            if (ps > 0)
+                out->rss_kb = (long)((resident_pages * (unsigned long)ps) / 1024UL);
+        }
+        fclose(f);
+    }
+
+    struct rusage ru;
+    if (getrusage(RUSAGE_SELF, &ru) == 0)
+        out->peak_rss_kb = ru.ru_maxrss; /* kB on Linux */
+    if (getrusage(RUSAGE_CHILDREN, &ru) == 0)
+        out->child_peak_rss_kb = ru.ru_maxrss;
+
+    f = fopen("/proc/self/io", "r");
+    if (f)
+    {
+        char line[128];
+        while (fgets(line, sizeof(line), f))
+        {
+            unsigned long long v;
+            if (sscanf(line, "read_bytes: %llu", &v) == 1)
+                out->io_read_bytes = v;
+            else if (sscanf(line, "write_bytes: %llu", &v) == 1)
+                out->io_write_bytes = v;
+        }
+        fclose(f);
+    }
+}
 
 // Execute the pipeline on the given batch. It picks up from the possibly partially executed state,
 // and for each module it picks the best effort level that fulfills the requirements based on the current state.
@@ -166,12 +229,16 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             struct timespec now_ts;
             clock_gettime(CLOCK_MONOTONIC, &now_ts);
             int64_t now_us = (int64_t)now_ts.tv_sec * 1000000 + (int64_t)now_ts.tv_nsec / 1000;
+            ResourceSample res;
+            sample_resources(&res);
             printf("EXEC uuid=%s pipeline=%d module_index=%zu module=%s param_id=%d "
                    "num_images=%d batch_bytes=%d cached=%d "
                    "latency_pred_us=%u latency_meas_us=%ld "
                    "energy_pred_uwh=%u energy_debited_uwh=%.3f "
                    "battery_wh=%.6f deadline_us=%lld slack_us=%lld "
-                   "ingest_depth=%ld partial_depth=%ld heuristic=%s\n",
+                   "ingest_depth=%ld partial_depth=%ld heuristic=%s "
+                   "rss_kb=%ld peak_rss_kb=%ld child_peak_rss_kb=%ld "
+                   "io_read_bytes=%llu io_write_bytes=%llu\n",
                    data->uuid, data->pipeline_id, i,
                    pipeline->modules[i].module_name ? pipeline->modules[i].module_name : "?",
                    module_param_id,
@@ -183,7 +250,9 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
                    (long long)data->priority, (long long)(data->priority - now_us),
                    pq_impl ? (long)pq_impl->get_queue_size(ingest_pq) : -1L,
                    pq_impl ? (long)pq_impl->get_queue_size(partially_processed_pq) : -1L,
-                   (current_heuristic == &best_effort_heuristic) ? "BEST_EFFORT" : "LOWEST_EFFORT");
+                   (current_heuristic == &best_effort_heuristic) ? "BEST_EFFORT" : "LOWEST_EFFORT",
+                   res.rss_kb, res.peak_rss_kb, res.child_peak_rss_kb,
+                   res.io_read_bytes, res.io_write_bytes);
         }
 
         ImageBatch result;

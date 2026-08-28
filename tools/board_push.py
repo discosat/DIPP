@@ -27,8 +27,9 @@ Always verifies with md5 at both ends.
 """
 import os, sys, time, termios, select, hashlib, argparse
 
-DEV = "/dev/ttyUSB0"
-
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import board_tty
+DEV = board_tty.resolve()
 def open_port():
     fd = os.open(DEV, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
     a = termios.tcgetattr(fd)

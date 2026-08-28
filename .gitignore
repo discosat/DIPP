@@ -63,3 +63,7 @@
 # Project logs files
 /log/*
 !/log/.gitkeep
+
+# Python bytecode
+__pycache__/
+*.pyc

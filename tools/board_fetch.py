@@ -2,7 +2,9 @@
 """Fetch a file from the board over the console as a hex dump, verify by md5."""
 import os, sys, time, termios, select, hashlib, re
 
-DEV="/dev/ttyUSB0"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import board_tty
+DEV = board_tty.resolve()
 def open_port():
     fd=os.open(DEV, os.O_RDWR|os.O_NOCTTY|os.O_NONBLOCK)
     a=termios.tcgetattr(fd); a[0]=a[1]=a[3]=0

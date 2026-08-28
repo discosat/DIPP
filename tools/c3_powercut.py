@@ -18,7 +18,9 @@ Power is ALWAYS restored on exit, including on exception or Ctrl-C.
 """
 import os, re, sys, time, termios, select, argparse, subprocess
 
-DEV = "/dev/ttyUSB0"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import board_tty
+DEV = board_tty.resolve()
 DIR = "/home/root/tmp-experiments"
 IMG = "/mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG"
 LOG = "pc.log"

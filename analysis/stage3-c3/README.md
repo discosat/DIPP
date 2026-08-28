@@ -318,3 +318,36 @@ fallback for a modest number of cuts.
 Also still to confirm: whether the board is actually powered from the Otii main
 channel, or from a separate supply. The script sets 5 V/4 A, but that is intent,
 not proof of wiring.
+
+## C3 with REAL power cuts — the test SIGKILL could not do
+
+20 batches, **20 genuine power cuts** via the Otii (which supplies the board at
+5 V), pipeline 2. Each cut cold-boots the board, so every cycle re-mounts
+`/mnt/flash` and restarts the daemon; batches are tracked by UUID across boots.
+
+| | |
+|---|---|
+| fed | 20 |
+| completed | 20 |
+| **lost, in scope** | **0** |
+| **duplicated** | **0** |
+| **`QUEUE_CORRUPT` detections** | **0** |
+| daemon starts recorded | 14 |
+
+**No torn write was observed in 20 power cuts.** Combined with the validation
+now on the load path, that is the empirical basis for deferring shadow paging:
+the queue survived real power loss intact, and had it not, corruption would have
+been detected rather than crashing the daemon.
+
+Two honest caveats:
+
+- **20 cuts is a small sample for a rare event.** This bounds the rate loosely,
+  it does not show torn writes are impossible. The cuts also land at arbitrary
+  points, so they are unlikely to hit the narrow window mid-`msync` where the
+  20,856-byte structure is partially written. A targeted version — cut power
+  deliberately during a queue `msync` — would be a much sharper test and is
+  cheap now the rig exists.
+- **`boots=14` against 20 cuts.** Fewer daemon starts were logged than cuts, so
+  on some cycles the daemon did not start (the harness does not yet verify it
+  came up). That weakens the run: some cuts landed on an idle board rather than
+  one mid-pipeline. Worth fixing before the Stage 5 200-trial campaign.

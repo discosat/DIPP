@@ -179,3 +179,38 @@ instrumentation step is to log both queue sizes at every startup and after every
 
 **Stage 3 gate remains open at 18/20**, with the systemic 9-batch loss fixed and
 duplication at zero throughout.
+
+## Incidental finding: the system starts exactly at its own refusal boundary
+
+Trying to build a fast repro surfaced this, and it matters well beyond C3.
+
+`BATTERY_SAFETY_MARGIN_WH` is **64.4 Wh**. Initial SoC is `0.7 × 92 Wh` =
+**exactly 64.4 Wh**. The best-effort and lowest-effort heuristics both compute
+
+    energy_requirement = (battery_level_wh - BATTERY_SAFETY_MARGIN_WH) * 1e6
+
+so at startup that is **zero**, and `judge_implementation` /
+`get_default_implementation` refuse *every* module until the simulated battery
+charges above the margin. Net power in sunlight is 25.4 − 13.07 = +12.3 W, so
+the budget grows quickly, but for the first seconds after start the scheduler
+declines all work and parks batches as partial.
+
+Consequences:
+
+- **This is the only regime in which partials occur** in a short run. Feeding
+  batches 2 s after startup lets the battery gain ~6,800 µWh of headroom —
+  more than an entire low-effort pipeline (1,931 µWh) — so every batch runs
+  straight through and no batch is ever parked. That is why two probe attempts
+  produced zero partial events.
+- **C7a's initial-SoC sweep {30, 50, 70, 90}% is not neutral.** 70% sits exactly
+  on the boundary, so that arm measures the transient rather than a steady
+  state, and the three other arms are not symmetric around it. Either sweep
+  relative to the margin or state the coincidence explicitly.
+- **Any run's first seconds are unrepresentative.** The published runs began
+  feeding immediately after launch, so their early batches were scheduled under
+  a near-zero energy budget. A warm-up discard is needed for the same reason
+  C4 discards the first batch for latency.
+
+Neither constant is wrong on its own — 64.4 Wh is 70% of 92 Wh, which is the
+documented margin — but their coincidence makes the start of every run a
+special case, and nothing in the manuscript says so.

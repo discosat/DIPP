@@ -436,10 +436,16 @@ static int run_one_batch(PriorityQueue *src)
     case BATCH_PARTIAL:
         if (src == partially_processed_pq)
         {
-            pq_impl->commit_head(src, &batch);
+            int rc = pq_impl->commit_head(src, &batch);
+            printf("COMMIT_HEAD queue=partial uuid=%s progress=%d rc=%d depth=%ld\n",
+                   batch.uuid, batch.progress, rc,
+                   (long)pq_impl->get_queue_size(src));
         }
         else
         {
+            printf("ENQUEUE_PARTIAL uuid=%s progress=%d partial_depth_before=%ld\n",
+                   batch.uuid, batch.progress,
+                   (long)pq_impl->get_queue_size(partially_processed_pq));
             if (pq_impl->enqueue(partially_processed_pq, batch) != SUCCESS)
             {
                 /* Partial queue full: leave the batch in ingest and retry later
@@ -479,6 +485,14 @@ void process_images_loop()
 
     cost_store_impl = get_cost_store_impl(global_storage_mode);
     cost_store_impl->init(&cost_store, CACHE_FILE);
+
+    /* Report both queue depths at startup unconditionally. This is what
+       distinguishes "the entry was never written durably" from "it was written
+       and later lost" -- the orphan scan's own log is gated on finding
+       something, so its absence proves nothing. */
+    printf("STARTUP_QUEUES ingest=%ld partial=%ld\n",
+           (long)pq_impl->get_queue_size(ingest_pq),
+           (long)pq_impl->get_queue_size(partially_processed_pq));
 
     /* Both queues are mapped now, so anything on disk they do not reference is
        unreachable and can be reclaimed. */

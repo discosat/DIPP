@@ -39,7 +39,7 @@ int enqueue_mem(PriorityQueue *pq, ImageBatch item)
     MTR_BEGIN_FUNC();
     pthread_mutex_lock(&pq->lock);
 
-    if (pq->size == MAX_QUEUE_SIZE)
+    if (pq->size >= MAX_QUEUE_SIZE)
     {
         pthread_mutex_unlock(&pq->lock);
         printf("Priority queue is full\n");

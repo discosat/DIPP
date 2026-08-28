@@ -58,6 +58,50 @@ int init_pq_mmap(PriorityQueue **pq, char *filename)
     {
         (*pq)->size = 0;
     }
+    else
+    {
+        /* Never trust the file. Until now `size` was taken straight from disk
+           and used unchecked, so a single corrupted word became an
+           out-of-bounds write in enqueue(). Any cause of corruption reaches
+           this -- a torn write during a power cut, a truncated file, bit rot --
+           and the failure was memory corruption rather than a detected error.
+
+           Treat an implausible queue as empty: the batches it named become
+           unreferenced files and the startup orphan scan reclaims them. That
+           loses the queue, which is bad, but it is a defined and logged
+           outcome instead of undefined behaviour. */
+        int n = (*pq)->size;
+        int corrupt = (n < 0 || n > MAX_QUEUE_SIZE);
+        if (!corrupt)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                ImageBatch *it = &(*pq)->items[i];
+                if (it->batch_size <= 0 || it->num_images <= 0 ||
+                    it->progress < -1 || it->progress > MAX_QUEUE_SIZE ||
+                    memchr(it->filename, '\0', sizeof(it->filename)) == NULL ||
+                    memchr(it->uuid, '\0', sizeof(it->uuid)) == NULL)
+                {
+                    printf("QUEUE_CORRUPT %s: entry %d fails validation "
+                           "(batch_size=%d num_images=%d progress=%d)\n",
+                           file, i, it->batch_size, it->num_images, it->progress);
+                    corrupt = 1;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            printf("QUEUE_CORRUPT %s: size=%d out of range [0, %d]\n",
+                   file, n, MAX_QUEUE_SIZE);
+        }
+        if (corrupt)
+        {
+            printf("QUEUE_CORRUPT %s: discarding queue contents\n", file);
+            (*pq)->size = 0;
+            msync(mapped, size, MS_SYNC);
+        }
+    }
     pthread_mutex_init(&(*pq)->lock, NULL);
 
     // keep mapping alive; close fd
@@ -71,7 +115,9 @@ int enqueue_mmap(PriorityQueue *pq, ImageBatch item)
     MTR_BEGIN_FUNC();
     pthread_mutex_lock(&pq->lock);
 
-    if (pq->size == MAX_QUEUE_SIZE)
+    /* >= not ==: an out-of-range size must not slip past into
+       pq->items[pq->size++], which is an out-of-bounds write. */
+    if (pq->size >= MAX_QUEUE_SIZE)
     {
         pthread_mutex_unlock(&pq->lock);
         printf("Priority queue is full\n");

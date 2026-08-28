@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include "priority_queue.h"
 
-#define PQ_HEADER_BYTES 4096u
+#define PQ_HEADER_BYTES 65536u
 #define PATH "/tmp/sipp_shadow_test.queue"
 
 static int failures = 0;

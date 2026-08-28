@@ -32,14 +32,17 @@
 
 #define PQ_MAGIC 0x53495050u /* "SIPP" */
 #define PQ_VERSION 1u
-#define PQ_PAGE 4096u
-
-/* Header and slots are each padded to whole pages. Not cosmetic: msync()
-   requires a page-aligned address and fails with EINVAL otherwise, so an
-   unaligned slot silently never reaches storage -- which is precisely the
-   failure this file exists to prevent. Page granularity also keeps the header
-   in a page of its own, so flushing a slot cannot drag a half-updated header
-   out with it. */
+/* Layout granularity, NOT the page size. msync() requires a page-aligned
+   address and fails with EINVAL otherwise, so an unaligned slot silently never
+   reaches storage -- exactly the failure this file exists to prevent.
+   4096 was wrong: it works on an x86 host but the board's page size is larger,
+   so every slot msync there returned EINVAL and the queue was never persisted.
+   64 KiB is a multiple of every page size Linux uses on aarch64 (4K/16K/64K),
+   so slot offsets are aligned whatever the kernel was built with. The cost is
+   a 192 KiB file instead of 52 KiB, which is nothing on an 8 GB device.
+   This granularity also keeps the header in a region of its own, so flushing a
+   slot cannot drag a half-updated header out with it. */
+#define PQ_PAGE 65536u
 #define PQ_HEADER_BYTES PQ_PAGE
 
 typedef struct PQSlotData
@@ -247,6 +250,13 @@ int init_pq_mmap(PriorityQueue **pq, char *filename)
     {
         work->size = 0;
     }
+
+    /* Report the real page size once: if it ever exceeds PQ_PAGE the layout
+       assumption is broken and msync will fail silently again. */
+    long ps = sysconf(_SC_PAGESIZE);
+    if (ps > 0 && (PQ_PAGE % (unsigned long)ps) != 0)
+        printf("QUEUE_ALIGN_WARN %s: page size %ld does not divide layout "
+               "granularity %u; msync will fail\n", filename, ps, PQ_PAGE);
 
     pthread_mutex_init(&work->lock, NULL);
     *pq = work;

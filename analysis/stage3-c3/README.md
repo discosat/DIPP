@@ -263,3 +263,58 @@ events only (`QUEUE_SELECT`, `QUEUE_REMOVE`, `EXEC`).
 The irony is not lost: this revision exists partly because the original traces
 were invalid, and the same class of defect — an instrument discarding its own
 output — cost three runs here before it was spotted.
+
+## Queue-corruption fault injection, with negative control
+
+The torn-write question ("do power cuts corrupt the queue?") needs real power
+cuts. But the more decisive question for the paper — **would we survive one?** —
+is testable now by writing corruption straight into the queue file.
+
+Injected an out-of-range `size` (65535, against `MAX_QUEUE_SIZE` 100) at offset
+20800 of `/usr/share/dipp/queue_file`, then started the daemon.
+
+| Build | Result |
+|---|---|
+| **Before the fix** (`HEAD~1`) | **SIGSEGV** — kernel audit: `comm="dipp_noval" sig=11 res=1`; `QUEUE_CORRUPT` lines: 0 |
+| **After the fix** | detected, logged, daemon survives |
+
+After:
+
+```
+QUEUE_CORRUPT /usr/share/dipp/queue_file: size=65535 out of range [0, 100]
+QUEUE_CORRUPT /usr/share/dipp/queue_file: discarding queue contents
+STARTUP_QUEUES ingest=0 partial=0
+daemon=alive
+```
+
+So a single corrupted word used to crash the daemon on startup — and because
+the queue file persists, it would crash it again on **every** restart. That is
+an unrecoverable boot loop from one bad word, on a satellite. It is now a
+logged, recoverable event.
+
+Note the queue file is 20,856 bytes: 100 x sizeof(ImageBatch) (208, after
+`priority` became `int64_t`) + 56.
+
+**This is not shadow paging.** It bounds the blast radius of a corrupt queue; it
+does not make the queue atomic across a power cut, and it does not tell us
+whether power cuts produce corruption in the first place.
+
+## Otii status — programmable power cuts are close but blocked
+
+The Otii Ace is a source-measure unit, not just a meter: the existing
+`energy_measurement_csh.py` configures it as a 5 V / 4 A supply
+(`set_main_voltage`, `set_max_current`). So power cuts can be scripted, without
+physical access to the board.
+
+Present and working: `otii_tcp_client` 1.0.11, the Otii 3 desktop app running,
+TCP API on 127.0.0.1:1905, and login now succeeds.
+
+**Blocked on licensing:** `get_licenses()` returns **0**, so `get_devices()`
+fails with "No license". The TCP automation API needs an Automation Toolbox
+licence that this account does not currently hold. Manual use of the Otii UI
+does not require it, so toggling the main output by hand in the UI remains a
+fallback for a modest number of cuts.
+
+Also still to confirm: whether the board is actually powered from the Otii main
+channel, or from a separate supply. The script sets 5 V/4 A, but that is intent,
+not proof of wiring.

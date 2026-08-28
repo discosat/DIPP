@@ -100,7 +100,16 @@ def boot_and_prepare(con, start_daemon=True):
     con.cmd(f"cd {DIR}", 2)
     con.cmd("mountpoint -q /mnt/flash || mount -o ro /dev/sda1 /mnt/flash", 4)
     if start_daemon:
-        con.cmd(f"cd {DIR} && (setsid ./dipp -i CAN -p can0 -a 5423 >> {LOG} 2>&1 &)", 3)
+        # Verify the daemon actually came up. A previous campaign logged only 14
+        # daemon starts across 20 cuts, so several cuts landed on an idle board
+        # -- which silently weakens a negative result, because a cut that hits
+        # nothing cannot corrupt anything.
+        for attempt in range(2):
+            con.cmd(f"cd {DIR} && (setsid ./dipp -i CAN -p can0 -a 5423 >> {LOG} 2>&1 &)", 4)
+            if "DAEMON_UP" in con.cmd("pidof dipp > /dev/null && echo DAEMON_UP || echo DAEMON_DOWN", 4):
+                return True
+        print("  WARNING: daemon did not start this cycle", flush=True)
+        return False
     return True
 
 
@@ -135,6 +144,7 @@ def main():
                 f"./emulate_camera 1 {a.pipeline} 123 {IMG} 2>/dev/null "
                 f"| grep '^Image sent' >> pc_fed.txt; done; echo FED", 90)
 
+        daemon_failures = 0
         for t in range(1, a.trials + 1):
             time.sleep(a.settle)
             print(f"--- cycle {t}/{a.trials}: cutting power ---", flush=True)
@@ -142,8 +152,8 @@ def main():
             if r.returncode != 0:
                 print("  otii error:", r.stderr[:200])
             if not boot_and_prepare(con):
-                print(f"  cycle {t}: board did not come back; aborting")
-                break
+                daemon_failures += 1
+                print(f"  cycle {t}: board back but daemon not confirmed", flush=True)
 
         print("=== draining ===", flush=True)
         last, stable = -1, 0
@@ -156,7 +166,7 @@ def main():
             last = now
             print(f"  completions={now}", flush=True)
 
-        print("=== RESULT ===", flush=True)
+        print(f"=== RESULT (daemon-start failures: {daemon_failures}) ===", flush=True)
         script = (
             f"cd {DIR}; "
             f"sed 's/.*uuid=//; s/ .*//' pc_fed.txt | sort -u > /tmp/f; "

@@ -16,9 +16,23 @@ from otii_tcp_client import otii_client
 CREDS = '/home/roba/energy-measurement-csh/energy_measurement_csh.py'
 
 def get_device(otii):
+    """Get the device, doing the licence dance only if we have to.
+
+    get_licenses() is a call out to Qoitech's server and it hangs for minutes
+    when the app is unhappy -- which silently turned every "power cut" in one
+    campaign into a no-op. If a licence is already reserved to this host,
+    get_devices() just works, so try that first.
+    """
+    try:
+        devs = otii.get_devices()
+        if devs:
+            return devs[0]
+    except Exception:
+        pass
+
     src = open(CREDS).read()
-    pw = re.search(r'otii\.login\("([^"]+)",\s*"([^"]+)"\)', src)
-    otii.login(pw.group(1), pw.group(2))
+    m = re.search(r'otii\.login\("([^"]+)",\s*"([^"]+)"\)', src)
+    otii.login(m.group(1), m.group(2))
     for l in otii.get_licenses():
         if not l.get('reserved_to'):
             otii.reserve_license(l['id'])
@@ -45,10 +59,22 @@ def main():
             elif a.action == "off":
                 d.set_main(False); print("main OFF")
             else:
+                # Verify the cut ACTUALLY happened. A previous campaign reported
+                # a clean 8/8 from a run where every cut had silently failed, so
+                # the result described a test that never took place. Confirm the
+                # output really went off before believing anything downstream.
                 d.set_main(False)
-                print(f"power CUT for {a.seconds}s", flush=True)
+                time.sleep(0.4)
+                off_state = d.get_main()
+                if off_state:
+                    d.set_main(True)
+                    raise RuntimeError("CUT FAILED: main output still on after set_main(False)")
+                print(f"power CUT verified (main={off_state}) for {a.seconds}s", flush=True)
                 time.sleep(a.seconds)
                 d.set_main(True)
+                time.sleep(0.4)
+                if not d.get_main():
+                    raise RuntimeError("power did NOT come back on")
                 print("power RESTORED", flush=True)
         except BaseException:
             try: d.set_main(True); print("power restored after error", flush=True)

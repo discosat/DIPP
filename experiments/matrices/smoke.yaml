@@ -1,0 +1,12 @@
+# Two-run smoke matrix: exercises the full campaign path (reboot, deploy-verify,
+# run, Otii energy, fetch, RUN.json) without costing a real campaign's time.
+run_set: smoke
+defaults:
+  n: 5
+  images: 1
+  seed: 43
+  load: populate
+  heuristic: BEST_EFFORT
+runs:
+  - {label: smoke-mmap-low, pipeline: 2, storage: MMAP}
+  - {label: smoke-mem-low,  pipeline: 2, storage: MEM}

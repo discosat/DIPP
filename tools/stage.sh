@@ -36,6 +36,12 @@ rm -rf "$OUT"; mkdir -p "$OUT/symbols"
 # shellcheck disable=SC1090
 set +u; . "$SDK"; set -u
 echo "--- building daemon ---"
+# BUILD_ID is computed by run_command() at meson CONFIGURE time, not build time,
+# so a plain ninja leaves the binary reporting whatever identity it had when
+# builddir was last set up. Observed 38 commits stale, which silently defeats
+# reading the build back from the daemon's own startup banner. Reconfigure so
+# the staged binary reports the truth.
+meson setup --reconfigure "$HERE/builddir" "$HERE" >/dev/null
 ninja -C "$HERE/builddir" >/dev/null
 echo "--- building modules ---"
 # libjxl.pc declares Requires.private: libhwy but the sysroot has no libhwy;

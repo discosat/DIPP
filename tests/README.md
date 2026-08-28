@@ -49,12 +49,16 @@ useless: **`msync()` requires a page-aligned address.** With the header at 512 B
 and slots at 20,808 B, every slot `msync` failed with `EINVAL` and nothing ever
 reached storage — silently.
 
-**But this test cannot catch that class of bug on its own, and did not.** The
-first fix used 4096-byte granularity, which is the host's page size, so the test
-passed on x86 while the board still failed with `EINVAL` on every single
-`msync` — 64 of them in one run, with the queue never persisted at all. The
-layout now uses 64 KiB granularity, a multiple of every page size Linux uses on
-aarch64 (4K/16K/64K), and `init` logs `QUEUE_ALIGN_WARN` if the runtime page
+**Correction (2026-08-28).** An earlier version of this note claimed the board's
+page size exceeds 4096 and that this is why a 4096-granularity build failed with
+`EINVAL` on hardware. That is wrong: the board measures **4 kB**
+(`/proc/self/smaps` `KernelPageSize`). The run that produced 64 `QUEUE_SYNC_FAIL`
+was launched before the header was widened and was still running the
+**512-byte-header** build, whose slot[0] at offset 512 is unaligned on any page
+size. The failure was real; the attribution was not.
+
+The layout keeps 64 KiB granularity anyway — headroom against a kernel built
+with 16K or 64K pages — and `init` logs `QUEUE_ALIGN_WARN` if the runtime page
 size ever fails to divide it.
 
 **Always confirm on the board** after changing anything about the on-disk

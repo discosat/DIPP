@@ -34,12 +34,19 @@
 #define PQ_VERSION 1u
 /* Layout granularity, NOT the page size. msync() requires a page-aligned
    address and fails with EINVAL otherwise, so an unaligned slot silently never
-   reaches storage -- exactly the failure this file exists to prevent.
-   4096 was wrong: it works on an x86 host but the board's page size is larger,
-   so every slot msync there returned EINVAL and the queue was never persisted.
+   reaches storage -- exactly the failure this file exists to prevent. The
+   original 512-byte header put slot[0] at offset 512, which is not aligned on
+   any Linux page size, and every slot msync returned EINVAL: 64 of them in one
+   run, with the queue never persisted at all.
+
    64 KiB is a multiple of every page size Linux uses on aarch64 (4K/16K/64K),
-   so slot offsets are aligned whatever the kernel was built with. The cost is
-   a 192 KiB file instead of 52 KiB, which is nothing on an 8 GB device.
+   so slot offsets are aligned whatever the kernel was built with. The board
+   measures 4 KiB (/proc/self/smaps KernelPageSize), so 4096 would in fact
+   suffice today; the larger granularity is deliberate headroom against a kernel
+   built with 16K or 64K pages, and costs a 192 KiB file instead of 52 KiB --
+   nothing on an 8 GB device. init() logs QUEUE_ALIGN_WARN if the runtime page
+   size ever fails to divide it.
+
    This granularity also keeps the header in a region of its own, so flushing a
    slot cannot drag a half-updated header out with it. */
 #define PQ_PAGE 65536u

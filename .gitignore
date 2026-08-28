@@ -67,3 +67,7 @@
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Staged run-sets and campaign output (large, regenerable)
+/staging/
+/runs/

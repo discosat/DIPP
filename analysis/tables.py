@@ -35,6 +35,7 @@ import numpy as np
 
 EFFORT_ORDER = {"low": 0, "medium": 1, "high": 2, "default": 3}
 BOOTSTRAP = 2000
+MIN_LAUNCHES = 5  # n>=5 independent process launches per cell
 SEED = 43
 BATTERY_CAPACITY_WH = 92.0  # SI-DISCOII-DR-001
 
@@ -342,6 +343,21 @@ def main():
               "MEM/MMAP columns will be incomplete", file=sys.stderr)
 
     rows = table6(execs, runs, effort_map)
+
+    # Dispersion is only meaningful across independent process launches. A cell
+    # backed by one launch measures within-process repetition, which is a much
+    # smaller number than run-to-run variation and would understate every
+    # interval in the table. Say so on the artifact itself rather than trusting
+    # whoever reads it to remember.
+    launch_counts = [r.get(f"{m}_n_runs", 0) for r in rows for m in ("MEM", "MMAP")
+                     if r.get(f"{m}_n_exec")]
+    min_launches = min(launch_counts) if launch_counts else 0
+    if min_launches < MIN_LAUNCHES:
+        caption_n += (f" \\emph{{Preliminary: {min_launches} independent launch(es) "
+                      f"in the smallest cell, fewer than the {MIN_LAUNCHES} this "
+                      f"table requires; intervals are within-run repetition.}}")
+        print(f"WARNING: smallest cell has {min_launches} independent launch(es), "
+              f"want >= {MIN_LAUNCHES}. Table is marked preliminary.", file=sys.stderr)
     open(os.path.join(a.out, "table6_overhead.tex"), "w").write(
         table6_latex(rows, caption_n))
     open(os.path.join(a.out, "table6_overhead.md"), "w").write(table6_markdown(rows))

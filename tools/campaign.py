@@ -120,21 +120,61 @@ class Energy:
 
 
 # -------------------------------------------------------------------- board
+def board_is_up(timeout, settle=0.0):
+    """Poll until Linux answers, or give up.
+
+    The marker is assembled at runtime because the console echoes the command
+    before its output. A literal "BOARD_READY" in the command would match its
+    own echo -- and a board stranded at the *U-Boot* prompt echoes typed
+    characters too, so the naive check reports a healthy Linux on a board that
+    has none.
+    """
+    if settle:
+        time.sleep(settle)
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if "BOARD_READY" in board("printf 'BOARD_%s\\n' READY", 20):
+            board("mountpoint -q /mnt/flash || mount -o ro /dev/sda1 /mnt/flash", 30)
+            return True
+        time.sleep(10)
+    return False
+
+
+def power_cycle():
+    """Last-resort recovery via the Otii, which supplies the board at 5 V.
+
+    The board hangs mid-U-Boot roughly one boot in twenty. Without this, one
+    wedge at run 12 of 100 fails every run after it as well -- each one still
+    paying the full reboot timeout -- which is a whole overnight campaign lost
+    to a fault that a five-second power cut clears.
+    """
+    try:
+        r = subprocess.run([os.path.join(HERE, "otii_power.py"), "cut", "5"],
+                           capture_output=True, text=True, timeout=180)
+        print(f"    power cycle: {r.stdout.strip() or r.stderr.strip()}")
+        return r.returncode == 0
+    except Exception as ex:
+        print(f"    power cycle unavailable: {type(ex).__name__}: {ex}")
+        return False
+
+
 def reboot_and_wait(timeout=240):
     """Software reboot: clears memory state and the A8 leak's effects, which is
     what the original experiments did. Never writes to the console during
     U-Boot's countdown -- a keystroke there stops autoboot and strands the board
     at a prompt that looks exactly like a failed boot."""
-    board("sync; reboot", 15)
-    time.sleep(45)                      # silent through SPL, U-Boot and early init
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        out = board("echo BOARD_READY", 20)
-        if "BOARD_READY" in out:
-            board("mountpoint -q /mnt/flash || mount -o ro /dev/sda1 /mnt/flash", 30)
-            return True
-        time.sleep(10)
-    return False
+    try:
+        board("sync; reboot", 15)
+    except subprocess.TimeoutExpired:
+        # An unresponsive console is itself the symptom; fall through to the
+        # power cycle rather than aborting the campaign.
+        pass
+    if board_is_up(timeout, settle=45):   # silent through SPL, U-Boot and early init
+        return True
+    print("    board did not return from reboot; power-cycling")
+    if not power_cycle():
+        return False
+    return board_is_up(timeout, settle=45)
 
 
 def run_one(spec, outdir, energy):

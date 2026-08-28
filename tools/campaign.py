@@ -29,6 +29,10 @@ import yaml
 HERE = os.path.dirname(os.path.abspath(__file__))
 BOARD_DIR = "/home/root/tmp-experiments"
 
+# A campaign runs for hours; block-buffered stdout means no visible progress
+# until it ends, and no partial record if it is killed.
+sys.stdout.reconfigure(line_buffering=True)
+
 
 def board(cmd, timeout=300):
     r = subprocess.run([os.path.join(HERE, "board_console.py"), cmd],
@@ -171,7 +175,13 @@ def run_one(spec, outdir, energy):
     deadline = time.time() + budget
     while time.time() < deadline:
         time.sleep(15)
-        if "OK" in board(f"test -f {remote_board_json} && echo OK", 30):
+        # The console echoes the command before its output, so a marker that
+        # appears literally in the command matches its own echo and the wait
+        # returns immediately -- which then gzips console.log out from under a
+        # still-draining run.sh. Assemble the marker at runtime so the literal
+        # token exists only in the reply.
+        if "BJDONE" in board(
+                f"test -f {remote_board_json} && printf 'B%s\\n' JDONE", 30):
             break
     else:
         energy.stop()

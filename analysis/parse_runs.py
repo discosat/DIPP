@@ -29,6 +29,7 @@ from collections import Counter, defaultdict
 # ---------------------------------------------------------------- EXEC record
 
 EXEC_INT = {
+    "ts_us",
     "pipeline", "module_index", "param_id", "num_images", "batch_bytes",
     "cached", "latency_pred_us", "latency_meas_us", "energy_pred_uwh",
     "deadline_us", "slack_us", "ingest_depth", "partial_depth",

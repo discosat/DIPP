@@ -231,7 +231,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             int64_t now_us = (int64_t)now_ts.tv_sec * 1000000 + (int64_t)now_ts.tv_nsec / 1000;
             ResourceSample res;
             sample_resources(&res);
-            printf("EXEC uuid=%s pipeline=%d module_index=%zu module=%s param_id=%d "
+            printf("EXEC ts_us=%lld uuid=%s pipeline=%d module_index=%zu module=%s param_id=%d "
                    "num_images=%d batch_bytes=%d cached=%d "
                    "latency_pred_us=%u latency_meas_us=%ld "
                    "energy_pred_uwh=%u energy_debited_uwh=%.3f "
@@ -239,7 +239,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
                    "ingest_depth=%ld partial_depth=%ld heuristic=%s "
                    "rss_kb=%ld peak_rss_kb=%ld child_peak_rss_kb=%ld "
                    "io_read_bytes=%llu io_write_bytes=%llu\n",
-                   data->uuid, data->pipeline_id, i,
+                   (long long)now_us, data->uuid, data->pipeline_id, i,
                    pipeline->modules[i].module_name ? pipeline->modules[i].module_name : "?",
                    module_param_id,
                    data->num_images, data->batch_size,

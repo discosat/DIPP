@@ -140,7 +140,10 @@ cp "$DIR/storage.vmem" "$OUT/storage.vmem" 2>/dev/null
 
 EXECS=$(cnt '^EXEC ' "$OUT/console.log")
 DONE=$(cnt 'fully executed' "$OUT/console.log")
-BUILD=$(grep -m1 '^SIPP build: ' "$OUT/console.log" 2>/dev/null | sed 's/^SIPP build: //')
+# The banner ends with CR, which grep keeps; an unescaped control character
+# inside a JSON string makes the whole record unparseable host-side.
+BUILD=$(grep -m1 '^SIPP build: ' "$OUT/console.log" 2>/dev/null \
+        | sed 's/^SIPP build: //' | tr -d '\000-\037')
 PAGESZ=$(awk '/^KernelPageSize/{print $2*1024; exit}' /proc/self/smaps 2>/dev/null)
 
 cat > "$OUT/board.json" <<JSON

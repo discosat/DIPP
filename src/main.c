@@ -159,6 +159,19 @@ static void iface_init(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+	/* Line-buffer stdout. It is almost always redirected to a file, where the
+	   default is 4 KB block buffering -- and the daemon is routinely stopped
+	   with SIGKILL, or with SIGTERM while tracing is disabled (in which case no
+	   handler is registered and the default disposition applies). Either way
+	   the process dies without flushing, silently discarding up to a full block
+	   of already-printed log lines.
+
+	   This is not cosmetic: it made a C3 run report batches as lost whose
+	   completion and QUEUE_REMOVE lines were simply thrown away with the
+	   buffer, and it twice made an idling daemon look like it was stuck during
+	   initialisation. */
+	setvbuf(stdout, NULL, _IOLBF, 0);
+
 	printf("argc %u", argc);
 
 	printf("\nbootmsg\n");

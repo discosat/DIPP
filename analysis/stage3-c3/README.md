@@ -351,3 +351,57 @@ Two honest caveats:
   on some cycles the daemon did not start (the harness does not yet verify it
   came up). That weakens the run: some cuts landed on an idle board rather than
   one mid-pipeline. Worth fixing before the Stage 5 200-trial campaign.
+
+## Shadow paging under real power cuts — final result
+
+20 batches, **20 verified power cuts** (the Otii asserts the output actually
+went off before sleeping), pipeline 2, with shadow paging in place.
+
+| | |
+|---|---|
+| fed | 20 |
+| completed, unique | **20** |
+| **lost, in scope** | **0** |
+| **duplicated** | **0** |
+| never reached the queue | 0 |
+| `QUEUE_ROLLBACK` | **0** |
+| `QUEUE_CORRUPT` | 0 |
+| `QUEUE_SYNC_FAIL` | 0 |
+| daemon starts / cuts | 19 / 20 |
+
+**Every batch completed exactly once across 20 real power cuts.** Even the
+ingest-window loss that appeared in earlier runs did not occur here.
+
+### What this says about shadow paging
+
+`QUEUE_ROLLBACK` is **0**: with detection in place and 20 real cuts, **no torn
+write was ever observed**. Both campaigns agree — the pre-shadow-paging run also
+saw no corruption. So on this hardware, at this cut rate, torn writes are rare
+enough not to appear in 40 cuts.
+
+That does not make the mechanism pointless, but it does change the claim W5 can
+make. Honest framing: *the queue is validated on load, survives real power
+loss, and rolls back to the previous slot if a write is ever torn; across 40
+power cuts no torn write was observed.* That is a measured statement rather than
+an argued one, which is what the mechanism was built to buy.
+
+The cost measured out as predicted: no `QUEUE_SYNC_FAIL`, no latency or
+completion regression against the pre-shadow-paging runs.
+
+### Platform observation worth recording separately
+
+**One power cut left the board hung.** After the campaign it drew 3.11 W --
+powered and running -- but emitted nothing on the console, and a capture from
+the instant of the next cut showed it stopping mid-U-Boot after 2,064 bytes. A
+further power cycle booted it cleanly (33,766 bytes, full systemd boot to a
+login prompt in 20 s).
+
+So the board itself intermittently fails to boot after a power cut. That is a
+platform/bootloader behaviour, not DIPP's, but it belongs in W4/W5: *system
+survival* and *data preservation* are separate claims, and DIPP preserved every
+batch across cuts that the platform sometimes did not survive cleanly. It also
+matters operationally -- the flight system's PDU watchdog (SI-DISCOII-DR-001
+5.5) exists for exactly this.
+
+`boots=19` across 20 cuts: the harness caught one cycle where the daemon did not
+start, which is why it now verifies startup rather than assuming it.

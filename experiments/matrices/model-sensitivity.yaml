@@ -1,0 +1,27 @@
+# Does the pipeline's output depend on its input at all?
+#
+# Five scenes that should be trivially separable: amager is urban Copenhagen
+# (expect class 7, Residential), koge-coast is open water (expect class 9,
+# SeaLake), and the cloud variants test whether cloud cover moves the decision.
+# If the class histograms come back indistinguishable, the models are not
+# seeing the image -- which would invalidate every retention and downlink
+# number in the paper.
+#
+# Pipeline 2 (static LOW) so the classifier is fixed at custom_conv_model and
+# nothing adapts underneath the comparison. MEM so persistence is out of the
+# picture too. One batch per run: the question is content, not throughput.
+run_set: model-sensitivity
+defaults:
+  n: 1
+  images: 1
+  seed: 43
+  load: populate
+  heuristic: BEST_EFFORT
+  pipeline: 2
+  storage: MEM
+runs:
+  - {label: sens-amager-no-clouds,     image: amager-no-clouds.bayerRG}
+  - {label: sens-amager-light-clouds,  image: amager-light-clouds.bayerRG}
+  - {label: sens-koge-no-clouds,       image: koge-coast-no-clouds.bayerRG}
+  - {label: sens-koge-light-clouds,    image: koge-coast-light-clouds.bayerRG}
+  - {label: sens-koge-full-clouds,     image: koge-coast-full-clouds.bayerRG}

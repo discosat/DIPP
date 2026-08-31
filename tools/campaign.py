@@ -201,6 +201,8 @@ def run_one(spec, outdir, energy):
             f"--heuristic {spec['heuristic']} --load {spec.get('load','populate')} "
             f"--n {spec.get('n',20)} --images {spec.get('images',1)} "
             f"--seed {spec.get('seed',43)}")
+    if spec.get("image"):
+        args += f" --image {spec['image']}"
     if spec.get("keep_cost_cache"):
         args += " --keep-cost-cache"
     if spec.get("trace") is False:
@@ -235,7 +237,8 @@ def run_one(spec, outdir, energy):
     # Collect. Compress first: these cross a 9.7 KB/s serial link.
     board(f"cd {BOARD_DIR}/runs/{label} && gzip -9 -f console.log trace.json 2>/dev/null; echo GZ", 120)
     got = {}
-    for name in ("board.json", "pre.txt", "post.txt", "console.log.gz", "trace.json.gz", "storage.vmem"):
+    for name in ("board.json", "pre.txt", "post.txt", "console.log.gz",
+                 "trace.json.gz", "storage.vmem", "predictions.txt", "kept_pixels.txt"):
         remote = f"{BOARD_DIR}/runs/{label}/{name}"
         m = remote_md5(remote)
         if not m:

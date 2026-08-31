@@ -3,6 +3,7 @@
 #
 #   run.sh --label adaptive-mmap-01 --pipeline 1 --storage MMAP \
 #          --heuristic BEST_EFFORT --load populate --n 20 --images 1 [--seed 43]
+#          [--image koge-coast-no-clouds.bayerRG]
 #          [--keep-cost-cache] [--no-trace]
 #
 # Writes runs/<label>/{board.json,console.log,trace.json,storage.vmem,pre.txt,post.txt}
@@ -11,7 +12,8 @@
 set -u
 
 DIR=/home/root/tmp-experiments
-IMG=/mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG
+IMG_DIR=/mnt/flash/2025-11-10/sentinel2-dataset
+IMAGE=amager-no-clouds.bayerRG
 
 LABEL=""; PIPELINE=2; STORAGE=MMAP; HEURISTIC=BEST_EFFORT
 LOAD=populate; N=20; IMAGES=1; SEED=43; KEEP_CACHE=0; TRACE=1
@@ -25,12 +27,14 @@ while [ $# -gt 0 ]; do
         --n) N="$2"; shift 2;;
         --images) IMAGES="$2"; shift 2;;
         --seed) SEED="$2"; shift 2;;
+        --image) IMAGE="$2"; shift 2;;
         --keep-cost-cache) KEEP_CACHE=1; shift;;
         --no-trace) TRACE=0; shift;;
         *) echo "unknown option: $1" >&2; exit 2;;
     esac
 done
 [ -n "$LABEL" ] || { echo "--label is required" >&2; exit 2; }
+IMG="$IMG_DIR/$IMAGE"
 
 # grep -c prints "0" and exits 1 on no-match, and prints nothing when the file
 # is missing. Both break the JSON in different ways, so count through here.
@@ -64,6 +68,7 @@ sleep 1
 # a discarded warm-up batch; the energy characterisation wants known-cold.
 rm -f /usr/share/dipp/queue_file /usr/share/dipp/partially_processed_queue_file
 [ "$KEEP_CACHE" -eq 1 ] || rm -f /usr/share/dipp/cost.cache
+rm -f /home/root/logs/* 2>/dev/null
 find /usr/share/dipp/data -type f -exec rm -f {} + 2>/dev/null
 
 {
@@ -138,6 +143,14 @@ pkill -KILL dipp 2>/dev/null
 # a relative path), so record the one that was actually in force.
 cp "$DIR/storage.vmem" "$OUT/storage.vmem" 2>/dev/null
 
+# The modules log their own decisions to /home/root/logs/, one file per fork.
+# These are the only record of what the models actually predicted, so they are
+# a first-class artifact of a run, not a debug aid.
+cat /home/root/logs/tflite_classification_* 2>/dev/null | grep 'Top class' > "$OUT/predictions.txt"
+cat /home/root/logs/tflite_binary_segmentation_* 2>/dev/null | grep 'Kept pixels' > "$OUT/kept_pixels.txt"
+HIST=$(awk '{for(i=1;i<=NF;i++) if($i=="class:"){c[$(i+1)]++}} END{s="";for(k in c) s=s k ":" c[k] " ";print s}' "$OUT/predictions.txt" 2>/dev/null)
+NPRED=$(cnt . "$OUT/predictions.txt")
+
 EXECS=$(cnt '^EXEC ' "$OUT/console.log")
 DONE=$(cnt 'fully executed' "$OUT/console.log")
 # The banner ends with CR, which grep keeps; an unescaped control character
@@ -156,6 +169,7 @@ cat > "$OUT/board.json" <<JSON
   "n": $N,
   "images": $IMAGES,
   "seed": $SEED,
+  "image": "$IMAGE",
   "cost_cache_kept": $KEEP_CACHE,
   "traced": $TRACE,
   "started_utc": $START,
@@ -170,7 +184,9 @@ cat > "$OUT/board.json" <<JSON
   "queue_corrupt": $(cnt QUEUE_CORRUPT "$OUT/console.log"),
   "queue_rollback": $(cnt QUEUE_ROLLBACK "$OUT/console.log"),
   "queue_mismatch": $(cnt QUEUE_MISMATCH "$OUT/console.log"),
-  "ingest_reject": $(cnt INGEST_REJECT "$OUT/console.log")
+  "ingest_reject": $(cnt INGEST_REJECT "$OUT/console.log"),
+  "n_predictions": $NPRED,
+  "class_histogram": "$HIST"
 }
 JSON
 

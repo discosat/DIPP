@@ -1,0 +1,251 @@
+{
+  "model": "../tf-dipp-module/custom_conv_model_landcover.tflite",
+  "variants": [
+    {
+      "colour": "bgr",
+      "radiometry": "minmax",
+      "scale": "native",
+      "separation": 0.38383838383838376,
+      "urban": {
+        "HerbaceousVegetation": 28,
+        "Forest": 2,
+        "Pasture": 1,
+        "PermanentCrop": 59,
+        "Highway": 3,
+        "Residential": 6
+      },
+      "sea": {
+        "Highway": 7,
+        "PermanentCrop": 55,
+        "Forest": 33,
+        "Pasture": 3,
+        "AnnualCrop": 1
+      }
+    },
+    {
+      "colour": "bgr",
+      "radiometry": "minmax",
+      "scale": "blur64",
+      "separation": 0.43434343434343436,
+      "urban": {
+        "HerbaceousVegetation": 30,
+        "Forest": 4,
+        "Pasture": 1,
+        "PermanentCrop": 62,
+        "Highway": 1,
+        "AnnualCrop": 1
+      },
+      "sea": {
+        "Forest": 35,
+        "PermanentCrop": 49,
+        "AnnualCrop": 10,
+        "Highway": 2,
+        "Pasture": 3
+      }
+    },
+    {
+      "colour": "bgr",
+      "radiometry": "minmax",
+      "scale": "wide",
+      "separation": 0.3333333333333333,
+      "urban": {
+        "Highway": 1,
+        "PermanentCrop": 3,
+        "HerbaceousVegetation": 1,
+        "Residential": 1
+      },
+      "sea": {
+        "Highway": 2,
+        "PermanentCrop": 3,
+        "Forest": 1
+      }
+    },
+    {
+      "colour": "bgr",
+      "radiometry": "fixed12",
+      "scale": "native",
+      "separation": 0.38383838383838376,
+      "urban": {
+        "HerbaceousVegetation": 28,
+        "Forest": 2,
+        "Pasture": 1,
+        "PermanentCrop": 59,
+        "Highway": 3,
+        "Residential": 6
+      },
+      "sea": {
+        "Highway": 7,
+        "PermanentCrop": 55,
+        "Forest": 33,
+        "Pasture": 3,
+        "AnnualCrop": 1
+      }
+    },
+    {
+      "colour": "bgr",
+      "radiometry": "fixed12",
+      "scale": "blur64",
+      "separation": 0.43434343434343436,
+      "urban": {
+        "HerbaceousVegetation": 30,
+        "Forest": 4,
+        "Pasture": 1,
+        "PermanentCrop": 62,
+        "Highway": 1,
+        "AnnualCrop": 1
+      },
+      "sea": {
+        "Forest": 35,
+        "PermanentCrop": 49,
+        "AnnualCrop": 10,
+        "Highway": 2,
+        "Pasture": 3
+      }
+    },
+    {
+      "colour": "bgr",
+      "radiometry": "fixed12",
+      "scale": "wide",
+      "separation": 0.3333333333333333,
+      "urban": {
+        "Highway": 1,
+        "PermanentCrop": 3,
+        "HerbaceousVegetation": 1,
+        "Residential": 1
+      },
+      "sea": {
+        "Highway": 2,
+        "PermanentCrop": 3,
+        "Forest": 1
+      }
+    },
+    {
+      "colour": "rgb",
+      "radiometry": "minmax",
+      "scale": "native",
+      "separation": 0.18181818181818182,
+      "urban": {
+        "HerbaceousVegetation": 26,
+        "Highway": 13,
+        "River": 25,
+        "PermanentCrop": 2,
+        "Residential": 9,
+        "Industrial": 24
+      },
+      "sea": {
+        "HerbaceousVegetation": 34,
+        "Highway": 11,
+        "River": 25,
+        "Pasture": 10,
+        "Industrial": 18,
+        "PermanentCrop": 1
+      }
+    },
+    {
+      "colour": "rgb",
+      "radiometry": "minmax",
+      "scale": "blur64",
+      "separation": 0.31313131313131315,
+      "urban": {
+        "HerbaceousVegetation": 27,
+        "Pasture": 5,
+        "River": 35,
+        "Highway": 21,
+        "PermanentCrop": 1,
+        "AnnualCrop": 1,
+        "Residential": 6,
+        "Industrial": 3
+      },
+      "sea": {
+        "HerbaceousVegetation": 34,
+        "River": 29,
+        "Pasture": 22,
+        "AnnualCrop": 5,
+        "Highway": 2,
+        "Forest": 1,
+        "Industrial": 5,
+        "PermanentCrop": 1
+      }
+    },
+    {
+      "colour": "rgb",
+      "radiometry": "minmax",
+      "scale": "wide",
+      "separation": 0.0,
+      "urban": {
+        "HerbaceousVegetation": 1,
+        "Industrial": 4,
+        "Highway": 1
+      },
+      "sea": {
+        "Highway": 1,
+        "Industrial": 4,
+        "HerbaceousVegetation": 1
+      }
+    },
+    {
+      "colour": "rgb",
+      "radiometry": "fixed12",
+      "scale": "native",
+      "separation": 0.18181818181818182,
+      "urban": {
+        "HerbaceousVegetation": 26,
+        "Highway": 12,
+        "River": 25,
+        "PermanentCrop": 2,
+        "Industrial": 25,
+        "Residential": 9
+      },
+      "sea": {
+        "HerbaceousVegetation": 34,
+        "Highway": 11,
+        "River": 25,
+        "Pasture": 10,
+        "Industrial": 18,
+        "PermanentCrop": 1
+      }
+    },
+    {
+      "colour": "rgb",
+      "radiometry": "fixed12",
+      "scale": "blur64",
+      "separation": 0.32323232323232326,
+      "urban": {
+        "HerbaceousVegetation": 27,
+        "AnnualCrop": 2,
+        "Pasture": 4,
+        "River": 35,
+        "Highway": 21,
+        "PermanentCrop": 1,
+        "Residential": 6,
+        "Industrial": 3
+      },
+      "sea": {
+        "HerbaceousVegetation": 34,
+        "River": 28,
+        "Pasture": 23,
+        "AnnualCrop": 5,
+        "Highway": 2,
+        "Forest": 1,
+        "Industrial": 5,
+        "PermanentCrop": 1
+      }
+    },
+    {
+      "colour": "rgb",
+      "radiometry": "fixed12",
+      "scale": "wide",
+      "separation": 0.0,
+      "urban": {
+        "HerbaceousVegetation": 1,
+        "Industrial": 4,
+        "Highway": 1
+      },
+      "sea": {
+        "Highway": 1,
+        "Industrial": 4,
+        "HerbaceousVegetation": 1
+      }
+    }
+  ]
+}

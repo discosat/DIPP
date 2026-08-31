@@ -203,3 +203,77 @@ both the feature and the fix.
 Targets: quality strictly increasing with effort, with gaps wide enough that
 spending 6.6× the energy is defensible, measured on the in-domain set above —
 not on EuroSAT alone.
+
+---
+
+## 12. Root cause: no photometric augmentation, and an uncalibrated pipeline
+
+The original training used `RandomFlip`, `RandomRotation`, `RandomZoom`,
+`RandomTranslation` — **geometric augmentation only, no photometric
+augmentation at all**. So the models learned absolute band values rather than
+spectral structure. Subtracting a per-channel dark-object offset from EuroSAT,
+roughly the difference between a top-of-atmosphere and a surface-reflectance
+product, is enough to destroy them:
+
+| class | EuroSAT as-is | after dark-object subtraction |
+|---|---:|---:|
+| SeaLake | 87.3% | **0.0%** |
+| Residential | 95.3% | **1.3%** |
+| Forest | 94.7% | **0.0%** |
+| AnnualCrop | 82.7% | 3.3% |
+
+And our frames *are* on the other side of that difference. Measured over the
+hand-labelled tiles:
+
+| | R | G | B | texture σ |
+|---|---:|---:|---:|---:|
+| device SeaLake | 7.7 | 37.6 | 32.9 | 4.1 |
+| EuroSAT SeaLake | 50.4 | 76.0 | 91.3 | 3.2 |
+| EuroSAT Forest | 39.1 | 63.9 | 76.2 | 3.7 |
+
+EuroSAT's SeaLake and Forest have almost identical colour *ratios* (B/G = 1.20
+vs 1.19) and identical texture, so within EuroSAT they are separated almost
+entirely by absolute brightness. Our water sits far below both, and lands on
+Forest.
+
+## 13. The fix is radiometric calibration, not model invariance
+
+Making the model invariant to brightness is self-defeating: brightness is the
+only cue separating SeaLake from Forest. Retraining with aggressive photometric
+augmentation confirmed this — it took Residential from 14.3% to 100% and left
+SeaLake at 0%, with 41 of 43 water tiles going to Forest.
+
+Calibrating the *input* instead works. Fitting a per-band affine so the pooled
+pixel statistics of all 495 device tiles match those of EuroSAT — **no class
+labels used** — gives `a = [0.825, 0.658, 0.552]`, `b = [14.3, 36.5, 55.8]`.
+The offsets rise toward blue, which is the signature of Rayleigh path radiance,
+and an independent fit from the two class means gives the same shape.
+
+| model | uncalibrated | calibrated |
+|---|---:|---:|
+| `custom_conv_model_landcover` (shipped, low) | 4.7% | **84.4%** (SeaLake 86.0%) |
+| `mobilenetv2_14_landcover` (shipped, high) | 28.1% | 45.3% |
+| `landcover_low` (retrained, 64×64) | 32.8% | 76.6% (Residential 100%) |
+
+**The shipped low-effort model goes from 4.7% to 84.4% with six numbers.** So
+the models were never the main defect; `cv::normalize(NORM_MINMAX)` was, and
+replacing it with a fixed calibration is the change that matters.
+
+⚠️ The affine is fitted on pooled statistics of the same five frames it is
+evaluated on. It uses no labels, and the statistics are dominated by content
+unrelated to the 64 labelled tiles, but a production version should derive the
+constants from a separate calibration scene or from an atmospheric model rather
+than from the evaluation frames.
+
+## 14. Where the ladder stands
+
+Retrained `landcover_low` is a 64×64 model (111 KB) that survives radiometric
+shift where the shipped one does not:
+
+| | clean | DOS | device stats | ×0.5 | brightened |
+|---|---:|---:|---:|---:|---:|
+| shipped `custom_conv` (224×224) | 75.3% | 10.5% | 12.8% | 10.1% | 13.6% |
+| retrained `landcover_low` (64×64) | 71.9% | 65.0% | 45.6% | 61.2% | 69.2% |
+
+3.4 points of clean accuracy for robustness across the board, at 1/12 the input
+pixels. The ladder itself is still not monotone and is the remaining work.

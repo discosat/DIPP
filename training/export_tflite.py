@@ -26,13 +26,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from train_landcover import DATA, photometric, SEED   # noqa: E402
 
 
-def representative(res, n=300, batch=16):
+def representative(res, n=300, batch=16, strength="mild"):
     ds = tf.keras.utils.image_dataset_from_directory(
         os.path.join(DATA, "training"), image_size=(res, res),
         batch_size=batch, seed=SEED, shuffle=True)
     seen = 0
     for x, _ in ds:
-        x = photometric(x)
+        if strength != "none":
+            x = photometric(x, strength)
         for i in range(x.shape[0]):
             yield [tf.cast(x[i:i + 1], tf.float32)]
             seen += 1
@@ -44,6 +45,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("keras_model")
     ap.add_argument("-o", "--out")
+    # Post-training quantisation is not free, and how much it costs depends on
+    # the model: alpha=0.35 loses 0.5 points, alpha=1.4 loses 20. Wide MobileNet
+    # depthwise layers have activation ranges that per-tensor quantisation
+    # cannot represent, and calibrating through the photometric augmentation
+    # widens them further. Both knobs are exposed so the trade can be measured
+    # rather than assumed.
+    ap.add_argument("--samples", type=int, default=300,
+                    help="representative dataset size")
+    ap.add_argument("--calib-aug", default="mild",
+                    help="photometric strength during calibration, or 'none'")
     a = ap.parse_args()
 
     meta_path = a.keras_model.replace(".keras", ".json")
@@ -55,7 +66,8 @@ def main():
 
     conv = tf.lite.TFLiteConverter.from_keras_model(model)
     conv.optimizations = [tf.lite.Optimize.DEFAULT]
-    conv.representative_dataset = lambda: representative(res)
+    conv.representative_dataset = lambda: representative(
+        res, n=a.samples, strength=a.calib_aug)
     conv.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
     conv.inference_input_type = tf.uint8
     conv.inference_output_type = tf.uint8

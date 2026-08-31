@@ -113,7 +113,16 @@ def build(effort, n_classes=10):
             x = tf.keras.layers.MaxPool2D()(x)
         x = tf.keras.layers.GlobalAveragePooling2D()(x)
         x = tf.keras.layers.Dropout(0.2)(x)
-        out = tf.keras.layers.Dense(n_classes)(x)
+        x = tf.keras.layers.Dense(n_classes)(x)
+    # Softmax must be IN the graph, not applied afterwards. Without it the model
+    # emits unbounded logits, and `inference_output_type=uint8` then has to pick
+    # a quantisation range from the representative set. On the board the logits
+    # exceed that range and saturate, so every tile returns an identical score
+    # -- 99 tiles, one distinct prediction, on a frame that is half open sea.
+    # The same export is fine on host CPU, which is why this only shows up on
+    # the NPU. Every model that works on this board ends in SOFTMAX; ours ended
+    # in RELU, and that was the only structural difference between them.
+        out = tf.keras.layers.Softmax()(x)
         return tf.keras.Model(inp, out)
 
     # MobileNetV2 expects [-1,1]; our tensor arrives as 0..255 so that the
@@ -124,7 +133,8 @@ def build(effort, n_classes=10):
         weights="imagenet", pooling="avg")
     x = base(scaled)
     x = tf.keras.layers.Dropout(0.2)(x)
-    out = tf.keras.layers.Dense(n_classes)(x)
+    x = tf.keras.layers.Dense(n_classes)(x)
+    out = tf.keras.layers.Softmax()(x)
     return tf.keras.Model(inp, out)
 
 
@@ -205,20 +215,33 @@ def main():
     ap.add_argument("--batch", type=int, default=64)
     ap.add_argument("--aug", default="mild", choices=list(AUG))
     ap.add_argument("--out", default="training/out")
+    # Sweep overrides. The ladder's rungs are operating points on a cost/quality
+    # curve, and picking them well needs the curve measured, not assumed -- a
+    # medium rung that lands within 1.2 points of high is a rung nobody would
+    # ever pay for.
+    ap.add_argument("--res", type=int, help="override input resolution")
+    ap.add_argument("--alpha", type=float, help="override width multiplier "
+                                                "(0 = the small custom CNN)")
+    ap.add_argument("--tag", help="output stem suffix instead of the effort name")
     a = ap.parse_args()
 
     tf.keras.utils.set_random_seed(SEED)
-    cfg = LADDER[a.effort]
+    cfg = dict(LADDER[a.effort])
+    if a.res:
+        cfg["res"] = a.res
+    if a.alpha is not None:
+        cfg["alpha"] = None if a.alpha == 0 else a.alpha
+    LADDER[a.effort] = cfg
     tr, va, classes = datasets(cfg["res"], a.batch, a.aug)
     print(f"effort={a.effort} res={cfg['res']} alpha={cfg['alpha']} "
           f"classes={classes}")
 
     model = build(a.effort, len(classes))
     model.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
-                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
                   metrics=["accuracy"])
     os.makedirs(a.out, exist_ok=True)
-    stem = os.path.join(a.out, f"landcover_{a.effort}")
+    stem = os.path.join(a.out, f"landcover_{a.tag or a.effort}")
     hist = model.fit(tr, validation_data=va, epochs=a.epochs, callbacks=[
         tf.keras.callbacks.EarlyStopping("val_accuracy", patience=6,
                                          restore_best_weights=True),

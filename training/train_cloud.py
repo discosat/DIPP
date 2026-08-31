@@ -135,10 +135,21 @@ def main():
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--limit", type=int, default=4000)
     ap.add_argument("--out", default="training/out")
+    # Same reason as the land-cover ladder: rungs are operating points, and a
+    # rung only earns its place if it is well separated from its neighbours in
+    # both cost and quality. That needs the curve measured, not assumed.
+    ap.add_argument("--res", type=int, help="override input resolution")
+    ap.add_argument("--width", type=int, help="override base filter count")
+    ap.add_argument("--depth", type=int, help="override number of levels")
+    ap.add_argument("--tag", help="output stem suffix instead of the effort name")
     a = ap.parse_args()
 
     tf.keras.utils.set_random_seed(SEED)
-    cfg = LADDER[a.effort]
+    cfg = dict(LADDER[a.effort])
+    for k in ("res", "width", "depth"):
+        if getattr(a, k):
+            cfg[k] = getattr(a, k)
+    LADDER[a.effort] = cfg
     X, Y, names = load_split(cfg["res"], a.limit)
     n_val = int(len(X) * 0.15)
     Xv, Yv, Xt, Yt = X[:n_val], Y[:n_val], X[n_val:], Y[n_val:]
@@ -164,7 +175,7 @@ def main():
     model.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
                   loss="binary_crossentropy", metrics=[iou_metric])
     os.makedirs(a.out, exist_ok=True)
-    stem = os.path.join(a.out, f"cloud_{a.effort}")
+    stem = os.path.join(a.out, f"cloud_{a.tag or a.effort}")
     hist = model.fit(ds, steps_per_epoch=max(1, len(Xt) // a.batch),
                      validation_data=(Xv, Yv), epochs=a.epochs, callbacks=[
                          tf.keras.callbacks.EarlyStopping("val_iou_metric", mode="max",

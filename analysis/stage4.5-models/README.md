@@ -277,3 +277,66 @@ shift where the shipped one does not:
 
 3.4 points of clean accuracy for robustness across the board, at 1/12 the input
 pixels. The ladder itself is still not monotone and is the remaining work.
+
+---
+
+# Retraining the ladder — quantisation is the binding constraint
+
+The first retrained ladder was monotone but badly shaped: 79.8 / 96.9 / 98.3
+validation. The top two rungs are 1.4 points apart, so nothing would ever pay
+for high. Fixing that meant measuring the cost/quality curve rather than
+assuming it, which turned up a larger problem.
+
+## Post-training quantisation, not training, is what limits the top rung
+
+Float and quantised top-1 on the EuroSAT `testing/` split diverge only for the
+largest model:
+
+| rung | float | uint8 tflite | loss |
+|---|---:|---:|---:|
+| custom CNN @64 | 78.7% | 80.5% | +1.8 |
+| MobileNetV2 α=0.35 @128 | 96.5% | 96.0% | −0.5 |
+| **MobileNetV2 α=1.4 @224** | **98.2%** | **78.4%** | **−19.8** |
+
+α=1.4 trains to 98.2% and then loses twenty points on export. Calibration is
+not the cause — 300/1000/2000 representative samples, with and without the
+photometric augmentation, all land within a point of each other (79.8, 78.6,
+79.4, 78.4). Wide MobileNetV2 depthwise layers have activation ranges that
+per-tensor int8 cannot represent, and no amount of calibration data changes
+that. `tensorflow_model_optimization` (QAT, the real fix) is absent from the
+container and has poor Keras 3 support, so the practical answer is to choose
+backbones that survive export.
+
+**The model that runs on the satellite is the quantised one, so every rung is
+selected on quantised accuracy.** Selecting on float accuracy would have put a
+78% model at the top of the ladder and called it 98%.
+
+## The candidate curve
+
+Quantised top-1 (EuroSAT testing, 800-image seeded sample), host-CPU latency as
+a *ranking* proxy only:
+
+| candidate | res | size | host ms | EuroSAT | device tiles |
+|---|---:|---:|---:|---:|---:|
+| custom CNN @64 | 64 | 111 KB | 1.2 | 80.5% | 92.2% |
+| custom CNN @96 | 96 | 111 KB | 1.3 | 86.2% | 76.6% |
+| custom CNN @112 | 112 | 111 KB | 1.8 | 88.6% | 79.7% |
+| custom CNN @128 | 128 | 111 KB | 2.4 | 88.8% | 76.6% |
+| MobileNetV2 α=0.35 @96 | 96 | 636 KB | 0.7 | 96.2% | 76.6% |
+| MobileNetV2 α=0.35 @128 | 128 | 636 KB | 1.3 | 96.0% | 84.4% |
+| MobileNetV2 α=0.35 @224 | 224 | 636 KB | 3.9 | 90.8% | 98.4% |
+| MobileNetV2 α=1.4 @224 | 224 | 5.0 MB | 20.7 | 78.4% | 95.3% |
+
+Two things this table says that the accuracy column alone does not.
+
+**Host-CPU latency cannot pick the rungs.** It ranks α=0.35 @96 as
+simultaneously the fastest candidate and among the most accurate, which would
+dominate every other option. That is an artifact of XNNPACK, not a property of
+the board: the i.MX8MP runs these through the VX delegate on the NPU, whose
+cost structure is nothing like it. Latency and energy have to be measured on
+the board, which is what `tools/bench_models.py` does.
+
+**The custom CNN is the wrong shape for a cheap rung.** It runs four dense
+convolutions at full resolution before pooling, so it costs *more* than
+MobileNetV2 α=0.35 while scoring eight points lower. It is small on disk and
+expensive to run — the opposite of what a low rung needs.

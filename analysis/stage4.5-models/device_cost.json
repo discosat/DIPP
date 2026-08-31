@@ -24,5 +24,45 @@
       "energy_wh": 0.05341854027621117,
       "measured_s": 55.523
     }
+  },
+  "bench_sm_cnn064": {
+    "classify_us": [],
+    "demosaic_us": [
+      696708
+    ],
+    "energy": {
+      "avg_current_a": 0.639232969912538,
+      "avg_power_w": 3.19616484956269,
+      "energy_wh": 0.049306169745920427,
+      "measured_s": 55.536
+    }
+  },
+  "mobilenetv2_14_landcover": {
+    "classify_us": [
+      1529611
+    ],
+    "demosaic_us": [
+      672193
+    ],
+    "energy": {
+      "avg_current_a": 0.6340529577536429,
+      "avg_power_w": 3.1702647887682147,
+      "energy_wh": 0.04887931863904993,
+      "measured_s": 55.505
+    }
+  },
+  "mobilenetv2_05_landcover": {
+    "classify_us": [
+      681906
+    ],
+    "demosaic_us": [
+      672938
+    ],
+    "energy": {
+      "avg_current_a": 0.6278686950037651,
+      "avg_power_w": 3.1393434750188254,
+      "energy_wh": 0.04853948236291607,
+      "measured_s": 55.662
+    }
   }
 }

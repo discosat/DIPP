@@ -125,3 +125,25 @@ without reading this file will silently destroy the results.
 
 Today both sizes happen to be 150,528. Any config change makes one of them a
 silent corruption.
+
+---
+
+## 8. The cloud-segmentation ladder is inverted too
+
+38-Cloud, 200 seeded patches, cloud-class IoU. Ground truth is 48.6% cloud, so
+**predicting "all cloud" scores IoU 0.486** — that is the floor to beat.
+
+| effort | model | size | latency | energy | best IoU |
+|---|---|---:|---:|---:|---:|
+| low | `custom_tiny_conv_unet` | 75 KB | 120 ms | 220 µWh | **0.594** |
+| high | `mobilenetv2_14_unet` | 5.4 MB | 1472 ms (12.3×) | 3540 µWh (16×) | 0.577 |
+
+**12.3× the latency and 16× the energy for slightly *worse* IoU**, and both are
+barely above the constant-prediction floor. Under `minmax` — the mapping the
+device actually applies — the low model collapses to **0.298**, worse than
+predicting every pixel cloudy.
+
+So both model families have the same defect: effort buys nothing. This is a
+prerequisite for DIPP rather than a property of it — an adaptive scheduler that
+chooses between effort levels needs those levels to differ in quality, or there
+is nothing to choose between.

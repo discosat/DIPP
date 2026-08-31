@@ -1,0 +1,13 @@
+{
+  "gain": [
+    0.04032064974308014,
+    0.03141263872385025,
+    0.02516835927963257
+  ],
+  "offset": [
+    17.2701416015625,
+    36.85985565185547,
+    60.97644805908203
+  ],
+  "note": "raw 12-bit demosaiced -> 8-bit, fitted label-free on pooled pixel statistics vs EuroSAT"
+}

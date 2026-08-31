@@ -1,0 +1,15 @@
+{
+  "_comment": "Hand-labelled tiles from the real device preprocessing chain, read off grid_*.png. Only unambiguous, fully-homogeneous tiles are included -- any tile containing a coastline, harbour or mixed cover is left out, so this is a conservative set. Tile index is row-major, 11 across x 9 down, matching tile_module.cpp.",
+  "tile_size": 224,
+  "grid": [9, 11],
+  "labels": {
+    "koge-coast-no-clouds": {
+      "SeaLake": [11,12,22,23,24,33,34,35,36,44,45,46,47,55,56,57,58,66,67,68,69,70,77,78,79,80,88,89,90,91],
+      "Residential": [50,61,72,83]
+    },
+    "amager-no-clouds": {
+      "SeaLake": [22,33,34,44,55,66,67,77,78,79,88,89,90],
+      "Residential": [24,25,39,49,50,59,60,61,70,71,72,81,82,83,92,93,94]
+    }
+  }
+}

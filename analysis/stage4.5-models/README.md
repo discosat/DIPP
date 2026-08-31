@@ -147,3 +147,59 @@ So both model families have the same defect: effort buys nothing. This is a
 prerequisite for DIPP rather than a property of it — an adaptive scheduler that
 chooses between effort levels needs those levels to differ in quality, or there
 is nothing to choose between.
+
+---
+
+## 9. In-domain baseline: hand-labelled tiles from real frames
+
+EuroSAT accuracy says whether a model works on EuroSAT. This says whether it
+works on what the satellite actually produces. 64 tiles hand-labelled off
+`grid_*.png` (`device_labels.json`), only unambiguous ones — open water with no
+coastline, dense urban with no fields — so failure here is not failure on a
+hard case.
+
+| model | effort | overall | SeaLake (43 tiles) | Residential (21) |
+|---|---|---:|---:|---:|
+| `custom_conv_model_landcover` | low | 4.7% | **0.0%** | 14.3% |
+| `mobilenetv2_05_landcover` | medium | 25.0% | **0.0%** | 76.2% |
+| `mobilenetv2_14_landcover` | high | 28.1% | **0.0%** | 85.7% |
+
+**Not one of 43 open-water tiles is classified SeaLake by any model.** The
+low-effort model is below chance overall. Note the ordering here is the
+*reverse* of the EuroSAT ordering — the model that is best on EuroSAT is worst
+in domain — which is what over-fitting to a clean, well-exposed dataset looks
+like.
+
+## 10. Why: the frame-wide stretch destroys per-tile contrast
+
+Measured over all 495 tiles of the five real frames
+(`device_stats.json`) against EuroSAT:
+
+| | R | G | B |
+|---|---:|---:|---:|
+| device tile within-tile σ | 27.4 | 23.4 | 24.0 |
+| EuroSAT within-image σ | 52.0 | 43.2 | 40.3 |
+| device tile mean, spread across tiles | 91.5 ± 52.8 | 102.6 ± 43.9 | 89.9 ± 45.3 |
+
+`cv::normalize(NORM_MINMAX)` sets the range from the *whole frame's* extremes,
+so any one 224×224 tile occupies a fraction of it: device tiles carry roughly
+**half the contrast** of EuroSAT patches, with brightness varying from mean 1
+to mean 240 depending on cloud cover. That is the domain gap, and it is why the
+`koge-coast-full-clouds` run put **all 99 tiles in a single class**.
+
+## 11. Ladder design
+
+Tile size stays at 224×224 and the tiler is not touched. Changing it would only
+produce more tiles, leaving total inference work unchanged — the ground area
+per inference has to stay constant for a cost comparison to mean anything.
+Effort scales by **downsampling the tile that the module is handed**, so a
+low-effort model can take a 64×64 or 112×112 input covering the same ground.
+
+This also removes a memory-safety defect for free: the module currently does
+`memcpy(input_tensor, input_image_data, expected_bytes)` with no size check.
+Resizing the tile to whatever the interpreter reports as its input shape is
+both the feature and the fix.
+
+Targets: quality strictly increasing with effort, with gaps wide enough that
+spending 6.6× the energy is defensible, measured on the in-domain set above —
+not on EuroSAT alone.

@@ -20,7 +20,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("keras_model")
     a = ap.parse_args()
-    m = tf.keras.models.load_model(a.keras_model)
+    # compile=False: the cloud models carry a custom iou_metric that cannot be
+    # deserialised without registering it, and weights do not need the
+    # optimiser or metrics anyway.
+    m = tf.keras.models.load_model(a.keras_model, compile=False)
     w = m.get_weights()
     out = a.keras_model.replace(".keras", ".weights.npz")
     np.savez(out, *w)

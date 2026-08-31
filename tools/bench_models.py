@@ -124,7 +124,37 @@ def run_once(label, n, energy):
            if "classification" in m.group(1)]
     dem = [int(m.group(2)) for m in EXEC_RE.finditer(log)
            if "demosaic" in m.group(1)]
-    return {"classify_us": lat, "demosaic_us": dem, "energy": e}
+
+    # The EXEC line only appears if the module returns a non-empty batch, and
+    # the batch is empty whenever no tile matches class_index -- which is the
+    # normal outcome of running a Residential filter over open sea. Timing must
+    # not depend on the scene, so it also comes from the module's own log,
+    # which timestamps every tile regardless of what survives the filter.
+    span = board(
+        f"L=$({{ ls -t /home/root/logs/tflite_classification_* | head -n 1; }}); "
+        f"grep -a 'Top class' $L | head -n 1; "
+        f"grep -a 'Top class' $L | tail -n 1; "
+        f"grep -ac 'Top class' $L", 300)
+    return {"classify_us": lat, "demosaic_us": dem, "energy": e,
+            "module_log": span}
+
+
+TS_RE = re.compile(r"\[\d{4}-\d{2}-\d{2} (\d{2}):(\d{2}):(\d{2})\.(\d{6})\]")
+
+
+def span_ms(text):
+    """Wall time across all tiles, from the module's own timestamps."""
+    ts = [((int(h) * 3600 + int(m) * 60 + int(s)) * 1_000_000 + int(us))
+          for h, m, s, us in TS_RE.findall(text)]
+    n = None
+    for line in text.splitlines():
+        t = line.strip()
+        if t.isdigit():
+            n = int(t)
+    if len(ts) < 2 or not n or n < 2:
+        return None, n
+    # ts are first and last tile; scale to all n tiles.
+    return (max(ts) - min(ts)) / 1000.0 * n / (n - 1), n
 
 
 def main():
@@ -152,9 +182,13 @@ def main():
         results[key] = r
         lat = r["classify_us"]
         med = sorted(lat)[len(lat) // 2] / 1000.0 if lat else float("nan")
+        ms, ntiles = span_ms(r.get("module_log", ""))
+        r["module_span_ms"] = ms
+        r["module_tiles"] = ntiles
         wh = (r["energy"] or {}).get("energy_wh")
-        print(f"{key:20} classify median {med:8.1f} ms over {len(lat)} batches"
-              + (f"   run energy {wh:.5f} Wh" if wh else ""))
+        print(f"{key:22} EXEC {med:8.1f} ms ({len(lat)} batches)   "
+              f"module {ms if ms else float('nan'):8.1f} ms / {ntiles} tiles"
+              + (f"   run {wh:.5f} Wh" if wh else ""))
 
     if os.path.exists(a.out):
         prev = json.load(open(a.out))

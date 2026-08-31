@@ -340,3 +340,87 @@ the board, which is what `tools/bench_models.py` does.
 convolutions at full resolution before pooling, so it costs *more* than
 MobileNetV2 α=0.35 while scoring eight points lower. It is small on disk and
 expensive to run — the opposite of what a low rung needs.
+
+---
+
+# The ladder, measured on all three axes
+
+Accuracy is quantised top-1 on the EuroSAT `testing` split, measured under
+TFLite **2.9.1** — the version the board runs. Latency is wall time across all
+99 tiles of one frame, taken from the module's own per-tile timestamps on the
+board. Energy is the Otii reading for the whole run.
+
+| model | res | ms / 99 tiles | quantised | float | run Wh |
+|---|---:|---:|---:|---:|---:|
+| **`t9_cnn112`** | 112 | **151.7** | **84.6%** | 84.6% | 0.04845 |
+| `custom_conv` (original low) | 224 | 180.7 | 75.7% | — | 0.04863 |
+| `t9_cnn064` | 64 | 254.6 | 77.8% | 79.0% | 0.04828 |
+| **`t9_a035r096`** | 96 | **396.5** | **96.0%** | 96.0% | 0.04850 |
+| `t9_a035r224` | 224 | 484.8 | 96.1% | 98.2% | 0.04940 |
+| `mobilenetv2_05` (original medium) | 224 | 488.3 | 48.9% | — | 0.04925 |
+| `t9_a035r128` | 128 | 514.7 | 82.1% | 93.0% | 0.04983 |
+| `t9_a100r224` | 224 | 912.5 | 89.2% | 98.2% | 0.05026 |
+| `mobilenetv2_14` (original high) | 224 | 1118.4 | 65.9% | — | 0.04966 |
+
+**Every one of the paper's three models is Pareto-dominated by a retrained one.**
+The published high-effort model costs 1118 ms for 65.9%; `a035r096` costs 397 ms
+for 96.0% — 2.8× faster and thirty points better.
+
+## Only two rungs currently earn their place
+
+The Pareto front is `cnn112` (152 ms, 84.6%) and `a035r096` (397 ms, 96.0%).
+Everything else is dominated, and two of those are worth naming because they
+look like obvious rungs until they are measured:
+
+- `a035r128` is **slower and less accurate** than `a035r096` — 515 ms for 82.1%
+  against 397 ms for 96.0%. Its float accuracy is 93.0%; quantisation takes
+  eleven points off this one and none off its neighbours.
+- `cnn064` is **slower** than `cnn112` despite a quarter the pixels, and less
+  accurate. Nothing about the architecture predicts that.
+
+Neither is visible from a host-CPU benchmark or a float validation number.
+
+## Quantisation, not capacity, is what caps the ladder
+
+Loss on export, from float validation to quantised top-1:
+
+| width | float | quantised | loss |
+|---|---:|---:|---:|
+| α=0.35 @96 | 96.0% | 96.0% | 0.0 |
+| α=0.35 @224 | 98.2% | 96.1% | 2.1 |
+| α=1.0 @224 | 98.2% | 89.2% | 9.0 |
+| α=1.4 @224 | 98.2% | 78.4% | 19.8 |
+
+Every model trains to ~98%. What separates them is how much survives
+per-tensor int8, and that degrades monotonically with width. **The achievable
+ceiling on this board is therefore about 96%, not 98%**, and a third rung
+meaningfully above `a035r096` needs quantisation-aware training rather than a
+bigger backbone. That is a real finding for the paper: on this hardware the
+effort ladder is bounded by the export path, not by how much compute the
+scheduler is willing to spend.
+
+## Latency is overhead-bound at the cheap end
+
+`cnn112` runs 99 tiles in 151.7 ms, i.e. ~1.5 ms per invocation, and `cnn064`
+is *slower* at the same tile count. At that end the per-invocation cost of
+crossing into the delegate dominates the arithmetic, so a cheaper model buys
+nothing. The low rung cannot go below roughly 150 ms per frame however small it
+gets — which also means the honest way to make low effort cheaper is to run
+fewer tiles, not a smaller network.
+
+## Cloud segmentation
+
+Trained and converted, IoU on a held-out 38-Cloud split:
+
+| model | res | width/depth | val IoU |
+|---|---:|---|---:|
+| `cl_x96w4` | 96 | 4/2 | 0.741 |
+| `cl_tiny` | 96 | 6/3 | 0.834 |
+| `cl_low` | 128 | 8/3 | 0.846 |
+| `cl_high` | 224 | 24/4 | 0.865 |
+
+Against the deployed models' 0.594 and 0.577, every rung is a large
+improvement, and `cl_x96w4` to `cl_high` spans 12 IoU points where the first
+attempt spanned three. **These have not yet been benchmarked on the board** —
+`bench_models.py` drives slot 3 (classification) and measuring the segmentation
+rungs needs the same treatment for slots 6 and 7.

@@ -1,17 +1,22 @@
 {
   "custom_conv_model_landcover": {
     "classify_us": [
-      246200
+      239763,
+      241601
     ],
     "demosaic_us": [
-      372968
+      668678,
+      668622
     ],
     "energy": {
-      "avg_current_a": 0.6844771499450555,
-      "avg_power_w": 3.4223857497252776,
-      "energy_wh": 0.05275702699472341,
-      "measured_s": 55.495
-    }
+      "avg_current_a": 0.6281244125463734,
+      "avg_power_w": 3.1406220627318673,
+      "energy_wh": 0.048627298271298414,
+      "measured_s": 55.74
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 06:15:33.254583] INFO: Top class: 1 with score 0.5430\n[1970-01-01 06:15:33.433486] INFO: Top class: 7 with score 0.9688\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 180.72854081632653,
+    "module_tiles": 99
   },
   "bench_a035r224": {
     "classify_us": [],
@@ -39,30 +44,136 @@
   },
   "mobilenetv2_14_landcover": {
     "classify_us": [
-      1529611
+      1224537,
+      1229015
     ],
     "demosaic_us": [
-      672193
+      678796,
+      684840
     ],
     "energy": {
-      "avg_current_a": 0.6340529577536429,
-      "avg_power_w": 3.1702647887682147,
-      "energy_wh": 0.04887931863904993,
-      "measured_s": 55.505
-    }
+      "avg_current_a": 0.64255281727314,
+      "avg_power_w": 3.2127640863657,
+      "energy_wh": 0.04966397816840311,
+      "measured_s": 55.65
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 06:19:13.234245] INFO: Top class: 9 with score 0.9883\n[1970-01-01 06:19:14.341315] INFO: Top class: 7 with score 0.9688\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 1118.366632653061,
+    "module_tiles": 99
   },
   "mobilenetv2_05_landcover": {
     "classify_us": [
-      681906
+      565118,
+      572401
     ],
     "demosaic_us": [
-      672938
+      672384,
+      675926
     ],
     "energy": {
-      "avg_current_a": 0.6278686950037651,
-      "avg_power_w": 3.1393434750188254,
-      "energy_wh": 0.04853948236291607,
-      "measured_s": 55.662
-    }
+      "avg_current_a": 0.6331651037099042,
+      "avg_power_w": 3.165825518549521,
+      "energy_wh": 0.0492549686927663,
+      "measured_s": 56.01
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 06:17:23.445037] INFO: Top class: 9 with score 0.3984\n[1970-01-01 06:17:23.928403] INFO: Top class: 7 with score 0.8164\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 488.29830612244893,
+    "module_tiles": 99
+  },
+  "bench_t9_cnn064": {
+    "classify_us": [],
+    "demosaic_us": [
+      673740,
+      668692
+    ],
+    "energy": {
+      "avg_current_a": 0.6260040109136824,
+      "avg_power_w": 3.130020054568412,
+      "energy_wh": 0.0482796898917026,
+      "measured_s": 55.529
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 06:10:05.866061] INFO: Top class: 9 with score 0.9961\n[1970-01-01 06:10:06.118129] INFO: Top class: 9 with score 0.9961\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 254.64012244897958,
+    "module_tiles": 99
+  },
+  "bench_t9_cnn112": {
+    "classify_us": [],
+    "demosaic_us": [
+      671487,
+      673748
+    ],
+    "energy": {
+      "avg_current_a": 0.6252347985895161,
+      "avg_power_w": 3.1261739929475807,
+      "energy_wh": 0.04845482850902279,
+      "measured_s": 55.799
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 06:11:55.115719] INFO: Top class: 9 with score 0.9961\n[1970-01-01 06:11:55.265933] INFO: Top class: 9 with score 0.9961\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 151.74679591836735,
+    "module_tiles": 99
+  },
+  "bench_t9_a035r096": {
+    "classify_us": [],
+    "demosaic_us": [
+      670833,
+      672309
+    ],
+    "energy": {
+      "avg_current_a": 0.6272517472406636,
+      "avg_power_w": 3.1362587362033176,
+      "energy_wh": 0.04849701425749064,
+      "measured_s": 55.668
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 06:13:44.247520] INFO: Top class: 9 with score 0.9961\n[1970-01-01 06:13:44.639989] INFO: Top class: 9 with score 0.9961\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 396.47378571428567,
+    "module_tiles": 99
+  },
+  "bench_t9_a035r128": {
+    "classify_us": [],
+    "demosaic_us": [
+      677352,
+      689039
+    ],
+    "energy": {
+      "avg_current_a": 0.6385987187702019,
+      "avg_power_w": 3.1929935938510097,
+      "energy_wh": 0.04983021280270484,
+      "measured_s": 56.182
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 06:33:56.101306] INFO: Top class: 9 with score 0.7578\n[1970-01-01 06:33:56.610772] INFO: Top class: 9 with score 0.7578\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 514.6646326530612,
+    "module_tiles": 99
+  },
+  "bench_t9_a035r224": {
+    "classify_us": [],
+    "demosaic_us": [
+      701510,
+      705191
+    ],
+    "energy": {
+      "avg_current_a": 0.6350428462060005,
+      "avg_power_w": 3.1752142310300027,
+      "energy_wh": 0.0493975133952962,
+      "measured_s": 56.006
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 06:35:46.630980] INFO: Top class: 9 with score 0.9961\n[1970-01-01 06:35:47.110896] INFO: Top class: 9 with score 0.9961\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 484.8131020408163,
+    "module_tiles": 99
+  },
+  "bench_t9_a100r224": {
+    "classify_us": [],
+    "demosaic_us": [
+      713058,
+      755749
+    ],
+    "energy": {
+      "avg_current_a": 0.6454914262518925,
+      "avg_power_w": 3.227457131259462,
+      "energy_wh": 0.050262265724147354,
+      "measured_s": 56.064
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificati \non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 06:45:52.379420] INFO: Top class: 9 with score 0.9961\n[1970-01-01 06:45:53.282670] INFO: Top class: 9 with score 0.9961\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 912.4668367346939,
+    "module_tiles": 99
   }
 }

@@ -31,6 +31,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -38,7 +39,7 @@ FLIGHT = os.path.join(ROOT, "experiments", "board", "flight-config")
 BOARD_DIR = "/home/root/tmp-experiments"
 sys.path.insert(0, HERE)
 
-PIPE_FULL = """pipeline:
+PIPE_CLASSIFY = """pipeline:
 - name: libdemosaic
   implementations:
   - param_id: 1
@@ -53,6 +54,10 @@ PIPE_FULL = """pipeline:
     effort_level: default
 """
 
+PIPE_SEGMENT = PIPE_CLASSIFY.replace(
+    "libtflite_classification", "libtflite_binary_segmentation").replace(
+    "param_id: 3", "param_id: 6")
+
 PIPE_BASE = """pipeline:
 - name: libdemosaic
   implementations:
@@ -64,7 +69,7 @@ PIPE_BASE = """pipeline:
     effort_level: default
 """
 
-MODULE3 = """latency_cost: 235000
+MODULE_CLASSIFY = """latency_cost: 235000
 energy_cost: 465
 parameters:
 - key: model_filename
@@ -75,6 +80,32 @@ parameters:
   value: 7
 """
 
+# Segmentation keeps class 0 (the non-cloud side) and a permissive threshold, so
+# the module always emits something and timing never depends on the scene.
+MODULE_SEGMENT = """latency_cost: 120000
+energy_cost: 264
+parameters:
+- key: model_filename
+  type: 5
+  value: /usr/share/models/{model}.tflite
+- key: class_index
+  type: 3
+  value: 0
+- key: threshold_percentage
+  type: 4
+  value: 0.0
+"""
+
+KINDS = {
+    "classification": dict(pipe=PIPE_CLASSIFY, module=MODULE_CLASSIFY, slot=3,
+                           log="tflite_classification", mark="Top class"),
+    # The .so is libtflite_binary_segmentation but the module names its own log
+    # "tflite_segmentation_<epoch>.txt" -- the two do not match, so the prefix
+    # has to come from the source, not from the module name.
+    "segmentation":   dict(pipe=PIPE_SEGMENT,   module=MODULE_SEGMENT,  slot=6,
+                           log="tflite_segmentation", mark="Kept pixels"),
+}
+
 
 def board(cmd, timeout=300):
     r = subprocess.run([os.path.join(HERE, "board_console.py"), cmd],
@@ -82,17 +113,18 @@ def board(cmd, timeout=300):
     return r.stdout
 
 
-def make_vmem(model, out_path):
+def make_vmem(model, out_path, kind="classification"):
     """A full config set with pipeline 2 cut down and slot 3 repointed."""
     tmp = tempfile.mkdtemp(prefix="benchcfg-")
     for f in os.listdir(FLIGHT):
         if f.endswith(".yaml"):
             shutil.copy(os.path.join(FLIGHT, f), tmp)
+    k = KINDS[kind]
     open(os.path.join(tmp, "pipeline_2.yaml"), "w").write(
-        PIPE_BASE if model is None else PIPE_FULL)
+        PIPE_BASE if model is None else k["pipe"])
     if model is not None:
-        open(os.path.join(tmp, "module_3.yaml"), "w").write(
-            MODULE3.format(model=model))
+        open(os.path.join(tmp, f"module_{k['slot']}.yaml"), "w").write(
+            k["module"].format(model=model))
     man = os.path.join(tmp, "manifest.yaml")
     # The manifest lists files relative to itself, so the copied dir just works.
     subprocess.run([sys.executable, os.path.join(HERE, "make_storage_vmem.py"),
@@ -104,7 +136,7 @@ def make_vmem(model, out_path):
 EXEC_RE = re.compile(r"^EXEC .*module=(\S+).*latency_meas_us=(\d+)", re.M)
 
 
-def run_once(label, n, energy):
+def run_once(label, n, energy, kind="classification"):
     board(f"cd {BOARD_DIR} && rm -rf runs/{label}", 60)
     energy.start()
     board(f"cd {BOARD_DIR} && (setsid ./run.sh --label {label} --pipeline 2 "
@@ -130,11 +162,12 @@ def run_once(label, n, energy):
     # normal outcome of running a Residential filter over open sea. Timing must
     # not depend on the scene, so it also comes from the module's own log,
     # which timestamps every tile regardless of what survives the filter.
+    k = KINDS[kind]
     span = board(
-        f"L=$({{ ls -t /home/root/logs/tflite_classification_* | head -n 1; }}); "
-        f"grep -a 'Top class' $L | head -n 1; "
-        f"grep -a 'Top class' $L | tail -n 1; "
-        f"grep -ac 'Top class' $L", 300)
+        f"L=$({{ ls -t /home/root/logs/{k['log']}_* | head -n 1; }}); "
+        f"grep -a '{k['mark']}' $L | head -n 1; "
+        f"grep -a '{k['mark']}' $L | tail -n 1; "
+        f"grep -ac '{k['mark']}' $L", 300)
     return {"classify_us": lat, "demosaic_us": dem, "energy": e,
             "module_log": span}
 
@@ -161,6 +194,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", nargs="*", default=[])
     ap.add_argument("--baseline", action="store_true")
+    ap.add_argument("--kind", default="classification", choices=list(KINDS),
+                    help="which pipeline stage to put the model in")
     ap.add_argument("--n", type=int, default=3)
     ap.add_argument("-o", "--out", default="analysis/stage4.5-models/device_cost.json")
     a = ap.parse_args()
@@ -173,11 +208,21 @@ def main():
     results = {}
     for model, label in jobs:
         vmem = os.path.join(tempfile.gettempdir(), "storage.vmem")
-        make_vmem(model, vmem)
-        subprocess.run([os.path.join(HERE, "board_push.py"), vmem,
-                        f"{BOARD_DIR}/storage.vmem"], check=True,
-                       capture_output=True, timeout=900)
-        r = run_once(label, a.n, energy)
+        make_vmem(model, vmem, a.kind)
+        # Serial pushes fail transiently often enough that one bad transfer
+        # would otherwise abandon the rest of a multi-model sweep.
+        for attempt in range(3):
+            r = subprocess.run([os.path.join(HERE, "board_push.py"), vmem,
+                                f"{BOARD_DIR}/storage.vmem"],
+                               capture_output=True, timeout=900)
+            if r.returncode == 0:
+                break
+            print(f"    push failed (attempt {attempt + 1}/3), retrying")
+            time.sleep(5)
+        else:
+            print(f"  {model or 'baseline'}: SKIPPED (vmem push failed 3x)")
+            continue
+        r = run_once(label, a.n, energy, a.kind)
         key = model or "baseline"
         results[key] = r
         lat = r["classify_us"]

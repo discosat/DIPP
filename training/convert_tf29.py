@@ -42,6 +42,11 @@ def main():
     ap.add_argument("weights_npz")
     ap.add_argument("-o", "--out")
     ap.add_argument("--samples", type=int, default=300)
+    # Calibration draw is a real source of variance, not a detail: the same
+    # a=0.35 weights quantised losslessly at 96px and 224px but lost eleven
+    # points at 128px. Exposing the seed makes that measurable instead of
+    # something that silently differs between exports.
+    ap.add_argument("--calib-seed", type=int, default=43)
     ap.add_argument("--data", default=os.environ.get(
         "EUROSAT_DIR", os.path.expanduser(
             "~/dipp1-experiments/tensorflow-conversion/EuroSat-working")))
@@ -73,7 +78,8 @@ def main():
 
     conv = tf.lite.TFLiteConverter.from_keras_model(model)
     conv.optimizations = [tf.lite.Optimize.DEFAULT]
-    conv.representative_dataset = lambda: representative(res, a.data, a.samples)
+    conv.representative_dataset = lambda: representative(
+        res, a.data, a.samples, a.calib_seed)
     conv.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
     conv.inference_input_type = tf.uint8
     conv.inference_output_type = tf.uint8

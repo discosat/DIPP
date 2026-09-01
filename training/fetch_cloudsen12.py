@@ -53,7 +53,7 @@ def main():
     ap.add_argument("--mode", default="cloudsen12-l1c")
     # Each sample is an independent HTTP range read, so this is I/O bound, not
     # CPU bound: serial fetching runs at ~15/min, i.e. 11 hours for the set.
-    ap.add_argument("--workers", type=int, default=12)
+    ap.add_argument("--workers", type=int, default=6)
     a = ap.parse_args()
 
     ds = tacoreader.load(f"tacofoundation:{a.mode}")
@@ -72,7 +72,22 @@ def main():
         dst = os.path.join(a.out, splits[i], f"{ids[i]}.npz")
         if os.path.exists(dst):
             return "skip", None
-        try:
+        # The host rate-limits sustained parallel range reads: a first run
+        # fetched ~800 samples and then failed 9,180 consecutively, while the
+        # same code succeeded 40/40 immediately afterwards. So the failure is
+        # throttling, not a bad sample, and it needs backoff rather than fewer
+        # samples.
+        for attempt in range(4):
+            try:
+                return _fetch_one(i, dst)
+            except Exception as e:                    # noqa: BLE001
+                if attempt == 3:
+                    return "fail", f"{ids[i]}: {type(e).__name__}: {e}"
+                time.sleep(2 ** attempt * 3)
+        return "fail", f"{ids[i]}: unreachable"
+
+    def _fetch_one(i, dst):
+        if True:
             s = ds.read(i)
             with rio.open(s.read(0)) as src:
                 rgb = src.read(RGB_BANDS,
@@ -87,8 +102,6 @@ def main():
             # that the resume check would treat as complete.
             os.replace(tmp + ".npz" if os.path.exists(tmp + ".npz") else tmp, dst)
             return "ok", None
-        except Exception as e:                    # noqa: BLE001
-            return "fail", f"{ids[i]}: {type(e).__name__}: {e}"
 
     t0, done, skipped, failed = time.time(), 0, 0, 0
     with cf.ThreadPoolExecutor(max_workers=a.workers) as ex:

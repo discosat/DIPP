@@ -108,6 +108,41 @@ def unet(res, width, depth):
     return tf.keras.Model(inp, out)
 
 
+# MobileNetV2 encoder taps, by output stride. These are the standard U-Net skip
+# points used with a MobileNetV2 encoder; naming them explicitly avoids guessing
+# at layer indices, which shift with the width multiplier.
+MBV2_SKIPS = ["block_1_expand_relu",   # 1/2
+              "block_3_expand_relu",   # 1/4
+              "block_6_expand_relu",   # 1/8
+              "block_13_expand_relu"]  # 1/16
+
+
+def unet_mobilenet(res, alpha):
+    """U-Net with a MobileNetV2 encoder -- the paper's high-effort segmentation.
+
+    Built as one flat graph (`input_tensor=`) and with no Rescaling layer, for
+    the same two reasons as the classification rungs: tfmot cannot wrap a nested
+    Model, and it cannot quantise Rescaling. Normalisation lives in the input
+    tensor's quantisation parameters instead, so the module still passes raw
+    uint8 through unchanged.
+    """
+    inp = tf.keras.Input((res, res, 3))
+    enc = tf.keras.applications.MobileNetV2(
+        input_tensor=inp, alpha=alpha, include_top=False, weights="imagenet")
+    skips = [enc.get_layer(n).output for n in MBV2_SKIPS]
+    x = enc.get_layer("block_16_project").output          # 1/32
+    for skip in reversed(skips):
+        f = skip.shape[-1]
+        x = tf.keras.layers.UpSampling2D()(x)
+        x = tf.keras.layers.Concatenate()([x, skip])
+        x = tf.keras.layers.Conv2D(f, 3, padding="same", use_bias=False)(x)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.ReLU()(x)
+    x = tf.keras.layers.UpSampling2D()(x)                  # back to full res
+    out = tf.keras.layers.Conv2D(1, 1, activation="sigmoid")(x)
+    return tf.keras.Model(inp, out)
+
+
 def augment(x, y, rng):
     """Geometric flips plus the same mild photometric jitter the classifiers
     use -- enough to absorb residual calibration error without erasing the
@@ -142,6 +177,10 @@ def main():
     ap.add_argument("--width", type=int, help="override base filter count")
     ap.add_argument("--depth", type=int, help="override number of levels")
     ap.add_argument("--tag", help="output stem suffix instead of the effort name")
+    ap.add_argument("--backbone", choices=["plain", "mobilenetv2"], default="plain",
+                    help="'mobilenetv2' matches the paper's high-effort model")
+    ap.add_argument("--alpha", type=float, default=1.4,
+                    help="width multiplier when --backbone mobilenetv2")
     a = ap.parse_args()
 
     tf.keras.utils.set_random_seed(SEED)
@@ -171,7 +210,11 @@ def main():
             tf.TensorSpec((cfg["res"], cfg["res"], 1), tf.float32))
     ).batch(a.batch).prefetch(tf.data.AUTOTUNE)
 
-    model = unet(cfg["res"], cfg["width"], cfg["depth"])
+    if a.backbone == "mobilenetv2":
+        model = unet_mobilenet(cfg["res"], a.alpha)
+        cfg = dict(cfg, backbone="mobilenetv2", alpha=a.alpha)
+    else:
+        model = unet(cfg["res"], cfg["width"], cfg["depth"])
     model.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
                   loss="binary_crossentropy", metrics=[iou_metric])
     os.makedirs(a.out, exist_ok=True)

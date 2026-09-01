@@ -38,7 +38,10 @@ import numpy as np
 BASE = ("https://huggingface.co/datasets/lc-col/bigearthnet/resolve/main/"
         "bigearthnet_{split}_p{n}.hdf5.gz")
 PARTS = {"train": 18, "val": 9, "test": 9}
-RGB = [3, 2, 1]          # B04, B03, B02 in BigEarthNet's 12-band order
+# h5py fancy indexing must be given in increasing order, so read
+# B02,B03,B04 and reverse to R,G,B. Asking for [3,2,1] directly raises
+# TypeError: Indexing elements must be in increasing order -- on every part.
+RGB_ASC = [1, 2, 3]      # B02, B03, B04 in BigEarthNet's 12-band order
 
 
 def run(cmd, **kw):
@@ -70,7 +73,7 @@ def main():
                 run(f"curl -sSL --retry 3 --retry-delay 5 '{url}' -o '{gz}'")
                 run(f"gunzip -f '{gz}'")
                 with h5py.File(h5, "r") as f:
-                    rgb = f["images"][:, RGB].astype(np.uint16)
+                    rgb = f["images"][:, RGB_ASC][:, ::-1].astype(np.uint16)
                     lab = f["labels19"][:].astype(np.uint8)
                 tmp_out = dst + ".part"
                 np.savez_compressed(tmp_out, rgb=rgb, label=lab)

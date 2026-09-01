@@ -10,3 +10,9 @@ parameters:
 - key: threshold_percentage
   type: 4
   value: 0.05000000074505806
+- key: pixel_threshold
+  type: 4
+  value: 0.5
+- key: mask_lowpass
+  type: 3
+  value: 5

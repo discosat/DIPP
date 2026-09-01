@@ -4,3 +4,6 @@ parameters:
 - key: effort_level
   type: 3
   value: 4
+- key: distance
+  type: 4
+  value: 1.0

@@ -16,3 +16,6 @@ parameters:
 - key: mask_lowpass
   type: 3
   value: 5
+- key: use_npu
+  type: 3
+  value: 0

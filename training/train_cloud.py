@@ -80,6 +80,9 @@ def load_split(res, limit=None):
     a = EU_SD / (flat.std(0) + 1e-6)
     b = EU_MU - a * flat.mean(0)
     X = np.clip(X * a + b, 0, 255)
+    # The Rescaling layer is gone from the graph, so the mapping to [-1,1] has
+    # to happen here instead.
+    X = X / 127.5 - 1.0
     print(f"38-Cloud -> EuroSAT domain: gain={a.round(5)} offset={b.round(2)}")
     return X, Y, names
 
@@ -88,8 +91,19 @@ def unet(res, width, depth):
     """Small encoder/decoder. Deliberately plain: the rung has to be cheap, and
     a U-Net's skip connections are what matter for boundary quality, not the
     backbone."""
-    inp = tf.keras.Input((res, res, 3))
-    x = tf.keras.layers.Rescaling(1 / 127.5, offset=-1.0)(inp)
+    # batch_size=1 and no Rescaling layer, both required for the VX delegate.
+    # Verified against the two U-Nets that already fly, by op set:
+    #   UpSampling2D, batch None, Rescaling -> RESIZE_NEAREST_NEIGHBOR, MUL,
+    #                                          PACK, SHAPE, STRIDED_SLICE
+    #   Conv2DTranspose, batch None          -> MUL, PACK, SHAPE, STRIDED_SLICE
+    #   Conv2DTranspose, batch 1             -> MUL
+    #   Conv2DTranspose, batch 1, no Rescale -> nothing the working models lack
+    # A dynamic batch makes the transposed convolution compute its output shape
+    # at runtime, which is what emits the shape ops. Normalisation moves into
+    # the input tensor's quantisation parameters, exactly as the classification
+    # models do, so the module still hands over raw uint8.
+    inp = tf.keras.Input(shape=(res, res, 3), batch_size=1)
+    x = inp
     skips = []
     for d in range(depth):
         x = tf.keras.layers.Conv2D(width * 2 ** d, 3, padding="same", use_bias=False)(x)
@@ -99,7 +113,15 @@ def unet(res, width, depth):
         x = tf.keras.layers.MaxPool2D()(x)
     x = tf.keras.layers.Conv2D(width * 2 ** depth, 3, padding="same", activation="relu")(x)
     for d in reversed(range(depth)):
-        x = tf.keras.layers.UpSampling2D()(x)
+        # Conv2DTranspose, NOT UpSampling2D. UpSampling2D converts to
+        # RESIZE_NEAREST_NEIGHBOR, which the i.MX8MP VX delegate gets wrong:
+        # measured with inference_diff_run_eval on the board, this model scored
+        # avg_error 250.2 out of a uint8 range of 255 against its own CPU
+        # reference, i.e. the NPU result is unrelated to the correct one. The
+        # two U-Nets that already fly score 0.06 and 1.04, and both upsample
+        # with TRANSPOSE_CONV. The delegate is fine; the operator was not.
+        x = tf.keras.layers.Conv2DTranspose(width * 2 ** d, 2, strides=2,
+                                            padding="same", use_bias=False)(x)
         x = tf.keras.layers.Concatenate()([x, skips[d]])
         x = tf.keras.layers.Conv2D(width * 2 ** d, 3, padding="same", use_bias=False)(x)
         x = tf.keras.layers.BatchNormalization()(x)

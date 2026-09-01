@@ -44,6 +44,8 @@ ROOT = os.environ.get("CLOUD38_DIR", os.path.expanduser(
 SEED = 43
 # Target domain: EuroSAT pooled per-band statistics, the same target the
 # demosaic calibration maps the device into.
+DEV_GAIN = np.array([0.005347, 0.003868, 0.003141], np.float32)
+DEV_OFFSET = np.array([10.76, 45.23, 60.73], np.float32)
 EU_MU = np.array([87.5, 97.0, 104.0], np.float32)
 EU_SD = np.array([50.9, 34.5, 29.3], np.float32)
 
@@ -76,14 +78,23 @@ def load_split(res, limit=None):
         g = np.array(Image.open(os.path.join(ROOT, "train_gt", f"gt_{n}.TIF"))
                      .resize((res, res), Image.NEAREST))
         Y[i, :, :, 0] = (g > 127).astype(np.float32)
-    flat = X.reshape(-1, 3)
-    a = EU_SD / (flat.std(0) + 1e-6)
-    b = EU_MU - a * flat.mean(0)
-    X = np.clip(X * a + b, 0, 255)
+    # FIXED transform, not one computed from whatever set happens to be loaded.
+    # The previous corpus-adaptive version was unreproducible where it matters:
+    # gain over 800 patches is [0.0054 0.0038 0.0031], but over a SINGLE patch
+    # it is [0.0072 0.0053 0.0045] -- 33% out -- and a single tile is all the
+    # device ever has. The device also applies no such transform at all; it
+    # feeds tiles calibrated by the demosaic module. So a model trained that way
+    # is trained in one radiometric domain and deployed in another.
+    #
+    # These constants map 38-Cloud onto the MEASURED device domain (pooled over
+    # 100 real calibrated tiles from four scenes: mean 94.4/104.5/111.2, std
+    # 50.4/34.8/29.6). After the map 38-Cloud lands at mean 94.4/103.5/111.7,
+    # std 50.2/35.0/29.5.
+    X = np.clip(X * DEV_GAIN + DEV_OFFSET, 0, 255)
     # The Rescaling layer is gone from the graph, so the mapping to [-1,1] has
     # to happen here instead.
     X = X / 127.5 - 1.0
-    print(f"38-Cloud -> EuroSAT domain: gain={a.round(5)} offset={b.round(2)}")
+    print(f"38-Cloud -> device domain: gain={DEV_GAIN} offset={DEV_OFFSET}")
     return X, Y, names
 
 
@@ -212,8 +223,18 @@ def main():
             cfg[k] = getattr(a, k)
     LADDER[a.effort] = cfg
     X, Y, names = load_split(cfg["res"], a.limit)
-    n_val = int(len(X) * 0.15)
-    Xv, Yv, Xt, Yt = X[:n_val], Y[:n_val], X[n_val:], Y[n_val:]
+    # Split by SCENE, not by patch. 38-Cloud patches are 384x384 crops of a few
+    # Landsat scenes, so neighbouring patches overlap in content and a random
+    # split leaks the validation set into training -- which is how a model can
+    # report val_iou 0.865 and then measure 0.538 on held-out data.
+    scenes = np.array([n.split("_by_")[1].split("_", 1)[1] for n in names])
+    uniq = sorted(set(scenes))
+    rng_s = np.random.default_rng(SEED)
+    val_scenes = set(rng_s.permutation(uniq)[:max(1, len(uniq) // 5)])
+    is_val = np.array([sc in val_scenes for sc in scenes])
+    Xv, Yv, Xt, Yt = X[is_val], Y[is_val], X[~is_val], Y[~is_val]
+    print(f"scene-disjoint split: {len(uniq)} scenes, {len(val_scenes)} held out "
+          f"({sorted(val_scenes)[:2]}...)")
     print(f"effort={a.effort} res={cfg['res']} train={len(Xt)} val={len(Xv)} "
           f"cloud_fraction={Y.mean():.3f}")
 

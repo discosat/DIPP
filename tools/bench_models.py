@@ -54,6 +54,10 @@ PIPE_CLASSIFY = """pipeline:
     effort_level: default
 """
 
+PIPE_ENCODE = PIPE_CLASSIFY.replace(
+    "libtflite_classification", "libjpegxl_module").replace(
+    "param_id: 3", "param_id: 11")
+
 PIPE_SEGMENT = PIPE_CLASSIFY.replace(
     "libtflite_classification", "libtflite_binary_segmentation").replace(
     "param_id: 3", "param_id: 6")
@@ -96,6 +100,19 @@ parameters:
   value: 0.0
 """
 
+# The encoder's "model" is a setting pair, effort:distance, since one binary
+# serves all three rungs. distance 0 means lossless.
+MODULE_ENCODE = """latency_cost: 149000
+energy_cost: 264
+parameters:
+- key: effort_level
+  type: 3
+  value: {effort}
+- key: distance
+  type: 4
+  value: {distance}
+"""
+
 KINDS = {
     "classification": dict(pipe=PIPE_CLASSIFY, module=MODULE_CLASSIFY, slot=3,
                            log="tflite_classification", mark="Top class"),
@@ -104,6 +121,11 @@ KINDS = {
     # has to come from the source, not from the module name.
     "segmentation":   dict(pipe=PIPE_SEGMENT,   module=MODULE_SEGMENT,  slot=6,
                            log="tflite_segmentation", mark="Kept pixels"),
+    # The encoder writes no log of its own, so timing comes from the EXEC line.
+    # With no classification stage ahead of it every tile reaches the encoder,
+    # so the batch is never empty and EXEC is always emitted.
+    "encoding":       dict(pipe=PIPE_ENCODE,    module=MODULE_ENCODE,   slot=11,
+                           log=None, mark=None),
 }
 
 
@@ -123,8 +145,12 @@ def make_vmem(model, out_path, kind="classification"):
     open(os.path.join(tmp, "pipeline_2.yaml"), "w").write(
         PIPE_BASE if model is None else k["pipe"])
     if model is not None:
-        open(os.path.join(tmp, f"module_{k['slot']}.yaml"), "w").write(
-            k["module"].format(model=model))
+        if kind == "encoding":
+            effort, distance = model.split(":")
+            body = k["module"].format(effort=effort, distance=distance)
+        else:
+            body = k["module"].format(model=model)
+        open(os.path.join(tmp, f"module_{k['slot']}.yaml"), "w").write(body)
     man = os.path.join(tmp, "manifest.yaml")
     # The manifest lists files relative to itself, so the copied dir just works.
     subprocess.run([sys.executable, os.path.join(HERE, "make_storage_vmem.py"),
@@ -136,15 +162,16 @@ def make_vmem(model, out_path, kind="classification"):
 EXEC_RE = re.compile(r"^EXEC .*module=(\S+).*latency_meas_us=(\d+)", re.M)
 
 
-def run_once(label, n, energy, kind="classification"):
+def run_once(label, n, energy, kind="classification", min_drain=20):
     board(f"cd {BOARD_DIR} && rm -rf runs/{label}", 60)
     energy.start()
     board(f"cd {BOARD_DIR} && (setsid ./run.sh --label {label} --pipeline 2 "
           f"--storage MEM --heuristic BEST_EFFORT --load populate "
-          f"--n {n} --images 1 --no-trace > run_{label}.log 2>&1 &) ; "
+          f"--n {n} --images 1 --no-trace --min-drain {min_drain} "
+          f"> run_{label}.log 2>&1 &) ; "
           f"printf 'ST%s\\n' ARTED", 60)
     import time
-    deadline = time.time() + 120 + n * 60
+    deadline = time.time() + 120 + n * 60 + min_drain * 3
     while time.time() < deadline:
         time.sleep(15)
         if "BJDONE" in board(f"test -f {BOARD_DIR}/runs/{label}/board.json && "
@@ -163,6 +190,14 @@ def run_once(label, n, energy, kind="classification"):
     # not depend on the scene, so it also comes from the module's own log,
     # which timestamps every tile regardless of what survives the filter.
     k = KINDS[kind]
+    if k["log"] is None:
+        # Encoder: no module log, but the daemon reports what it uploaded, which
+        # is the compressed size we actually care about for downlink volume.
+        up = board(f"grep -a 'Uploading image' "
+                   f"{BOARD_DIR}/runs/{label}/console.log | tail -n 200", 300)
+        sizes = [int(m) for m in re.findall(r"image size = (\d+)", up)]
+        return {"classify_us": lat, "demosaic_us": dem, "energy": e,
+                "module_log": "", "encoded_bytes": sizes}
     span = board(
         f"L=$({{ ls -t /home/root/logs/{k['log']}_* | head -n 1; }}); "
         f"grep -a '{k['mark']}' $L | head -n 1; "
@@ -222,17 +257,23 @@ def main():
         else:
             print(f"  {model or 'baseline'}: SKIPPED (vmem push failed 3x)")
             continue
-        r = run_once(label, a.n, energy, a.kind)
+        r = run_once(label, a.n, energy, a.kind, a.min_drain)
         key = model or "baseline"
         results[key] = r
         lat = r["classify_us"]
         med = sorted(lat)[len(lat) // 2] / 1000.0 if lat else float("nan")
+        enc = r.get("encoded_bytes") or []
         ms, ntiles = span_ms(r.get("module_log", ""))
+        if enc:
+            r["encoded_mean_bytes"] = sum(enc) / len(enc)
+            r["encoded_n"] = len(enc)
         r["module_span_ms"] = ms
         r["module_tiles"] = ntiles
         wh = (r["energy"] or {}).get("energy_wh")
-        print(f"{key:22} EXEC {med:8.1f} ms ({len(lat)} batches)   "
-              f"module {ms if ms else float('nan'):8.1f} ms / {ntiles} tiles"
+        tail = (f"   encoded {r['encoded_mean_bytes']:.0f} B/tile "
+                f"(n={r['encoded_n']})" if enc else
+                f"   module {ms if ms else float('nan'):8.1f} ms / {ntiles} tiles")
+        print(f"{key:22} EXEC {med:8.1f} ms ({len(lat)} batches){tail}"
               + (f"   run {wh:.5f} Wh" if wh else ""))
 
     if os.path.exists(a.out):

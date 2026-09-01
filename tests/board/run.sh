@@ -16,7 +16,7 @@ IMG_DIR=/mnt/flash/2025-11-10/sentinel2-dataset
 IMAGE=amager-no-clouds.bayerRG
 
 LABEL=""; PIPELINE=2; STORAGE=MMAP; HEURISTIC=BEST_EFFORT
-LOAD=populate; N=20; IMAGES=1; SEED=43; KEEP_CACHE=0; TRACE=1
+LOAD=populate; N=20; IMAGES=1; SEED=43; KEEP_CACHE=0; TRACE=1; MIN_DRAIN=20
 while [ $# -gt 0 ]; do
     case "$1" in
         --label) LABEL="$2"; shift 2;;
@@ -30,6 +30,7 @@ while [ $# -gt 0 ]; do
         --image) IMAGE="$2"; shift 2;;
         --keep-cost-cache) KEEP_CACHE=1; shift;;
         --no-trace) TRACE=0; shift;;
+        --min-drain) MIN_DRAIN="$2"; shift 2;;
         *) echo "unknown option: $1" >&2; exit 2;;
     esac
 done
@@ -117,12 +118,19 @@ else
 fi
 
 echo "--- draining ---"
-LAST=-1; STABLE=0
+# Counting completions cannot tell "slow" from "finished": a module that takes
+# longer than the stability window leaves the count at zero, four identical
+# reads in a row look stable, and the run is cut off mid-execution. JPEG XL at
+# effort 7 does exactly this. So while nothing has completed yet, keep waiting
+# until MIN_DRAIN has elapsed.
+LAST=-1; STABLE=0; DRAIN_START=$(date -u +%s)
 while [ "$STABLE" -lt 4 ]; do
     sleep 5
     NOW=$(cnt 'fully executed' "$OUT/console.log")
     if [ "$NOW" = "$LAST" ]; then STABLE=$((STABLE + 1)); else STABLE=0; fi
     LAST=$NOW
+    ELAPSED=$(( $(date -u +%s) - DRAIN_START ))
+    if [ "$NOW" -eq 0 ] && [ "$ELAPSED" -lt "$MIN_DRAIN" ]; then STABLE=0; fi
 done
 END=$(date -u +%s)
 

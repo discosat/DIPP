@@ -3,7 +3,7 @@ energy_cost: 3180
 parameters:
 - key: model_filename
   type: 5
-  value: /usr/share/models/mobilenetv2_14_landcover.tflite
+  value: /usr/share/models/qat_a140r224.tflite
 - key: class_index
   type: 3
   value: 7

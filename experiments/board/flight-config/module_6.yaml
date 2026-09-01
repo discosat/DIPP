@@ -3,7 +3,7 @@ energy_cost: 220
 parameters:
 - key: model_filename
   type: 5
-  value: /usr/share/models/custom_tiny_conv_unet.tflite
+  value: /usr/share/models/seg_low.tflite
 - key: class_index
   type: 3
   value: 0

@@ -3,7 +3,7 @@ energy_cost: 3540
 parameters:
 - key: model_filename
   type: 5
-  value: /usr/share/models/mobilenetv2_14_unet.tflite
+  value: /usr/share/models/seg_high.tflite
 - key: class_index
   type: 3
   value: 0

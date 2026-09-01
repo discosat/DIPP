@@ -138,6 +138,11 @@ def main():
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--lr", type=float, default=1e-5)
     ap.add_argument("--samples", type=int, default=300)
+    # The target is only checked at epoch end, so a full pass can sail well past
+    # it: the alpha=0.5 float run was asked for 85.15% and stopped at 91.91%.
+    # Shortening the epoch checks more often and lands closer to the mark.
+    ap.add_argument("--steps-per-epoch", type=int,
+                    help="shorten epochs so --target is evaluated more often")
     ap.add_argument("-o", "--out", required=True)
     # Float-only mode trains the *same flat graph* on a GPU box, so its weights
     # load straight into the QAT wrapper here. Training the nested builder
@@ -184,7 +189,12 @@ def main():
            tf.keras.callbacks.ModelCheckpoint(ckpt, monitor="val_accuracy",
                                               mode="max", save_best_only=True,
                                               save_weights_only=True, verbose=1)]
-    qat.fit(tr, validation_data=va, epochs=a.epochs, callbacks=cbs, verbose=2)
+    fit_kw = {}
+    if a.steps_per_epoch:
+        fit_kw["steps_per_epoch"] = a.steps_per_epoch
+        tr = tr.repeat()
+    qat.fit(tr, validation_data=va, epochs=a.epochs, callbacks=cbs, verbose=2,
+            **fit_kw)
     if os.path.exists(ckpt):
         qat.load_weights(ckpt)
         print(f"restored best-val weights from {ckpt}")

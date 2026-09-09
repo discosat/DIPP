@@ -27,7 +27,7 @@ CODE=$WORK/code
 DSET=$WORK/data
 OUT=$WORK/out
 LOGS=$WORK/logs
-SIF=$WORK/tf217.sif
+SIF=$WORK/tf215.sif
 
 echo "=== 0/5 workspace: $WORK ==="
 mkdir -p "$CODE" "$DSET/38-Cloud_training" "$OUT" "$LOGS" || exit 1
@@ -52,10 +52,14 @@ rsync -a "$REMOTE:$REPO/tools/wheels/" "$WORK/wheels/" 2>/dev/null || true
 echo "patches: $(ls "$DSET/38-Cloud_training/train_red" 2>/dev/null | wc -l) red tiles"
 
 echo "=== 3/5 container ==="
-# tfmot needs Keras 2; TF 2.17 defaults to Keras 3, so pin the legacy path.
 
 if [ ! -f "$SIF" ]; then
-  apptainer pull "$SIF" docker://tensorflow/tensorflow:2.17.0-gpu || exit 1
+  # TF 2.15, not 2.17: tfmot imports `keras` directly rather than `tf.keras`,
+  # so TF_USE_LEGACY_KERAS cannot redirect it and it picks up Keras 3, which
+  # has no keras.backend.unique_object_name. TF 2.15 ships Keras 2 as `keras`,
+  # so tfmot works with no shim -- and its CUDA 12.2 still covers the L40S
+  # (compute 8.9).
+  apptainer pull "$SIF" docker://tensorflow/tensorflow:2.15.0-gpu || exit 1
 fi
 apptainer exec --nv "$SIF" python -c \
   "import tensorflow as tf;print('tf',tf.__version__);print(tf.config.list_physical_devices('GPU'))" \
@@ -79,13 +83,13 @@ for w in "$WORK"/wheels/*.whl; do
     || { echo "FATAL: could not install $(basename "$w")"; exit 1; }
 done
 # Verify each import separately so the failing one is named.
-apptainer exec --nv --env TF_USE_LEGACY_KERAS=1 "$SIF" python -c \
-  "import tf_keras; print('tf_keras', tf_keras.__version__)" \
-  || { echo "FATAL: tf_keras missing -- TF_USE_LEGACY_KERAS=1 needs it"; exit 1; }
+apptainer exec --nv "$SIF" python -c \
+  "import keras; print('keras', keras.__version__)" \
+  || { echo "FATAL: keras missing"; exit 1; }
 
 # Fail here rather than after ten runs: without tfmot every --qat config dies on
 # the import, and the last sweep burned all ten producing nothing.
-apptainer exec --nv --env TF_USE_LEGACY_KERAS=1 "$SIF" python -c \
+apptainer exec --nv "$SIF" python -c \
   "import tensorflow_model_optimization as t, tensorflow as tf
 m = tf.keras.Sequential([tf.keras.layers.Input((8,8,3)), tf.keras.layers.Conv2D(4,3),
                          tf.keras.layers.GlobalAveragePooling2D(), tf.keras.layers.Dense(2)])
@@ -125,7 +129,6 @@ echo "$GRID" | while read -r spec; do
   fi
   echo "--- training $5 (alpha=$1 res=$2 batch=$3 dec_max=$4) ---"
   apptainer exec --nv \
-    --env TF_USE_LEGACY_KERAS=1 \
     --env CLOUD38_DIR="$DSET/38-Cloud_training" \
     "$SIF" python "$CODE/train_cloud.py" \
       --effort high --backbone mobilenetv2 \

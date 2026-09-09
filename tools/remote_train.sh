@@ -1,32 +1,43 @@
 #!/bin/bash
-# Run ON desktop7. Pulls code+data from planb, trains, pushes results back.
-# Safe to re-run: transfers are incremental, the container is only pulled once,
-# and a finished rung is skipped rather than retrained.
+# Run ON the GPU host (desktop7). Pulls code+data from planb, trains, pushes back.
+#
+# Everything lives under a single directory ($WORK) so the host's home stays
+# clean: code, data, container image, checkpoints and logs are all inside it,
+# and removing that one directory removes every trace of this job.
+#
+# Safe to re-run: transfers are incremental, the container is pulled once, and a
+# rung whose weights already exist is skipped rather than retrained.
 set -u
 
 PLANB=planb
 REPO=/home/roba/dipp-paper/DIPP
 DATA=/home/roba/dipp1-experiments/tensorflow-conversion/38cloud
-SIF=$HOME/tf217.sif
-OUT=$HOME/training/out
+
+WORK=$HOME/sipp-cloud-training      # override: WORK=/somewhere ./remote_train.sh
+CODE=$WORK/code
+DSET=$WORK/data
+OUT=$WORK/out
+LOGS=$WORK/logs
+SIF=$WORK/tf217.sif
+
+echo "=== 0/5 workspace: $WORK ==="
+mkdir -p "$CODE" "$DSET/38-Cloud_training" "$OUT" "$LOGS" || exit 1
 
 echo "=== 1/5 code ==="
-mkdir -p "$HOME/training" "$OUT"
 rsync -a "$PLANB:$REPO/training/train_cloud.py" \
          "$PLANB:$REPO/training/train_landcover.py" \
-         "$PLANB:$REPO/training/dump_weights.py" "$HOME/training/" || exit 1
+         "$PLANB:$REPO/training/dump_weights.py" "$CODE/" || exit 1
 
 echo "=== 2/5 data (4.2 GB, incremental) ==="
-mkdir -p "$HOME/38cloud/38-Cloud_training"
 rsync -a --partial --info=progress2 \
   "$PLANB:$DATA/38-Cloud_training/train_red" \
   "$PLANB:$DATA/38-Cloud_training/train_green" \
   "$PLANB:$DATA/38-Cloud_training/train_blue" \
   "$PLANB:$DATA/38-Cloud_training/train_gt" \
-  "$HOME/38cloud/38-Cloud_training/" || exit 1
+  "$DSET/38-Cloud_training/" || exit 1
 # The script looks for the CSV one level ABOVE the band directories.
-rsync -a "$PLANB:$DATA/training_patches_38-cloud_nonempty.csv" "$HOME/38cloud/" || exit 1
-echo "patches: $(ls "$HOME/38cloud/38-Cloud_training/train_red" | wc -l) red tiles"
+rsync -a "$PLANB:$DATA/training_patches_38-cloud_nonempty.csv" "$DSET/" || exit 1
+echo "patches: $(ls "$DSET/38-Cloud_training/train_red" 2>/dev/null | wc -l) red tiles"
 
 echo "=== 3/5 container ==="
 if [ ! -f "$SIF" ]; then
@@ -35,10 +46,11 @@ fi
 apptainer exec --nv "$SIF" python -c \
   "import tensorflow as tf;print('tf',tf.__version__);print(tf.config.list_physical_devices('GPU'))" \
   || { echo "GPU not visible inside container"; exit 1; }
+# Apptainer bind-mounts $HOME, so --user persists outside the image.
 apptainer exec --nv "$SIF" pip install --user --quiet pillow
 
 echo "=== 4/5 train ==="
-# alpha res batch tag   -- batch sized for the 2070's 8 GB; drop to 4 if it OOMs
+# alpha res batch tag  -- batch sized for the 2070's 8 GB; drop to 4 if it OOMs
 for spec in "1.4 224 8 ds_hi" "0.35 96 16 ds_lo"; do
   set -- $spec
   if [ -f "$OUT/cloud_$4.weights.npz" ]; then
@@ -46,21 +58,21 @@ for spec in "1.4 224 8 ds_hi" "0.35 96 16 ds_lo"; do
   fi
   apptainer exec --nv \
     --env TF_USE_LEGACY_KERAS=0 \
-    --env CLOUD38_DIR="$HOME/38cloud/38-Cloud_training" \
-    "$SIF" python "$HOME/training/train_cloud.py" \
+    --env CLOUD38_DIR="$DSET/38-Cloud_training" \
+    "$SIF" python "$CODE/train_cloud.py" \
       --effort high --backbone mobilenetv2 \
       --alpha "$1" --res "$2" --batch "$3" --dec-max 128 --loss bcedice \
       --tag "$4" --limit 5155 --epochs 40 --out "$OUT" \
-      > "$HOME/ds_$4.log" 2>&1
-  apptainer exec --nv "$SIF" python "$HOME/training/dump_weights.py" \
-      "$OUT/cloud_$4.keras" >> "$HOME/ds_$4.log" 2>&1
-  echo "DONE $4 $(grep -aoE 'best val_iou=[0-9.]+' "$HOME/ds_$4.log" | tail -1)"
+      > "$LOGS/ds_$4.log" 2>&1
+  apptainer exec --nv "$SIF" python "$CODE/dump_weights.py" \
+      "$OUT/cloud_$4.keras" >> "$LOGS/ds_$4.log" 2>&1
+  echo "DONE $4 $(grep -aoE 'best val_iou=[0-9.]+' "$LOGS/ds_$4.log" | tail -1)"
 done
 
 echo "=== 5/5 push results back to planb ==="
 # Weights and metadata only; conversion to TFLite happens on planb, because the
-# board runs TFLite 2.9.1 and the converter must match it.
+# board runs TFLite 2.9.1 and the converter must match that version.
 rsync -a "$OUT"/cloud_ds_*.weights.npz "$OUT"/cloud_ds_*.json \
-         "$HOME"/ds_*.log "$PLANB:$REPO/training/out/" || exit 1
+         "$LOGS"/ds_*.log "$PLANB:$REPO/training/out/" || exit 1
 echo "pushed. summary:"
-grep -ahoE 'best val_iou=[0-9.]+' "$HOME"/ds_*.log | tail -5
+grep -ahoE 'best val_iou=[0-9.]+' "$LOGS"/ds_*.log | tail -5

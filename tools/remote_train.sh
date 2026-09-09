@@ -68,16 +68,20 @@ apptainer exec --nv "$SIF" python -c \
 # --no-deps either way: tf-keras declares tensorflow as a dependency, so a plain
 # install pulls the whole ~600 MB TF stack into a container that already has it.
 apptainer exec --nv "$SIF" pip install --user --quiet pillow 2>/dev/null || true
-if ls "$WORK"/wheels/*.whl >/dev/null 2>&1; then
-  echo "installing QAT packages from vendored wheels"
-  apptainer exec --nv "$SIF" pip install --user --quiet --no-deps \
-      --no-index --find-links="$WORK/wheels" \
-      tf-keras tensorflow-model-optimization dm-tree || exit 1
-else
-  echo "no vendored wheels; trying PyPI"
-  apptainer exec --nv "$SIF" pip install --user --quiet --no-deps \
-      tf-keras "tensorflow-model-optimization==0.7.5" dm-tree || exit 1
-fi
+# Install each wheel by explicit path. A name-based install can silently
+# satisfy some packages and skip others: the previous run ended with tfmot
+# present but tf_keras missing, so TF_USE_LEGACY_KERAS=1 pointed at a package
+# that did not exist and tfmot failed on "Keras cannot be imported".
+echo "wheels available:"; ls -1 "$WORK"/wheels/*.whl 2>/dev/null || echo "  (none)"
+for w in "$WORK"/wheels/*.whl; do
+  [ -e "$w" ] || { echo "FATAL: no vendored wheels at $WORK/wheels"; exit 1; }
+  apptainer exec --nv "$SIF" pip install --user --quiet --no-deps --no-index "$w" \
+    || { echo "FATAL: could not install $(basename "$w")"; exit 1; }
+done
+# Verify each import separately so the failing one is named.
+apptainer exec --nv --env TF_USE_LEGACY_KERAS=1 "$SIF" python -c \
+  "import tf_keras; print('tf_keras', tf_keras.__version__)" \
+  || { echo "FATAL: tf_keras missing -- TF_USE_LEGACY_KERAS=1 needs it"; exit 1; }
 
 # Fail here rather than after ten runs: without tfmot every --qat config dies on
 # the import, and the last sweep burned all ten producing nothing.

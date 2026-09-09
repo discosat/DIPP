@@ -108,37 +108,40 @@ echo "=== 4/5 train ==="
 # the memory for far more, but changing the accelerator and the batch size at
 # once would make the numbers incomparable.
 #
-#          alpha res batch dec tag
+# The low rung must be the small plain U-Net, not a MobileNet: the paper's low
+# segmentation model is 75 KB, while the smallest MobileNet-backed candidate is
+# 1360 KB and lands within 0.04 IoU of the high rung. Two alpha=0.5 configs are
+# repeated here because their first run stopped at 10-12 epochs on patience 6.
+#
+#      backbone alpha res batch dec width depth tag
 GRID="
-1.4  224 16 128 g_a14_r224
-1.4  192 16 128 g_a14_r192
-1.0  224 16 128 g_a10_r224
-1.4  224 16  64 g_a14_r224_d64
-0.5  160 16 128 g_a05_r160
-0.5  128 16 128 g_a05_r128
-0.35 160 16 128 g_a035_r160
-0.35 128 16 128 g_a035_r128
-0.35 96  16 128 g_a035_r096
-0.35 96  16  64 g_a035_r096_d64
+plain 0    96  16 128 8  3 p_w08d3_r096
+plain 0    128 16 128 8  3 p_w08d3_r128
+plain 0    128 16 128 16 3 p_w16d3_r128
+plain 0    160 16 128 16 4 p_w16d4_r160
+plain 0    96  16 128 4  2 p_w04d2_r096
+mobilenetv2 0.5 128 16 128 0 0 g2_a05_r128
+mobilenetv2 0.5 160 16 128 0 0 g2_a05_r160
 "
 echo "$GRID" | while read -r spec; do
   [ -z "$spec" ] && continue
   set -- $spec
-  if [ -f "$OUT/cloud_$5.weights.npz" ]; then
-    echo "SKIP $5 (already done)"; continue
+  if [ -f "$OUT/cloud_$8.weights.npz" ]; then
+    echo "SKIP $8 (already done)"; continue
   fi
-  echo "--- training $5 (alpha=$1 res=$2 batch=$3 dec_max=$4) ---"
+  echo "--- training $8 ($1 alpha=$2 res=$3 w=$6 d=$7) ---"
   apptainer exec --nv \
     --env CLOUD38_DIR="$DSET/38-Cloud_training" \
     "$SIF" python "$CODE/train_cloud.py" \
       --effort high --backbone mobilenetv2 \
-      --alpha "$1" --res "$2" --batch "$3" --dec-max "$4" --loss bcedice \
-      --qat --tag "$5" --limit 5155 --epochs 50 --out "$OUT" \
-      > "$LOGS/ds_$5.log" 2>&1
-  echo "DONE $5 $(grep -aoE 'best val_iou=[0-9.]+' "$LOGS/ds_$5.log" | tail -1)"
+      --backbone "$1" --alpha "$2" --res "$3" --batch "$4" --dec-max "$5" \
+      --width "$6" --depth "$7" --loss bcedice --patience 12 \
+      --qat --tag "$8" --limit 5155 --epochs 50 --out "$OUT" \
+      > "$LOGS/ds_$8.log" 2>&1
+  echo "DONE $8 $(grep -aoE 'best val_iou=[0-9.]+' "$LOGS/ds_$8.log" | tail -1)"
   # Push each result as it lands, so an interrupted sweep still delivers what
   # it finished rather than nothing.
-  rsync -a "$OUT/cloud_$5.weights.npz" "$OUT/cloud_$5.json" "$LOGS/ds_$5.log" \
+  rsync -a "$OUT/cloud_$8.weights.npz" "$OUT/cloud_$8.json" "$LOGS/ds_$8.log" \
         "$REMOTE:$REPO/training/out/" 2>/dev/null
 done
 

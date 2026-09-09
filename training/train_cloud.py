@@ -278,6 +278,10 @@ def main():
                     help="quantisation-aware training (needs tensorflow_model_optimization)")
     ap.add_argument("--init", help="float .weights.npz to start QAT from")
     ap.add_argument("--lr", type=float, default=1e-3)
+    # Patience 6 stopped three configs at 10-12 epochs while their neighbours
+    # ran 29-32, which made alpha=0.5 look worse than alpha=0.35 when it was
+    # simply undertrained. QAT plateaus are bumpier than float ones.
+    ap.add_argument("--patience", type=int, default=12)
     ap.add_argument("--alpha", type=float, default=1.4,
                     help="width multiplier when --backbone mobilenetv2")
     a = ap.parse_args()
@@ -350,7 +354,8 @@ def main():
     hist = model.fit(ds, steps_per_epoch=max(1, len(Xt) // a.batch),
                      validation_data=(Xv, Yv), epochs=a.epochs, callbacks=[
                          tf.keras.callbacks.EarlyStopping("val_iou_metric", mode="max",
-                                                          patience=6, restore_best_weights=True),
+                                                          patience=a.patience,
+                                                          restore_best_weights=True),
                          tf.keras.callbacks.ReduceLROnPlateau("val_iou_metric", mode="max",
                                                               factor=0.3, patience=3)])
     best = float(max(hist.history["val_iou_metric"]))

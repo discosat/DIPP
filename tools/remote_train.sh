@@ -61,15 +61,23 @@ apptainer exec --nv "$SIF" python -c \
   "import tensorflow as tf;print('tf',tf.__version__);print(tf.config.list_physical_devices('GPU'))" \
   || { echo "GPU not visible inside container"; exit 1; }
 # Apptainer bind-mounts $HOME, so --user persists outside the image.
-# --no-deps is essential: tf-keras declares tensorflow as a dependency, so a
-# plain install makes pip pull the whole ~600 MB TF stack into a container that
-# already has it. That download is what stalled, not the network.
+# The container cannot resolve DNS ("Name or service not known" for every host),
+# so install from the vendored wheels FIRST and only reach for PyPI if they are
+# missing. Trying the network first costs a minute of retries for nothing.
+#
+# --no-deps either way: tf-keras declares tensorflow as a dependency, so a plain
+# install pulls the whole ~600 MB TF stack into a container that already has it.
 apptainer exec --nv "$SIF" pip install --user --quiet pillow 2>/dev/null || true
-apptainer exec --nv "$SIF" pip install --user --quiet --no-deps \
-    tf-keras "tensorflow-model-optimization==0.7.5" dm-tree \
-  || apptainer exec --nv "$SIF" pip install --user --quiet --no-deps \
-       --no-index --find-links="$WORK/wheels" \
-       tf-keras tensorflow-model-optimization dm-tree
+if ls "$WORK"/wheels/*.whl >/dev/null 2>&1; then
+  echo "installing QAT packages from vendored wheels"
+  apptainer exec --nv "$SIF" pip install --user --quiet --no-deps \
+      --no-index --find-links="$WORK/wheels" \
+      tf-keras tensorflow-model-optimization dm-tree || exit 1
+else
+  echo "no vendored wheels; trying PyPI"
+  apptainer exec --nv "$SIF" pip install --user --quiet --no-deps \
+      tf-keras "tensorflow-model-optimization==0.7.5" dm-tree || exit 1
+fi
 
 # Fail here rather than after ten runs: without tfmot every --qat config dies on
 # the import, and the last sweep burned all ten producing nothing.

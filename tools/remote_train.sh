@@ -46,6 +46,9 @@ rsync -a --partial --info=progress2 \
   "$DSET/38-Cloud_training/" || exit 1
 # The script looks for the CSV one level ABOVE the band directories.
 rsync -a "$REMOTE:$DATA/training_patches_38-cloud_nonempty.csv" "$DSET/" || exit 1
+# Offline fallback for the QAT packages, in case pip cannot reach PyPI.
+mkdir -p "$WORK/wheels"
+rsync -a "$REMOTE:$REPO/tools/wheels/" "$WORK/wheels/" 2>/dev/null || true
 echo "patches: $(ls "$DSET/38-Cloud_training/train_red" 2>/dev/null | wc -l) red tiles"
 
 echo "=== 3/5 container ==="
@@ -58,8 +61,25 @@ apptainer exec --nv "$SIF" python -c \
   "import tensorflow as tf;print('tf',tf.__version__);print(tf.config.list_physical_devices('GPU'))" \
   || { echo "GPU not visible inside container"; exit 1; }
 # Apptainer bind-mounts $HOME, so --user persists outside the image.
-apptainer exec --nv "$SIF" pip install --user --quiet \
-    pillow tf-keras "tensorflow-model-optimization==0.7.5"
+# --no-deps is essential: tf-keras declares tensorflow as a dependency, so a
+# plain install makes pip pull the whole ~600 MB TF stack into a container that
+# already has it. That download is what stalled, not the network.
+apptainer exec --nv "$SIF" pip install --user --quiet pillow 2>/dev/null || true
+apptainer exec --nv "$SIF" pip install --user --quiet --no-deps \
+    tf-keras "tensorflow-model-optimization==0.7.5" dm-tree \
+  || apptainer exec --nv "$SIF" pip install --user --quiet --no-deps \
+       --no-index --find-links="$WORK/wheels" \
+       tf-keras tensorflow-model-optimization dm-tree
+
+# Fail here rather than after ten runs: without tfmot every --qat config dies on
+# the import, and the last sweep burned all ten producing nothing.
+apptainer exec --nv --env TF_USE_LEGACY_KERAS=1 "$SIF" python -c \
+  "import tensorflow_model_optimization as t, tensorflow as tf
+m = tf.keras.Sequential([tf.keras.layers.Input((8,8,3)), tf.keras.layers.Conv2D(4,3),
+                         tf.keras.layers.GlobalAveragePooling2D(), tf.keras.layers.Dense(2)])
+t.quantization.keras.quantize_model(m)
+print('tfmot', t.__version__, 'ok under tf', tf.__version__)" \
+  || { echo "FATAL: tfmot unusable; QAT cannot run"; exit 1; }
 
 echo "=== 4/5 train ==="
 # The rung grid. Resolution is swept more densely than width because resolution

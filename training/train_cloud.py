@@ -198,9 +198,16 @@ def augment(x, y, rng):
         x, y = x[:, ::-1], y[:, ::-1]
     if rng.random() < 0.5:
         x, y = x[::-1], y[::-1]
+    # x is already in [-1,1] -- load_split does the /127.5-1 because the graph
+    # has no Rescaling layer. The jitter must therefore be expressed in that
+    # domain, not in 0..255. Applying a +/-12 offset to a signal of total width
+    # 2 and then clipping at 0 blanked whole channels on roughly half the
+    # training samples, and trained the model in a [0,13] domain while
+    # validation stayed in [-1,1]. It also made QAT learn an input range of
+    # [0,13], which would not match the raw uint8 the module hands over.
     g = rng.uniform(0.90, 1.15, 3).astype(np.float32)
-    o = rng.uniform(-12, 12, 3).astype(np.float32)
-    return np.clip(x * g + o, 0, 255), y
+    o = (rng.uniform(-12, 12, 3) / 127.5).astype(np.float32)
+    return np.clip(x * g + o, -1.0, 1.0), y
 
 
 def make_loss(kind, tv_alpha=0.5, tv_beta=0.5, bce_weight=0.5):
@@ -261,6 +268,16 @@ def main():
     ap.add_argument("--tag", help="output stem suffix instead of the effort name")
     ap.add_argument("--backbone", choices=["plain", "mobilenetv2"], default="plain",
                     help="'mobilenetv2' matches the paper's high-effort model")
+    # Quantisation-aware training. Post-training quantisation is not a small
+    # correction on these models and it is not even monotone in capacity: on the
+    # held-out scenes alpha=0.35 lost 0.000 IoU, alpha=1.4 lost 0.089 and
+    # alpha=1.0 lost 0.374. That makes selecting a rung on float accuracy
+    # invalid, because the ranking that ships is the int8 one -- the best float
+    # model here was the worst deployed model.
+    ap.add_argument("--qat", action="store_true",
+                    help="quantisation-aware training (needs tensorflow_model_optimization)")
+    ap.add_argument("--init", help="float .weights.npz to start QAT from")
+    ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--alpha", type=float, default=1.4,
                     help="width multiplier when --backbone mobilenetv2")
     a = ap.parse_args()
@@ -307,7 +324,25 @@ def main():
         cfg = dict(cfg, backbone="mobilenetv2", alpha=a.alpha, dec_max=a.dec_max)
     else:
         model = unet(cfg["res"], cfg["width"], cfg["depth"])
-    model.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
+    # QAT starts from trained float weights: it only has to adapt to the
+    # quantiser, not learn the task, so it converges in a few epochs.
+    if a.init:
+        z = np.load(a.init)
+        w = [z[f"arr_{i}"] for i in range(len(z.files))]
+        have = model.get_weights()
+        if len(have) == len(w) and all(h.shape == x.shape for h, x in zip(have, w)):
+            model.set_weights(w)
+            print(f"loaded float weights from {a.init}")
+        else:
+            print(f"WARNING: {a.init} does not match this graph "
+                  f"({len(have)} vs {len(w)} arrays); training from scratch",
+                  file=sys.stderr)
+    if a.qat:
+        import tensorflow_model_optimization as tfmot
+        model = tfmot.quantization.keras.quantize_model(model)
+        print(f"QAT wrapped: {model.count_params():,} params")
+
+    model.compile(optimizer=tf.keras.optimizers.Adam(a.lr),
                   loss=make_loss(a.loss, a.tv_alpha, a.tv_beta),
                   metrics=[iou_metric])
     os.makedirs(a.out, exist_ok=True)
@@ -318,11 +353,16 @@ def main():
                                                           patience=6, restore_best_weights=True),
                          tf.keras.callbacks.ReduceLROnPlateau("val_iou_metric", mode="max",
                                                               factor=0.3, patience=3)])
-    model.save(f"{stem}.keras")
     best = float(max(hist.history["val_iou_metric"]))
-    json.dump({"effort": a.effort, **cfg, "val_iou": best,
+    # Save weights directly rather than only a .keras: a QAT-wrapped model needs
+    # tfmot's custom objects to reload, and the conversion step rebuilds the
+    # same graph and loads these arrays instead.
+    np.savez(f"{stem}.weights.npz", *model.get_weights())
+    if not a.qat:
+        model.save(f"{stem}.keras")
+    json.dump({"effort": a.effort, **cfg, "val_iou": best, "qat": bool(a.qat),
                "n_train": len(Xt), "n_val": len(Xv)}, open(f"{stem}.json", "w"), indent=2)
-    print(f"wrote {stem}.keras  best val_iou={best:.4f}")
+    print(f"wrote {stem}.weights.npz  best val_iou={best:.4f}")
     return 0
 
 

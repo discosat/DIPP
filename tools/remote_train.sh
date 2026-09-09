@@ -49,6 +49,8 @@ rsync -a "$REMOTE:$DATA/training_patches_38-cloud_nonempty.csv" "$DSET/" || exit
 echo "patches: $(ls "$DSET/38-Cloud_training/train_red" 2>/dev/null | wc -l) red tiles"
 
 echo "=== 3/5 container ==="
+# tfmot needs Keras 2; TF 2.17 defaults to Keras 3, so pin the legacy path.
+
 if [ ! -f "$SIF" ]; then
   apptainer pull "$SIF" docker://tensorflow/tensorflow:2.17.0-gpu || exit 1
 fi
@@ -56,7 +58,8 @@ apptainer exec --nv "$SIF" python -c \
   "import tensorflow as tf;print('tf',tf.__version__);print(tf.config.list_physical_devices('GPU'))" \
   || { echo "GPU not visible inside container"; exit 1; }
 # Apptainer bind-mounts $HOME, so --user persists outside the image.
-apptainer exec --nv "$SIF" pip install --user --quiet pillow
+apptainer exec --nv "$SIF" pip install --user --quiet \
+    pillow tf-keras "tensorflow-model-optimization==0.7.5"
 
 echo "=== 4/5 train ==="
 # The rung grid. Resolution is swept more densely than width because resolution
@@ -90,15 +93,13 @@ echo "$GRID" | while read -r spec; do
   fi
   echo "--- training $5 (alpha=$1 res=$2 batch=$3 dec_max=$4) ---"
   apptainer exec --nv \
-    --env TF_USE_LEGACY_KERAS=0 \
+    --env TF_USE_LEGACY_KERAS=1 \
     --env CLOUD38_DIR="$DSET/38-Cloud_training" \
     "$SIF" python "$CODE/train_cloud.py" \
       --effort high --backbone mobilenetv2 \
       --alpha "$1" --res "$2" --batch "$3" --dec-max "$4" --loss bcedice \
-      --tag "$5" --limit 5155 --epochs 40 --out "$OUT" \
+      --qat --tag "$5" --limit 5155 --epochs 50 --out "$OUT" \
       > "$LOGS/ds_$5.log" 2>&1
-  apptainer exec --nv "$SIF" python "$CODE/dump_weights.py" \
-      "$OUT/cloud_$5.keras" >> "$LOGS/ds_$5.log" 2>&1
   echo "DONE $5 $(grep -aoE 'best val_iou=[0-9.]+' "$LOGS/ds_$5.log" | tail -1)"
   # Push each result as it lands, so an interrupted sweep still delivers what
   # it finished rather than nothing.

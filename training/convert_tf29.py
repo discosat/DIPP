@@ -85,6 +85,14 @@ def main():
         else:
             model = tc.unet(res, int(meta["width"]), int(meta["depth"]))
 
+    # A QAT model must be rebuilt wrapped before its weights will load: the
+    # fake-quant nodes carry their own variables, so the array count differs
+    # from the float graph.
+    if meta.get("qat"):
+        import tensorflow_model_optimization as tfmot
+        model = tfmot.quantization.keras.quantize_model(model)
+        print("rebuilt QAT-wrapped graph")
+
     z = np.load(a.weights_npz)
     weights = [z[f"arr_{i}"] for i in range(len(z.files))]
     have = model.get_weights()
@@ -97,9 +105,20 @@ def main():
 
     conv = tf.lite.TFLiteConverter.from_keras_model(model)
     conv.optimizations = [tf.lite.Optimize.DEFAULT]
-    conv.representative_dataset = lambda: representative(
-        res, a.data, a.samples, a.calib_seed, a.pm1)
-    conv.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+    if meta.get("qat"):
+        # QAT models already carry activation ranges in their fake-quant nodes;
+        # supplying a representative dataset would override them with ranges
+        # calibrated on different data.
+        print("QAT model: converting from learned ranges, no calibration set")
+    else:
+        conv.representative_dataset = lambda: representative(
+            res, a.data, a.samples, a.calib_seed, a.pm1)
+    if not meta.get("qat"):
+        # Forcing full-integer mode demands a representative dataset. A QAT
+        # model already carries its ranges in fake-quant nodes, so this is both
+        # unnecessary and harmful there -- TFLite derives int8 weights and
+        # activations from the learned ranges instead.
+        conv.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
     conv.inference_input_type = tf.uint8
     conv.inference_output_type = tf.uint8
     blob = conv.convert()

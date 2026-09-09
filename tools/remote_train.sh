@@ -59,29 +59,60 @@ apptainer exec --nv "$SIF" python -c \
 apptainer exec --nv "$SIF" pip install --user --quiet pillow
 
 echo "=== 4/5 train ==="
-# alpha res batch tag  -- batch sized for the 2070's 8 GB; drop to 4 if it OOMs
-for spec in "1.4 224 8 ds_hi" "0.35 96 16 ds_lo"; do
+# The rung grid. Resolution is swept more densely than width because resolution
+# is what actually separates the rungs: on 38-Cloud, width alone (1.4 vs 0.35 at
+# 224) gave 0.027 of IoU separation while dropping resolution to 96 gave 0.193.
+# It also cuts cost and quality together, which is the property a scheduler
+# needs from an effort level.
+#
+# Batch stays at 16 to match the runs already measured elsewhere; the L40S has
+# the memory for far more, but changing the accelerator and the batch size at
+# once would make the numbers incomparable.
+#
+#          alpha res batch dec tag
+GRID="
+1.4  224 16 128 g_a14_r224
+1.4  192 16 128 g_a14_r192
+1.0  224 16 128 g_a10_r224
+1.4  224 16  64 g_a14_r224_d64
+0.5  160 16 128 g_a05_r160
+0.5  128 16 128 g_a05_r128
+0.35 160 16 128 g_a035_r160
+0.35 128 16 128 g_a035_r128
+0.35 96  16 128 g_a035_r096
+0.35 96  16  64 g_a035_r096_d64
+"
+echo "$GRID" | while read -r spec; do
+  [ -z "$spec" ] && continue
   set -- $spec
-  if [ -f "$OUT/cloud_$4.weights.npz" ]; then
-    echo "SKIP $4 (already done)"; continue
+  if [ -f "$OUT/cloud_$5.weights.npz" ]; then
+    echo "SKIP $5 (already done)"; continue
   fi
+  echo "--- training $5 (alpha=$1 res=$2 batch=$3 dec_max=$4) ---"
   apptainer exec --nv \
     --env TF_USE_LEGACY_KERAS=0 \
     --env CLOUD38_DIR="$DSET/38-Cloud_training" \
     "$SIF" python "$CODE/train_cloud.py" \
       --effort high --backbone mobilenetv2 \
-      --alpha "$1" --res "$2" --batch "$3" --dec-max 128 --loss bcedice \
-      --tag "$4" --limit 5155 --epochs 40 --out "$OUT" \
-      > "$LOGS/ds_$4.log" 2>&1
+      --alpha "$1" --res "$2" --batch "$3" --dec-max "$4" --loss bcedice \
+      --tag "$5" --limit 5155 --epochs 40 --out "$OUT" \
+      > "$LOGS/ds_$5.log" 2>&1
   apptainer exec --nv "$SIF" python "$CODE/dump_weights.py" \
-      "$OUT/cloud_$4.keras" >> "$LOGS/ds_$4.log" 2>&1
-  echo "DONE $4 $(grep -aoE 'best val_iou=[0-9.]+' "$LOGS/ds_$4.log" | tail -1)"
+      "$OUT/cloud_$5.keras" >> "$LOGS/ds_$5.log" 2>&1
+  echo "DONE $5 $(grep -aoE 'best val_iou=[0-9.]+' "$LOGS/ds_$5.log" | tail -1)"
+  # Push each result as it lands, so an interrupted sweep still delivers what
+  # it finished rather than nothing.
+  rsync -a "$OUT/cloud_$5.weights.npz" "$OUT/cloud_$5.json" "$LOGS/ds_$5.log" \
+        "$REMOTE:$REPO/training/out/" 2>/dev/null
 done
 
 echo "=== 5/5 push results back to roba-desktop ==="
 # Weights and metadata only; conversion to TFLite happens on roba-desktop, as the
 # board runs TFLite 2.9.1 and the converter must match that version.
-rsync -a "$OUT"/cloud_ds_*.weights.npz "$OUT"/cloud_ds_*.json \
+rsync -a "$OUT"/cloud_g_*.weights.npz "$OUT"/cloud_g_*.json \
          "$LOGS"/ds_*.log "$REMOTE:$REPO/training/out/" || exit 1
-echo "pushed. summary:"
-grep -ahoE 'best val_iou=[0-9.]+' "$LOGS"/ds_*.log | tail -5
+echo "pushed. summary (val IoU per config):"
+for f in "$LOGS"/ds_g_*.log; do
+  printf "  %-22s %s\n" "$(basename "$f" .log | sed s/^ds_//)" \
+    "$(grep -aoE 'best val_iou=[0-9.]+' "$f" | tail -1)"
+done

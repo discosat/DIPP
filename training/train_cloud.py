@@ -150,7 +150,7 @@ MBV2_SKIPS = ["block_1_expand_relu",   # 1/2
               "block_13_expand_relu"]  # 1/16
 
 
-def unet_mobilenet(res, alpha):
+def unet_mobilenet(res, alpha, dec_max=128):
     """U-Net with a MobileNetV2 encoder -- the paper's high-effort segmentation.
 
     Built as one flat graph (`input_tensor=`) and with no Rescaling layer, for
@@ -164,14 +164,28 @@ def unet_mobilenet(res, alpha):
         input_tensor=inp, alpha=alpha, include_top=False, weights="imagenet")
     skips = [enc.get_layer(n).output for n in MBV2_SKIPS]
     x = enc.get_layer("block_16_project").output          # 1/32
+    # Conv2DTranspose, not UpSampling2D. UpSampling2D lowers to
+    # RESIZE_NEAREST_NEIGHBOR, which the VX delegate computes wrongly -- a
+    # trained model using it measured avg_error 250 of 255 against the CPU
+    # reference on this board, i.e. the NPU output is unrelated to the CPU's.
+    # The deployed segmentation models use TRANSPOSE_CONV and score 0.06 and
+    # 1.04, so this is the op set known to work here.
+    # Cap the decoder width. Sizing each decoder stage to its skip's channel
+    # count follows MobileNetV2-1.4's very wide taps and produced a 24.9 MB
+    # flatbuffer -- against 5435 KB for the model this replaces, which would
+    # wreck both the size column and the uplink argument the paper makes. The
+    # encoder is what carries the representation; the decoder only has to
+    # reconstruct a single-channel mask.
     for skip in reversed(skips):
-        f = skip.shape[-1]
-        x = tf.keras.layers.UpSampling2D()(x)
+        f = min(int(skip.shape[-1]), dec_max)
+        x = tf.keras.layers.Conv2DTranspose(f, 3, strides=2, padding="same",
+                                            use_bias=False)(x)
         x = tf.keras.layers.Concatenate()([x, skip])
         x = tf.keras.layers.Conv2D(f, 3, padding="same", use_bias=False)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.ReLU()(x)
-    x = tf.keras.layers.UpSampling2D()(x)                  # back to full res
+    x = tf.keras.layers.Conv2DTranspose(min(32, dec_max), 3, strides=2,
+                                        padding="same", use_bias=False)(x)
     out = tf.keras.layers.Conv2D(1, 1, activation="sigmoid")(x)
     return tf.keras.Model(inp, out)
 
@@ -189,6 +203,35 @@ def augment(x, y, rng):
     return np.clip(x * g + o, 0, 255), y
 
 
+def make_loss(kind, tv_alpha=0.5, tv_beta=0.5, bce_weight=0.5):
+    """Loss that matches the metric.
+
+    Training with binary cross-entropy and reporting IoU optimises the wrong
+    thing: BCE maximises per-pixel likelihood, which a model can improve while
+    overlap stays flat. Dice/Tversky is a smooth surrogate for the overlap
+    itself. Tversky also exposes the two error directions separately --
+    TP/(TP + a*FP + b*FN) -- so a>b penalises false positives, which are the
+    costly direction here because a masked pixel is not downlinked.
+    """
+    bce = tf.keras.losses.BinaryCrossentropy()
+
+    def tversky(y_true, y_pred):
+        yt = tf.reshape(y_true, [-1])
+        yp = tf.reshape(y_pred, [-1])
+        tp = tf.reduce_sum(yt * yp)
+        fp = tf.reduce_sum((1 - yt) * yp)
+        fn = tf.reduce_sum(yt * (1 - yp))
+        return 1.0 - (tp + 1e-6) / (tp + tv_alpha * fp + tv_beta * fn + 1e-6)
+
+    if kind == "bce":
+        return bce
+    if kind in ("dice", "tversky"):
+        return tversky
+    if kind in ("bcedice", "bcetversky"):
+        return lambda yt, yp: bce_weight * bce(yt, yp) + (1 - bce_weight) * tversky(yt, yp)
+    raise ValueError(kind)
+
+
 def iou_metric(y_true, y_pred):
     p = tf.cast(y_pred > 0.5, tf.float32)
     inter = tf.reduce_sum(y_true * p)
@@ -202,6 +245,12 @@ def main():
     ap.add_argument("--epochs", type=int, default=25)
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--limit", type=int, default=4000)
+    ap.add_argument("--loss", default="bce",
+                    choices=["bce", "dice", "tversky", "bcedice", "bcetversky"])
+    ap.add_argument("--tv-alpha", type=float, default=0.5, help="false-positive weight")
+    ap.add_argument("--tv-beta", type=float, default=0.5, help="false-negative weight")
+    ap.add_argument("--dec-max", type=int, default=128,
+                    help="cap on decoder filters per stage")
     ap.add_argument("--out", default="training/out")
     # Same reason as the land-cover ladder: rungs are operating points, and a
     # rung only earns its place if it is well separated from its neighbours in
@@ -254,12 +303,13 @@ def main():
     ).batch(a.batch).prefetch(tf.data.AUTOTUNE)
 
     if a.backbone == "mobilenetv2":
-        model = unet_mobilenet(cfg["res"], a.alpha)
-        cfg = dict(cfg, backbone="mobilenetv2", alpha=a.alpha)
+        model = unet_mobilenet(cfg["res"], a.alpha, a.dec_max)
+        cfg = dict(cfg, backbone="mobilenetv2", alpha=a.alpha, dec_max=a.dec_max)
     else:
         model = unet(cfg["res"], cfg["width"], cfg["depth"])
     model.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
-                  loss="binary_crossentropy", metrics=[iou_metric])
+                  loss=make_loss(a.loss, a.tv_alpha, a.tv_beta),
+                  metrics=[iou_metric])
     os.makedirs(a.out, exist_ok=True)
     stem = os.path.join(a.out, f"cloud_{a.tag or a.effort}")
     hist = model.fit(ds, steps_per_epoch=max(1, len(Xt) // a.batch),

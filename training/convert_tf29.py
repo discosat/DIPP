@@ -24,8 +24,17 @@ import tensorflow as tf
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
-def representative(res, data_dir, n=300, seed=43):
-    """Calibrate on the training split, resized as the module resizes."""
+def representative(res, data_dir, n=300, seed=43, pm1=False):
+    """Calibrate on the training split, resized as the module resizes.
+
+    `pm1` must match the domain the model was TRAINED on. Models built without
+    a Rescaling layer (the QAT classification rungs, and the cloud rungs since
+    the decoder rewrite) expect [-1,1], with the mapping carried by the input
+    tensor's quantisation parameters. Calibrating those with 0..255 data yields
+    input quantisation (1.0, 0) -- the model is then fed raw 0..255 where it
+    expects [-1,1], and the output is unrelated to the input. That failure is
+    silent: the conversion succeeds and only the accuracy collapses.
+    """
     import glob
     files = sorted(glob.glob(os.path.join(data_dir, "training", "*", "*.jpg")))
     rng = np.random.default_rng(seed)
@@ -34,7 +43,8 @@ def representative(res, data_dir, n=300, seed=43):
         img = tf.io.decode_image(tf.io.read_file(f), channels=3,
                                  expand_animations=False)
         img = tf.image.resize(img, (res, res))
-        yield [tf.cast(tf.expand_dims(img, 0), tf.float32)]
+        img = tf.cast(tf.expand_dims(img, 0), tf.float32)
+        yield [img / 127.5 - 1.0 if pm1 else img]
 
 
 def main():
@@ -47,6 +57,8 @@ def main():
     # points at 128px. Exposing the seed makes that measurable instead of
     # something that silently differs between exports.
     ap.add_argument("--calib-seed", type=int, default=43)
+    ap.add_argument("--pm1", action="store_true",
+                    help="model expects [-1,1] input (no Rescaling layer in graph)")
     ap.add_argument("--data", default=os.environ.get(
         "EUROSAT_DIR", os.path.expanduser(
             "~/dipp1-experiments/tensorflow-conversion/EuroSat-working")))
@@ -64,7 +76,14 @@ def main():
         model = tl.build("medium", len(meta.get("classes", [0] * 10)))
     else:
         import train_cloud as tc
-        model = tc.unet(res, int(meta["width"]), int(meta["depth"]))
+        # The cloud ladder has two architectures now: the plain U-Net and the
+        # MobileNetV2-encoder one. Rebuilding the wrong shape silently fails the
+        # weight-count check, so pick from the metadata.
+        if meta.get("backbone") == "mobilenetv2":
+            model = tc.unet_mobilenet(res, float(meta["alpha"]),
+                                      int(meta.get("dec_max", 128)))
+        else:
+            model = tc.unet(res, int(meta["width"]), int(meta["depth"]))
 
     z = np.load(a.weights_npz)
     weights = [z[f"arr_{i}"] for i in range(len(z.files))]
@@ -79,7 +98,7 @@ def main():
     conv = tf.lite.TFLiteConverter.from_keras_model(model)
     conv.optimizations = [tf.lite.Optimize.DEFAULT]
     conv.representative_dataset = lambda: representative(
-        res, a.data, a.samples, a.calib_seed)
+        res, a.data, a.samples, a.calib_seed, a.pm1)
     conv.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
     conv.inference_input_type = tf.uint8
     conv.inference_output_type = tf.uint8

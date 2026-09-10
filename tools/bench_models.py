@@ -126,10 +126,10 @@ parameters:
   value: {ratio}
 - key: resolutions
   type: 3
-  value: 6
+  value: {resolutions}
 - key: quality_layers
   type: 3
-  value: 1
+  value: {layers}
 - key: resync_markers
   type: 3
   value: {resync}
@@ -173,8 +173,10 @@ def make_vmem(model, out_path, kind="classification"):
             effort, distance = model.split(":")
             body = k["module"].format(effort=effort, distance=distance)
         elif kind == "j2k":
-            ratio, resync = (model.split(":") + ["0"])[:2]
-            body = k["module"].format(ratio=ratio, resync=resync)
+            # "ratio[:resync[:layers[:resolutions]]]"
+            ratio, resync, layers, res = (model.split(":") + ["0", "1", "6"])[:4]
+            body = k["module"].format(ratio=ratio, resync=resync,
+                                      layers=layers, resolutions=res)
         else:
             body = k["module"].format(model=model)
         open(os.path.join(tmp, f"module_{k['slot']}.yaml"), "w").write(body)

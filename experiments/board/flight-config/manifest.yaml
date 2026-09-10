@@ -20,5 +20,8 @@ modules:
   13: module_13.yaml
   14: module_14.yaml
   15: module_15.yaml
+  16: module_16.yaml
+  17: module_17.yaml
+  18: module_18.yaml
 radio_node_id: 0
 module_timeout: 0

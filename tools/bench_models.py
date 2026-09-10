@@ -58,6 +58,10 @@ PIPE_ENCODE = PIPE_CLASSIFY.replace(
     "libtflite_classification", "libjpegxl_module").replace(
     "param_id: 3", "param_id: 11")
 
+PIPE_J2K = PIPE_CLASSIFY.replace(
+    "libtflite_classification", "libjpeg2000_module").replace(
+    "param_id: 3", "param_id: 16")
+
 PIPE_SEGMENT = PIPE_CLASSIFY.replace(
     "libtflite_classification", "libtflite_binary_segmentation").replace(
     "param_id: 3", "param_id: 6")
@@ -113,6 +117,24 @@ parameters:
   value: {distance}
 """
 
+# JPEG 2000 rungs are addressed by compression ratio; 1 means lossless.
+MODULE_J2K = """latency_cost: 149000
+energy_cost: 264
+parameters:
+- key: compression_ratio
+  type: 4
+  value: {ratio}
+- key: resolutions
+  type: 3
+  value: 6
+- key: quality_layers
+  type: 3
+  value: 1
+- key: resync_markers
+  type: 3
+  value: {resync}
+"""
+
 KINDS = {
     "classification": dict(pipe=PIPE_CLASSIFY, module=MODULE_CLASSIFY, slot=3,
                            log="tflite_classification", mark="Top class"),
@@ -125,6 +147,8 @@ KINDS = {
     # With no classification stage ahead of it every tile reaches the encoder,
     # so the batch is never empty and EXEC is always emitted.
     "encoding":       dict(pipe=PIPE_ENCODE,    module=MODULE_ENCODE,   slot=11,
+                           log=None, mark=None),
+    "j2k":            dict(pipe=PIPE_J2K,       module=MODULE_J2K,      slot=16,
                            log=None, mark=None),
 }
 
@@ -148,6 +172,9 @@ def make_vmem(model, out_path, kind="classification"):
         if kind == "encoding":
             effort, distance = model.split(":")
             body = k["module"].format(effort=effort, distance=distance)
+        elif kind == "j2k":
+            ratio, resync = (model.split(":") + ["0"])[:2]
+            body = k["module"].format(ratio=ratio, resync=resync)
         else:
             body = k["module"].format(model=model)
         open(os.path.join(tmp, f"module_{k['slot']}.yaml"), "w").write(body)

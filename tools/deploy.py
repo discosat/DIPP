@@ -18,6 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REQUIRED_MODULES = {
     "libdemosaic.so", "libtile.so", "libtflite_classification.so",
     "libtflite_binary_segmentation.so", "libjpegxl_module.so",
+    "libjpeg2000_module.so",
 }
 
 

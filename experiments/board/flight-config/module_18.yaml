@@ -1,0 +1,17 @@
+# JPEG 2000 high effort -- lossless, mirrors jxl lossless
+# Costs are placeholders until measured on the board.
+latency_cost: 149000
+energy_cost: 264
+parameters:
+- key: compression_ratio
+  type: 4
+  value: 1.0
+- key: resolutions
+  type: 3
+  value: 6
+- key: quality_layers
+  type: 3
+  value: 1
+- key: resync_markers
+  type: 3
+  value: 0

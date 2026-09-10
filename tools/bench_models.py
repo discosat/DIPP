@@ -137,18 +137,21 @@ parameters:
 
 KINDS = {
     "classification": dict(pipe=PIPE_CLASSIFY, module=MODULE_CLASSIFY, slot=3,
+                           exec_name="classification",
                            log="tflite_classification", mark="Top class"),
     # The .so is libtflite_binary_segmentation but the module names its own log
     # "tflite_segmentation_<epoch>.txt" -- the two do not match, so the prefix
     # has to come from the source, not from the module name.
     "segmentation":   dict(pipe=PIPE_SEGMENT,   module=MODULE_SEGMENT,  slot=6,
+                           exec_name="segmentation",
                            log="tflite_segmentation", mark="Kept pixels"),
     # The encoder writes no log of its own, so timing comes from the EXEC line.
     # With no classification stage ahead of it every tile reaches the encoder,
     # so the batch is never empty and EXEC is always emitted.
     "encoding":       dict(pipe=PIPE_ENCODE,    module=MODULE_ENCODE,   slot=11,
+                           exec_name="jpegxl",
                            log=None, mark=None),
-    "j2k":            dict(pipe=PIPE_J2K,       module=MODULE_J2K,      slot=16,
+    "j2k":            dict(pipe=PIPE_J2K, exec_name="jpeg2000",       module=MODULE_J2K,      slot=16,
                            log=None, mark=None),
 }
 
@@ -208,8 +211,11 @@ def run_once(label, n, energy, kind="classification", min_drain=20):
             break
     e = energy.stop()
     log = board(f"cat {BOARD_DIR}/runs/{label}/console.log", 300)
-    lat = [int(m.group(2)) for m in EXEC_RE.finditer(log)
-           if "classification" in m.group(1)]
+    # Match the stage under test, not always classification: the encoder's EXEC
+    # line names libjpegxl_module, so a hardcoded filter reported 0 batches and
+    # a nan latency for every encoder run.
+    want = KINDS[kind].get("exec_name", "classification")
+    lat = [int(m.group(2)) for m in EXEC_RE.finditer(log) if want in m.group(1)]
     dem = [int(m.group(2)) for m in EXEC_RE.finditer(log)
            if "demosaic" in m.group(1)]
 
@@ -261,6 +267,12 @@ def main():
     ap.add_argument("--kind", default="classification", choices=list(KINDS),
                     help="which pipeline stage to put the model in")
     ap.add_argument("--n", type=int, default=3)
+    # Counting completions cannot distinguish "slow" from "finished": a module
+    # slower than the stability window leaves the count at zero, which looks
+    # stable, and the run is cut off mid-encode. Keep draining until this many
+    # seconds have passed while nothing has completed.
+    ap.add_argument("--min-drain", type=int, default=20,
+                    help="seconds to keep draining while nothing has completed")
     ap.add_argument("-o", "--out", default="analysis/stage4.5-models/device_cost.json")
     a = ap.parse_args()
 

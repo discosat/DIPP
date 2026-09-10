@@ -21,21 +21,26 @@ set -u
 cd "$(dirname "$0")/.." || exit 1
 export BOARD_TTY="${BOARD_TTY:-/dev/ttyUSB1}"
 
+# Budget: 100 ms/tile maximum, i.e. 9.9 s per 99-tile frame. A drain of 120 s
+# lets a config run to ~12x the budget before being cut off, which is enough to
+# see how far over a near-miss lands while not spending minutes on configs that
+# are hopeless. A config that does not complete is over budget by definition.
 N="${N:-1}"
-DRAIN="${DRAIN:-300}"
+DRAIN="${DRAIN:-120}"
+BUDGET_MS_PER_TILE=100
 OUT_JXL=analysis/stage4.5-models/dev_grid_jxl.json
 OUT_J2K=analysis/stage4.5-models/dev_grid_j2k.json
 
 echo "=== baseline: demosaic+tile only ==="
 ./tools/bench_models.py --kind encoding --baseline --models --n "$N" \
-    --min-drain 60 -o "$OUT_JXL" 2>&1 | grep -E "EXEC|SKIP"
+    --min-drain 60 -o "$OUT_JXL"
 
 # JPEG XL: effort 1..9, each at the distance holding the byte budget.
 echo "=== JPEG XL: effort sweep at iso-rate ==="
 for spec in "1:1.414" "2:1.414" "3:1.277" "4:1.414" "5:1.391" \
             "6:1.505" "7:1.505" "8:1.243" "9:1.243"; do
     ./tools/bench_models.py --kind encoding --n "$N" --min-drain "$DRAIN" \
-        --models "$spec" -o "$OUT_JXL" 2>&1 | grep -E "EXEC|SKIP"
+        --models "$spec" -o "$OUT_JXL"
 done
 
 # JPEG 2000: resolutions x layers x resync, each at its own iso-rate.
@@ -52,7 +57,7 @@ for spec in "49.03:0:1:1"  "49.03:1:1:1" \
             "49.81:0:1:6"  "49.81:1:1:6" \
             "247.25:0:5:6" "247.25:1:5:6"; do
     ./tools/bench_models.py --kind j2k --n "$N" --min-drain "$DRAIN" \
-        --models "$spec" -o "$OUT_J2K" 2>&1 | grep -E "EXEC|SKIP"
+        --models "$spec" -o "$OUT_J2K"
 done
 
 echo "=== done ==="

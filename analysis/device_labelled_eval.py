@@ -15,7 +15,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from preprocess_replica import device_frame, tiles, CLASSES
 
-DATA = os.path.expanduser("~/dipp2-experiments/sentinel2-dataset")
+DATA = os.path.expanduser("~/dipp-datasets/cs12-frames")   # CloudSEN12+ frames; the koge/amager frames are RETIRED
 
 
 CALIB = json.load(open(os.path.join(

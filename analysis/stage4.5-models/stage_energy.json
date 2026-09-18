@@ -1,0 +1,82 @@
+{
+ "io_15mb": {
+  "uwh": 304.23440279664504,
+  "reps": [
+   304.23440279664504
+  ]
+ },
+ "fixed": {
+  "uwh": 57.3777096548224,
+  "reps": [
+   62.56449776115426,
+   34.255333875284066,
+   84.94926136689287,
+   47.74174561595839
+  ],
+  "note": "one-pass demosaic (2026-09-17), baseline - I/O"
+ },
+ "cls_low": {
+  "uwh": 219.28808633094593,
+  "reps": [
+   219.28808633094593
+  ]
+ },
+ "cls_med": {
+  "uwh": 393.5481424704639,
+  "reps": [
+   393.5481424704639
+  ]
+ },
+ "cls_high": {
+  "uwh": 848.9091065272123,
+  "reps": [
+   848.9091065272123
+  ]
+ },
+ "seg_low": {
+  "uwh": 163.19179561168687,
+  "reps": [
+   163.19179561168687
+  ]
+ },
+ "seg_med": {
+  "uwh": 495.96588940246147,
+  "reps": [
+   495.96588940246147
+  ]
+ },
+ "seg_high": {
+  "uwh": 2485.919736734789,
+  "reps": [
+   2485.919736734789
+  ]
+ },
+ "fixed_old_float_path": {
+  "uwh": 216.53760710266175,
+  "reps": [
+   216.53760710266175
+  ]
+ },
+ "_exec_ms": {
+  "demosaic": 242.95749999999998,
+  "baseline": 695.658,
+  "cls_high": 1783.931,
+  "cls_low": 497.08,
+  "cls_medop": 854.764,
+  "seg_high_keepall": 4150.485,
+  "seg_low_keepall": 558.461,
+  "seg_low_keepnone": 509.604,
+  "seg_med_keepall": 1430.972
+ },
+ "_meta": {
+  "settled_reps": [
+   2
+  ],
+  "floor_rule": [
+   2.7,
+   2.85
+  ],
+  "unit": "uWh per 99-tile frame",
+  "note": "cls/seg per full frame; downstream stages see only retained tiles"
+ }
+}

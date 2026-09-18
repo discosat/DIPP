@@ -1,0 +1,107 @@
+[
+ {
+  "model": "custom_conv (slot 3)",
+  "agreement": 0.3217821782178218,
+  "n": 202,
+  "preds": {
+   "River": 35,
+   "SeaLake": 44,
+   "HerbaceousVegetation": 41,
+   "Forest": 21,
+   "Residential": 40,
+   "Highway": 9,
+   "Industrial": 5,
+   "AnnualCrop": 7
+  },
+  "per_group": {
+   "crop": {
+    "n": 17,
+    "hit": 1
+   },
+   "tree": {
+    "n": 63,
+    "hit": 12
+   },
+   "herb": {
+    "n": 88,
+    "hit": 26
+   },
+   "built": {
+    "n": 6,
+    "hit": 5
+   },
+   "water": {
+    "n": 28,
+    "hit": 21
+   }
+  }
+ },
+ {
+  "model": "qat_a050r224 (slot 4)",
+  "agreement": 0.2722772277227723,
+  "n": 202,
+  "preds": {
+   "AnnualCrop": 57,
+   "SeaLake": 112,
+   "PermanentCrop": 5,
+   "Forest": 2,
+   "River": 12,
+   "HerbaceousVegetation": 14
+  },
+  "per_group": {
+   "crop": {
+    "n": 17,
+    "hit": 16
+   },
+   "tree": {
+    "n": 63,
+    "hit": 1
+   },
+   "herb": {
+    "n": 88,
+    "hit": 10
+   },
+   "built": {
+    "n": 6,
+    "hit": 0
+   },
+   "water": {
+    "n": 28,
+    "hit": 28
+   }
+  }
+ },
+ {
+  "model": "qat_a140r224 (slot 5)",
+  "agreement": 0.3069306930693069,
+  "n": 202,
+  "preds": {
+   "AnnualCrop": 42,
+   "HerbaceousVegetation": 34,
+   "SeaLake": 125,
+   "River": 1
+  },
+  "per_group": {
+   "crop": {
+    "n": 17,
+    "hit": 14
+   },
+   "tree": {
+    "n": 63,
+    "hit": 0
+   },
+   "herb": {
+    "n": 88,
+    "hit": 22
+   },
+   "built": {
+    "n": 6,
+    "hit": 0
+   },
+   "water": {
+    "n": 28,
+    "hit": 26
+   }
+  }
+ }
+]

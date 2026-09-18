@@ -1,0 +1,128 @@
+[
+ {
+  "model": "ms_low_qat (slot 3)",
+  "split": "validation",
+  "gain": 0.05,
+  "crops": "grid",
+  "agreement": 0.3935483870967742,
+  "n": 465,
+  "preds": {
+   "AnnualCrop": 65,
+   "Industrial": 41,
+   "Highway": 43,
+   "River": 30,
+   "Pasture": 28,
+   "PermanentCrop": 25,
+   "HerbaceousVegetation": 96,
+   "Residential": 29,
+   "Forest": 47,
+   "SeaLake": 61
+  },
+  "per_group": {
+   "crop": {
+    "n": 51,
+    "hit": 14
+   },
+   "tree": {
+    "n": 170,
+    "hit": 43
+   },
+   "herb": {
+    "n": 149,
+    "hit": 53
+   },
+   "built": {
+    "n": 12,
+    "hit": 8
+   },
+   "water": {
+    "n": 83,
+    "hit": 65
+   }
+  }
+ },
+ {
+  "model": "ms_medop_qat (slot 4)",
+  "split": "validation",
+  "gain": 0.05,
+  "crops": "grid",
+  "agreement": 0.4946236559139785,
+  "n": 465,
+  "preds": {
+   "HerbaceousVegetation": 48,
+   "PermanentCrop": 128,
+   "AnnualCrop": 32,
+   "Industrial": 40,
+   "Pasture": 51,
+   "Highway": 6,
+   "River": 13,
+   "SeaLake": 84,
+   "Forest": 49,
+   "Residential": 14
+  },
+  "per_group": {
+   "crop": {
+    "n": 51,
+    "hit": 41
+   },
+   "tree": {
+    "n": 170,
+    "hit": 48
+   },
+   "herb": {
+    "n": 149,
+    "hit": 49
+   },
+   "built": {
+    "n": 12,
+    "hit": 12
+   },
+   "water": {
+    "n": 83,
+    "hit": 80
+   }
+  }
+ },
+ {
+  "model": "ms_high_qat (slot 5)",
+  "split": "validation",
+  "gain": 0.05,
+  "crops": "grid",
+  "agreement": 0.5935483870967742,
+  "n": 465,
+  "preds": {
+   "HerbaceousVegetation": 170,
+   "PermanentCrop": 66,
+   "Industrial": 28,
+   "Forest": 62,
+   "AnnualCrop": 18,
+   "Pasture": 10,
+   "River": 12,
+   "SeaLake": 86,
+   "Highway": 3,
+   "Residential": 10
+  },
+  "per_group": {
+   "crop": {
+    "n": 51,
+    "hit": 24
+   },
+   "tree": {
+    "n": 170,
+    "hit": 60
+   },
+   "herb": {
+    "n": 149,
+    "hit": 108
+   },
+   "built": {
+    "n": 12,
+    "hit": 7
+   },
+   "water": {
+    "n": 83,
+    "hit": 77
+   }
+  }
+ }
+]

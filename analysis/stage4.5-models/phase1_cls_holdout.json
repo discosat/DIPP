@@ -1,0 +1,192 @@
+[
+ {
+  "model": "landcover_ms_high_qat.tflite",
+  "gain": 0.05,
+  "res": 224,
+  "n": 5400,
+  "top1": 0.9851851851851852,
+  "recall": {
+   "AnnualCrop": 0.9833333333333333,
+   "Forest": 0.9966666666666667,
+   "HerbaceousVegetation": 0.985,
+   "Highway": 0.994,
+   "Industrial": 0.988,
+   "Pasture": 0.9525,
+   "PermanentCrop": 0.968,
+   "Residential": 0.995,
+   "River": 0.98,
+   "SeaLake": 0.9966666666666667
+  }
+ },
+ {
+  "model": "landcover_ms_high.tflite",
+  "gain": 0.05,
+  "res": 224,
+  "n": 5400,
+  "top1": 0.9618518518518518,
+  "recall": {
+   "AnnualCrop": 0.9916666666666667,
+   "Forest": 0.8633333333333333,
+   "HerbaceousVegetation": 0.9866666666666667,
+   "Highway": 0.992,
+   "Industrial": 0.992,
+   "Pasture": 0.8775,
+   "PermanentCrop": 0.94,
+   "Residential": 0.9933333333333333,
+   "River": 0.96,
+   "SeaLake": 1.0
+  }
+ },
+ {
+  "model": "landcover_ms_low_qat.tflite",
+  "gain": 0.05,
+  "res": 224,
+  "n": 5400,
+  "top1": 0.7512962962962964,
+  "recall": {
+   "AnnualCrop": 0.7783333333333333,
+   "Forest": 0.925,
+   "HerbaceousVegetation": 0.81,
+   "Highway": 0.392,
+   "Industrial": 0.9,
+   "Pasture": 0.775,
+   "PermanentCrop": 0.49,
+   "Residential": 0.9383333333333334,
+   "River": 0.554,
+   "SeaLake": 0.8466666666666667
+  }
+ },
+ {
+  "model": "landcover_ms_low.tflite",
+  "gain": 0.05,
+  "res": 224,
+  "n": 5400,
+  "top1": 0.7266666666666667,
+  "recall": {
+   "AnnualCrop": 0.8716666666666667,
+   "Forest": 0.94,
+   "HerbaceousVegetation": 0.8166666666666667,
+   "Highway": 0.416,
+   "Industrial": 0.884,
+   "Pasture": 0.6825,
+   "PermanentCrop": 0.35,
+   "Residential": 0.9083333333333333,
+   "River": 0.376,
+   "SeaLake": 0.86
+  }
+ },
+ {
+  "model": "landcover_ms_med_qat.tflite",
+  "gain": 0.05,
+  "res": 224,
+  "n": 5400,
+  "top1": 0.9857407407407407,
+  "recall": {
+   "AnnualCrop": 0.985,
+   "Forest": 0.9983333333333333,
+   "HerbaceousVegetation": 0.98,
+   "Highway": 0.992,
+   "Industrial": 0.99,
+   "Pasture": 0.9575,
+   "PermanentCrop": 0.962,
+   "Residential": 0.9966666666666667,
+   "River": 0.984,
+   "SeaLake": 1.0
+  }
+ },
+ {
+  "model": "landcover_ms_med.tflite",
+  "gain": 0.05,
+  "res": 224,
+  "n": 5400,
+  "top1": 0.9512962962962963,
+  "recall": {
+   "AnnualCrop": 0.985,
+   "Forest": 0.8283333333333334,
+   "HerbaceousVegetation": 0.99,
+   "Highway": 0.992,
+   "Industrial": 0.994,
+   "Pasture": 0.825,
+   "PermanentCrop": 0.932,
+   "Residential": 0.9916666666666667,
+   "River": 0.946,
+   "SeaLake": 0.9966666666666667
+  }
+ },
+ {
+  "model": "landcover_ms_smoke_qat.tflite",
+  "gain": 0.05,
+  "res": 64,
+  "n": 5400,
+  "top1": 0.3925925925925926,
+  "recall": {
+   "AnnualCrop": 0.645,
+   "Forest": 0.925,
+   "HerbaceousVegetation": 0.3466666666666667,
+   "Highway": 0.0,
+   "Industrial": 0.908,
+   "Pasture": 0.0,
+   "PermanentCrop": 0.0,
+   "Residential": 0.395,
+   "River": 0.006,
+   "SeaLake": 0.46
+  }
+ },
+ {
+  "model": "landcover_ms_smoke.tflite",
+  "gain": 0.05,
+  "res": 64,
+  "n": 5400,
+  "top1": 0.30074074074074075,
+  "recall": {
+   "AnnualCrop": 0.735,
+   "Forest": 0.9866666666666667,
+   "HerbaceousVegetation": 0.11833333333333333,
+   "Highway": 0.126,
+   "Industrial": 0.826,
+   "Pasture": 0.0,
+   "PermanentCrop": 0.0,
+   "Residential": 0.0016666666666666668,
+   "River": 0.012,
+   "SeaLake": 0.06166666666666667
+  }
+ },
+ {
+  "model": "landcover_ms_medop_qat.tflite",
+  "gain": 0.05,
+  "res": 224,
+  "n": 5400,
+  "top1": 0.9209259259259259,
+  "recall": {
+   "AnnualCrop": 0.945,
+   "Forest": 0.9566666666666667,
+   "HerbaceousVegetation": 0.625,
+   "Highway": 0.982,
+   "Industrial": 0.972,
+   "Pasture": 0.945,
+   "PermanentCrop": 0.92,
+   "Residential": 0.9733333333333334,
+   "River": 0.928,
+   "SeaLake": 0.99
+  }
+ },
+ {
+  "model": "landcover_ms_medop.tflite",
+  "gain": 0.05,
+  "res": 224,
+  "n": 5400,
+  "top1": 0.8655555555555555,
+  "recall": {
+   "AnnualCrop": 0.9583333333333334,
+   "Forest": 0.8733333333333333,
+   "HerbaceousVegetation": 0.5233333333333333,
+   "Highway": 0.934,
+   "Industrial": 0.856,
+   "Pasture": 0.8875,
+   "PermanentCrop": 0.918,
+   "Residential": 0.8166666666666667,
+   "River": 0.93,
+   "SeaLake": 0.995
+  }
+ }
+]

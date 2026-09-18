@@ -1,0 +1,123 @@
+{
+ "n": 2140,
+ "order": "segmentation -> classification",
+ "seg": {
+  "low": 0.7261682242990655,
+  "med": 0.6579439252336449,
+  "high": 0.6443925233644859
+ },
+ "e2e": {
+  "low/low": {
+   "cls_ret": 0.055341055341055344,
+   "e2e_ret": 0.04018691588785047,
+   "value": 0.7209302325581395,
+   "n": 86,
+   "breakdown": {
+    "partly cloudy (10-50%)": 14,
+    "not water, clear": 2,
+    "majority cloud": 8,
+    "water & clear": 62
+   }
+  },
+  "low/med": {
+   "cls_ret": 0.13513513513513514,
+   "e2e_ret": 0.09813084112149532,
+   "value": 0.3761904761904762,
+   "n": 210,
+   "breakdown": {
+    "not water, clear": 42,
+    "majority cloud": 37,
+    "partly cloudy (10-50%)": 49,
+    "water & clear": 79,
+    "mixed coast (20-60% water)": 3
+   }
+  },
+  "low/high": {
+   "cls_ret": 0.13063063063063063,
+   "e2e_ret": 0.09485981308411215,
+   "value": 0.39408866995073893,
+   "n": 203,
+   "breakdown": {
+    "majority cloud": 24,
+    "not water, clear": 40,
+    "partly cloudy (10-50%)": 59,
+    "water & clear": 80
+   }
+  },
+  "med/low": {
+   "cls_ret": 0.0625,
+   "e2e_ret": 0.041121495327102804,
+   "value": 0.7386363636363636,
+   "n": 88,
+   "breakdown": {
+    "partly cloudy (10-50%)": 14,
+    "not water, clear": 2,
+    "majority cloud": 7,
+    "water & clear": 65
+   }
+  },
+  "med/med": {
+   "cls_ret": 0.14133522727272727,
+   "e2e_ret": 0.09299065420560748,
+   "value": 0.41708542713567837,
+   "n": 199,
+   "breakdown": {
+    "not water, clear": 43,
+    "partly cloudy (10-50%)": 51,
+    "majority cloud": 19,
+    "water & clear": 83,
+    "mixed coast (20-60% water)": 3
+   }
+  },
+  "med/high": {
+   "cls_ret": 0.13636363636363635,
+   "e2e_ret": 0.08971962616822429,
+   "value": 0.4322916666666667,
+   "n": 192,
+   "breakdown": {
+    "not water, clear": 39,
+    "partly cloudy (10-50%)": 54,
+    "majority cloud": 16,
+    "water & clear": 83
+   }
+  },
+  "high/low": {
+   "cls_ret": 0.06381435823060189,
+   "e2e_ret": 0.041121495327102804,
+   "value": 0.7386363636363636,
+   "n": 88,
+   "breakdown": {
+    "partly cloudy (10-50%)": 14,
+    "not water, clear": 2,
+    "majority cloud": 7,
+    "water & clear": 65
+   }
+  },
+  "high/med": {
+   "cls_ret": 0.14720812182741116,
+   "e2e_ret": 0.09485981308411215,
+   "value": 0.4088669950738916,
+   "n": 203,
+   "breakdown": {
+    "not water, clear": 43,
+    "partly cloudy (10-50%)": 55,
+    "majority cloud": 19,
+    "water & clear": 83,
+    "mixed coast (20-60% water)": 3
+   }
+  },
+  "high/high": {
+   "cls_ret": 0.1414068165337201,
+   "e2e_ret": 0.0911214953271028,
+   "value": 0.4205128205128205,
+   "n": 195,
+   "breakdown": {
+    "not water, clear": 40,
+    "partly cloudy (10-50%)": 57,
+    "majority cloud": 16,
+    "water & clear": 82
+   }
+  }
+ },
+ "breakdown": {}
+}

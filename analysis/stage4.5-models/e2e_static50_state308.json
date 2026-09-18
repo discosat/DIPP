@@ -1,0 +1,33 @@
+{
+ "p2/cs12_validation_00/n50": {
+  "pipeline": 2,
+  "n": 48,
+  "floor_w": 3.0952,
+  "floor_after": 3.0946,
+  "measured_uwh": 570.4,
+  "ms_per_frame": 1654.9,
+  "uploaded_per_frame": 6.0,
+  "kept_per_frame": 6.0
+ },
+ "p6/cs12_validation_00/n50": {
+  "pipeline": 6,
+  "n": 48,
+  "floor_w": 3.0817,
+  "floor_after": 3.0902,
+  "measured_uwh": 884.0,
+  "ms_per_frame": 2709.3,
+  "uploaded_per_frame": 12.0,
+  "kept_per_frame": 18.0
+ },
+ "p3/cs12_validation_00/n50": {
+  "pipeline": 3,
+  "n": 47,
+  "floor_w": 3.0807,
+  "floor_after": 3.0978,
+  "measured_uwh": 1624.9,
+  "ms_per_frame": 4198.0,
+  "uploaded_per_frame": 11.0,
+  "kept_per_frame": 16.0
+ },
+ "_note": "first n=50 pass, board in the 3.08 W idle state; recovered from energy_finish.log after the settled-state repeat overwrote the JSON keys (key bug fixed in phase4_e2e.py)"
+}

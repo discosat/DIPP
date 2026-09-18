@@ -1,0 +1,17 @@
+{
+  "qat_a050r224": {
+    "classify_us": [],
+    "demosaic_us": [
+      671580
+    ],
+    "energy": {
+      "avg_current_a": 0.5556208353354883,
+      "avg_power_w": 2.7781041766774415,
+      "energy_wh": 0.13380044240922728,
+      "measured_s": 173.385
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificati \non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-10 22:12:31.444047] INFO: Top class: 9 with score 7.3090\n[1970-01-10 22:12:32.095261] INFO: Top class: 2 with score 5.7989\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 657.8590408163266,
+    "module_tiles": 99
+  }
+}

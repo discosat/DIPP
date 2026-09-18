@@ -1,0 +1,110 @@
+{
+  "idle": {
+    "energy": {
+      "avg_current_a": 0.6578316852343562,
+      "avg_power_w": 3.289158426171781,
+      "energy_wh": 0.05547348416762385,
+      "measured_s": 60.716
+    }
+  },
+  "baseline": {
+    "classify_us": [],
+    "demosaic_us": [
+      699771
+    ],
+    "energy": {
+      "avg_current_a": 0.6693593881368256,
+      "avg_power_w": 3.3467969406841283,
+      "energy_wh": 0.05289891464496322,
+      "measured_s": 56.901
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\nls: /home/root/logs/tflite_classification_*: No such file or directory\n",
+    "module_span_ms": null,
+    "module_tiles": null
+  },
+  "custom_conv_model_landcover": {
+    "classify_us": [
+      273489
+    ],
+    "demosaic_us": [
+      689287
+    ],
+    "energy": {
+      "avg_current_a": 0.669005299022429,
+      "avg_power_w": 3.345026495112145,
+      "energy_wh": 0.052082991702922514,
+      "measured_s": 56.053
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificati \non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 00:29:52.804305] INFO: Top class: 1 with score 0.5430\n[1970-01-01 00:29:52.986532] INFO: Top class: 7 with score 0.9688\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 184.0864591836735,
+    "module_tiles": 99
+  },
+  "qat_a050r224": {
+    "classify_us": [
+      763378
+    ],
+    "demosaic_us": [
+      684080
+    ],
+    "energy": {
+      "avg_current_a": 0.6679228373208813,
+      "avg_power_w": 3.3396141866044067,
+      "energy_wh": 0.05145139489767783,
+      "measured_s": 55.463
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificati \non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 00:31:50.994965] INFO: Top class: 9 with score 7.3090\n[1970-01-01 00:31:51.673767] INFO: Top class: 2 with score 5.7989\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 685.7285510204082,
+    "module_tiles": 99
+  },
+  "qat_a140r224": {
+    "classify_us": [
+      2020880
+    ],
+    "demosaic_us": [
+      691522
+    ],
+    "energy": {
+      "avg_current_a": 0.6762228101339999,
+      "avg_power_w": 3.3811140506699995,
+      "energy_wh": 0.05276416315740016,
+      "measured_s": 56.18
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificati \non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-01 00:33:50.990688] INFO: Top class: 9 with score 7.2933\n[1970-01-01 00:33:52.568429] INFO: Top class: 7 with score 6.9460\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 1593.8403979591837,
+    "module_tiles": 99
+  },
+  "seg_low": {
+    "classify_us": [
+      4878944
+    ],
+    "demosaic_us": [
+      698438
+    ],
+    "energy": {
+      "avg_current_a": 0.6796660087769604,
+      "avg_power_w": 3.398330043884802,
+      "energy_wh": 0.05322917625404895,
+      "measured_s": 56.388
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_segmentation \n_* | head -n 1; }); grep -a 'Kept pixels' $L | head -n 1; grep -a 'Kept pixels'  \n$L | tail -n 1; grep -ac 'Kept pixels' $L\n[1970-01-01 00:35:52.619818] INFO: Kept pixels: 150528 out of 150528\n[1970-01-01 00:35:57.347602] INFO: Kept pixels: 150315 out of 150528\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 4776.026693877551,
+    "module_tiles": 99
+  },
+  "seg_high_p": {
+    "classify_us": [
+      12954665
+    ],
+    "demosaic_us": [
+      685404
+    ],
+    "energy": {
+      "avg_current_a": 0.7067484510186183,
+      "avg_power_w": 3.5337422550930913,
+      "energy_wh": 0.05446576569676399,
+      "measured_s": 55.487
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_segmentation \n_* | head -n 1; }); grep -a 'Kept pixels' $L | head -n 1; grep -a 'Kept pixels'  \n$L | tail -n 1; grep -ac 'Kept pixels' $L\n[1970-01-01 00:37:52.169167] INFO: Kept pixels: 149547 out of 150528\n[1970-01-01 00:38:03.734634] INFO: Kept pixels: 13317 out of 150528\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 11683.481969387754,
+    "module_tiles": 99
+  }
+}

@@ -1,0 +1,174 @@
+{
+ "target_bytes": 10000,
+ "tiles": 6,
+ "rungs": [
+  {
+   "name": "L1 plain",
+   "layers": 1,
+   "cblk_style": 0,
+   "precinct": null,
+   "tile": null,
+   "rate": 11.272705078125,
+   "bytes": 10007.666666666666,
+   "psnr": 52.07279730318533,
+   "host_ms": 16.500473488122225,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 42.913734115591
+    },
+    "lost2": {
+     "decode_rate": 0.9666666666666667,
+     "psnr": 39.59244505563786
+    }
+   }
+  },
+  {
+   "name": "L3 plain",
+   "layers": 3,
+   "cblk_style": 0,
+   "precinct": null,
+   "tile": null,
+   "rate": 34.698486328125,
+   "bytes": 10058.166666666666,
+   "psnr": 51.949392641418804,
+   "host_ms": 23.396052070893347,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 47.420102609242775
+    },
+    "lost2": {
+     "decode_rate": 0.9666666666666667,
+     "psnr": 43.63492520599705
+    }
+   }
+  },
+  {
+   "name": "L6 plain",
+   "layers": 6,
+   "cblk_style": 0,
+   "precinct": null,
+   "tile": null,
+   "rate": 72.765380859375,
+   "bytes": 10010.0,
+   "psnr": 51.738365465847046,
+   "host_ms": 36.379463388584554,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 48.922036246182465
+    },
+    "lost2": {
+     "decode_rate": 1.0,
+     "psnr": 41.9301622751203
+    }
+   }
+  },
+  {
+   "name": "L12 plain",
+   "layers": 12,
+   "cblk_style": 0,
+   "precinct": null,
+   "tile": null,
+   "rate": 158.380126953125,
+   "bytes": 10008.833333333334,
+   "psnr": 51.310170799805654,
+   "host_ms": 71.33841107133776,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 45.54446808610911
+    },
+    "lost2": {
+     "decode_rate": 1.0,
+     "psnr": 43.85335563141231
+    }
+   }
+  },
+  {
+   "name": "L3 prec128",
+   "layers": 3,
+   "cblk_style": 46,
+   "precinct": "[128,128]",
+   "tile": null,
+   "rate": 34.698486328125,
+   "bytes": 11928.833333333334,
+   "psnr": 51.071855267430884,
+   "host_ms": 50.00331311021,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 48.09934573889189
+    },
+    "lost2": {
+     "decode_rate": 1.0,
+     "psnr": 44.248454431676585
+    }
+   }
+  },
+  {
+   "name": "L6 prec128",
+   "layers": 6,
+   "cblk_style": 46,
+   "precinct": "[128,128]",
+   "tile": null,
+   "rate": 72.765380859375,
+   "bytes": 12165.166666666666,
+   "psnr": 50.2715740150168,
+   "host_ms": 84.49212193954736,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 45.02994275080835
+    },
+    "lost2": {
+     "decode_rate": 1.0,
+     "psnr": 41.9434565515223
+    }
+   }
+  },
+  {
+   "name": "L12 prec128",
+   "layers": 12,
+   "cblk_style": 46,
+   "precinct": "[128,128]",
+   "tile": null,
+   "rate": 158.380126953125,
+   "bytes": 11408.166666666666,
+   "psnr": 46.150119384405336,
+   "host_ms": 127.06578301731497,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 34.98931222252418
+    },
+    "lost2": {
+     "decode_rate": 0.9,
+     "psnr": 29.556128624346176
+    }
+   }
+  },
+  {
+   "name": "L20 prec128",
+   "layers": 20,
+   "cblk_style": 46,
+   "precinct": "[128,128]",
+   "tile": null,
+   "rate": 282.203369140625,
+   "bytes": 13126.333333333334,
+   "psnr": 13.476336546875338,
+   "host_ms": 149.26157041918486,
+   "survival": {
+    "lost1": {
+     "decode_rate": 0.7,
+     "psnr": 12.346419781016019
+    },
+    "lost2": {
+     "decode_rate": 0.7833333333333333,
+     "psnr": 8.41624918191364
+    }
+   }
+  }
+ ]
+}

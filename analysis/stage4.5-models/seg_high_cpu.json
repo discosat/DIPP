@@ -1,0 +1,17 @@
+{
+  "seg_high:0": {
+    "classify_us": [],
+    "demosaic_us": [
+      734103
+    ],
+    "energy": {
+      "avg_current_a": 0.6696615156188259,
+      "avg_power_w": 3.3483075780941296,
+      "energy_wh": 0.16168605260441207,
+      "measured_s": 173.84
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_segmentation_\n_* | head -n 1; }); grep -a 'Kept pixels' $L | head -n 1; grep -a 'Kept pixels' $\n$L | tail -n 1; grep -ac 'Kept pixels' $L\n0\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": null,
+    "module_tiles": 0
+  }
+}

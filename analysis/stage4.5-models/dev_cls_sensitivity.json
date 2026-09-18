@@ -1,0 +1,53 @@
+{
+  "custom_conv_model_landcover": {
+    "classify_us": [
+      226870
+    ],
+    "demosaic_us": [
+      670076
+    ],
+    "energy": {
+      "avg_current_a": 0.5570378481111207,
+      "avg_power_w": 2.7851892405556034,
+      "energy_wh": 0.04361219518871109,
+      "measured_s": 56.371
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-02 08:25:35.485025] INFO: Top class: 2 with score 0.8203\n[1970-01-02 08:25:35.657104] INFO: Top class: 4 with score 0.4375\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 173.8349081632653,
+    "module_tiles": 99
+  },
+  "qat_a050r224": {
+    "classify_us": [
+      765230
+    ],
+    "demosaic_us": [
+      670692
+    ],
+    "energy": {
+      "avg_current_a": 0.5618295826833939,
+      "avg_power_w": 2.8091479134169695,
+      "energy_wh": 0.04341694163958894,
+      "measured_s": 55.64
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-02 08:27:46.263507] INFO: Top class: 1 with score 5.0136\n[1970-01-02 08:27:46.940232] INFO: Top class: 7 with score 5.0740\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 683.6303571428572,
+    "module_tiles": 99
+  },
+  "qat_a140r224": {
+    "classify_us": [
+      1695985
+    ],
+    "demosaic_us": [
+      671052
+    ],
+    "energy": {
+      "avg_current_a": 0.5667345794780859,
+      "avg_power_w": 2.8336728973904295,
+      "energy_wh": 0.045229355099153185,
+      "measured_s": 57.461
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_classificatio\non_* | head -n 1; }); grep -a 'Top class' $L | head -n 1; grep -a 'Top class' $L \n | tail -n 1; grep -ac 'Top class' $L\n[1970-01-02 08:29:57.854717] INFO: Top class: 7 with score 5.6726\n[1970-01-02 08:29:59.421328] INFO: Top class: 7 with score 7.8721\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 1582.5968265306124,
+    "module_tiles": 99
+  }
+}

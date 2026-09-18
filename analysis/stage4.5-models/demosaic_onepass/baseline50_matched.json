@@ -1,0 +1,80 @@
+{
+  "idle": {
+    "energy": {
+      "avg_current_a": 0.5437439007322202,
+      "avg_power_w": 2.7187195036611014,
+      "energy_wh": 0.04603849399505224,
+      "measured_s": 60.962
+    }
+  },
+  "baseline": {
+    "classify_us": [],
+    "demosaic_us": [
+      266945,
+      270136,
+      342961,
+      320850,
+      316663,
+      319059,
+      299032,
+      304546,
+      298030,
+      298760,
+      297450,
+      299493,
+      300796,
+      293710,
+      302105,
+      301413,
+      304985,
+      298006,
+      299986,
+      304531,
+      302866,
+      307976,
+      299605,
+      296848,
+      308320,
+      303316,
+      308213,
+      301887,
+      305131,
+      299432,
+      303359,
+      302903,
+      301972,
+      295755,
+      290417,
+      293459,
+      294428,
+      292579,
+      292284,
+      297550,
+      297746,
+      292380,
+      291847,
+      279758,
+      271237,
+      272402,
+      270419,
+      276100,
+      275684,
+      270328
+    ],
+    "energy": {
+      "avg_current_a": 0.6294278098063668,
+      "avg_power_w": 3.147139049031834,
+      "energy_wh": 0.13506034649449256,
+      "measured_s": 154.495
+    },
+    "idle_after": {
+      "avg_current_a": 0.5441707768425084,
+      "avg_power_w": 2.720853884212542,
+      "energy_wh": 0.04599150015613933,
+      "measured_s": 60.852
+    },
+    "module_log": "\nroot@fsimx8mp:/tmp/stage_demosaic-onepass# ( L=$({ ls -t /home/root/logs/tflite_c\nclassification_* 2>/dev/null | head -n 1; }); if [ -n \"$L\" ]; then grep -a 'Top  \nclass' \"$L\" | head -n 1; grep -a 'Top class' \"$L\" | tail -n 1; grep -ac 'Top cla \nss' \"$L\"; else echo NOLOG; fi ) < /dev/null\nNOLOG\nroot@fsimx8mp:/tmp/stage_demosaic-onepass# ",
+    "module_span_ms": null,
+    "module_tiles": null
+  }
+}

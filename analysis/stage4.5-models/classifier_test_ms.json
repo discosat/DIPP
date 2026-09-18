@@ -1,0 +1,131 @@
+[
+ {
+  "model": "ms_low_qat (slot 3)",
+  "split": "test",
+  "gain": 0.05,
+  "crops": "grid",
+  "train_res": 64,
+  "agreement": 0.39456521739130435,
+  "n": 920,
+  "preds": {
+   "Industrial": 88,
+   "AnnualCrop": 89,
+   "Pasture": 32,
+   "HerbaceousVegetation": 221,
+   "PermanentCrop": 86,
+   "River": 60,
+   "Highway": 99,
+   "Forest": 100,
+   "Residential": 56,
+   "SeaLake": 89
+  },
+  "per_group": {
+   "crop": {
+    "n": 88,
+    "hit": 20
+   },
+   "tree": {
+    "n": 291,
+    "hit": 84
+   },
+   "herb": {
+    "n": 361,
+    "hit": 133
+   },
+   "built": {
+    "n": 49,
+    "hit": 34
+   },
+   "water": {
+    "n": 131,
+    "hit": 92
+   }
+  }
+ },
+ {
+  "model": "ms_medop_qat (slot 4)",
+  "split": "test",
+  "gain": 0.05,
+  "crops": "grid",
+  "train_res": 64,
+  "agreement": 0.5076086956521739,
+  "n": 920,
+  "preds": {
+   "Industrial": 87,
+   "HerbaceousVegetation": 146,
+   "Pasture": 129,
+   "PermanentCrop": 175,
+   "AnnualCrop": 53,
+   "River": 15,
+   "SeaLake": 163,
+   "Highway": 14,
+   "Forest": 103,
+   "Residential": 35
+  },
+  "per_group": {
+   "crop": {
+    "n": 88,
+    "hit": 59
+   },
+   "tree": {
+    "n": 291,
+    "hit": 102
+   },
+   "herb": {
+    "n": 361,
+    "hit": 152
+   },
+   "built": {
+    "n": 49,
+    "hit": 43
+   },
+   "water": {
+    "n": 131,
+    "hit": 111
+   }
+  }
+ },
+ {
+  "model": "ms_high_qat (slot 5)",
+  "split": "test",
+  "gain": 0.05,
+  "crops": "grid",
+  "train_res": 64,
+  "agreement": 0.6543478260869565,
+  "n": 920,
+  "preds": {
+   "HerbaceousVegetation": 355,
+   "Forest": 149,
+   "Pasture": 45,
+   "PermanentCrop": 75,
+   "AnnualCrop": 62,
+   "Industrial": 60,
+   "Residential": 36,
+   "Highway": 2,
+   "SeaLake": 127,
+   "River": 9
+  },
+  "per_group": {
+   "crop": {
+    "n": 88,
+    "hit": 60
+   },
+   "tree": {
+    "n": 291,
+    "hit": 131
+   },
+   "herb": {
+    "n": 361,
+    "hit": 260
+   },
+   "built": {
+    "n": 49,
+    "hit": 40
+   },
+   "water": {
+    "n": 131,
+    "hit": 111
+   }
+  }
+ }
+]

@@ -1,0 +1,86 @@
+{
+  "49.81:1:2:6": {
+    "classify_us": [],
+    "demosaic_us": [],
+    "energy": {
+      "avg_current_a": 0.55793486734716,
+      "avg_power_w": 2.7896743367358,
+      "energy_wh": 0.1527238212027533,
+      "measured_s": 197.086
+    },
+    "module_log": "",
+    "encoded_bytes": [],
+    "module_span_ms": null,
+    "module_tiles": null
+  },
+  "49.81:1:3:6": {
+    "classify_us": [],
+    "demosaic_us": [],
+    "energy": {
+      "avg_current_a": 0.5553665963012467,
+      "avg_power_w": 2.776832981506234,
+      "energy_wh": 0.1516143094477455,
+      "measured_s": 196.559
+    },
+    "module_log": "",
+    "encoded_bytes": [],
+    "module_span_ms": null,
+    "module_tiles": null
+  },
+  "99.62:1:2:6": {
+    "classify_us": [],
+    "demosaic_us": [],
+    "energy": {
+      "avg_current_a": 0.5600726397359382,
+      "avg_power_w": 2.8003631986796913,
+      "energy_wh": 0.15278159309063352,
+      "measured_s": 196.408
+    },
+    "module_log": "",
+    "encoded_bytes": [],
+    "module_span_ms": null,
+    "module_tiles": null
+  },
+  "149.43:1:3:6": {
+    "classify_us": [],
+    "demosaic_us": [],
+    "energy": {
+      "avg_current_a": 0.6285210107459175,
+      "avg_power_w": 3.1426050537295875,
+      "energy_wh": 0.16189479112627272,
+      "measured_s": 185.458
+    },
+    "module_log": "",
+    "encoded_bytes": [],
+    "module_span_ms": null,
+    "module_tiles": null
+  },
+  "49.81:1:1:6": {
+    "classify_us": [],
+    "demosaic_us": [],
+    "energy": {
+      "avg_current_a": 0.5541876260597617,
+      "avg_power_w": 2.7709381302988083,
+      "energy_wh": 0.15151258784963023,
+      "measured_s": 196.845
+    },
+    "module_log": "",
+    "encoded_bytes": [],
+    "module_span_ms": null,
+    "module_tiles": null
+  },
+  "249.05:1:5:6": {
+    "classify_us": [],
+    "demosaic_us": [],
+    "energy": {
+      "avg_current_a": 0.7456671848433583,
+      "avg_power_w": 3.7283359242167915,
+      "energy_wh": 0.6795399689830344,
+      "measured_s": 656.149
+    },
+    "module_log": "",
+    "encoded_bytes": [],
+    "module_span_ms": null,
+    "module_tiles": null
+  }
+}

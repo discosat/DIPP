@@ -1,0 +1,36 @@
+{
+  "seg_low:0.5:0": {
+    "classify_us": [
+      2603723
+    ],
+    "demosaic_us": [
+      681037
+    ],
+    "energy": {
+      "avg_current_a": 0.5707650885350172,
+      "avg_power_w": 2.853825442675086,
+      "energy_wh": 0.046076597230568526,
+      "measured_s": 58.124
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_segmentation_\n_* | head -n 1; }); grep -a 'Kept pixels' $L | head -n 1; grep -a 'Kept pixels' $\n$L | tail -n 1; grep -ac 'Kept pixels' $L\n[1970-01-01 01:36:49.519401] INFO: Kept pixels: 149892 out of 150528\n[1970-01-01 01:36:54.244238] INFO: Kept pixels: 149694 out of 150528\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 4773.049622448981,
+    "module_tiles": 99
+  },
+  "seg_low:0.5:5": {
+    "classify_us": [
+      2304183
+    ],
+    "demosaic_us": [
+      672906
+    ],
+    "energy": {
+      "avg_current_a": 0.5729667907421024,
+      "avg_power_w": 2.8648339537105123,
+      "energy_wh": 0.044274417180177245,
+      "measured_s": 55.636
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_segmentation_\n_* | head -n 1; }); grep -a 'Kept pixels' $L | head -n 1; grep -a 'Kept pixels' $\n$L | tail -n 1; grep -ac 'Kept pixels' $L\n[1970-01-01 01:38:53.076850] INFO: Kept pixels: 149892 out of 150528\n[1970-01-01 01:38:57.865577] INFO: Kept pixels: 149694 out of 150528\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 4837.59156122449,
+    "module_tiles": 99
+  }
+}

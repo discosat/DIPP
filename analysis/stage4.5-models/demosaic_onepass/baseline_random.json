@@ -1,0 +1,50 @@
+{
+  "idle": {
+    "energy": {
+      "avg_current_a": 0.5422582032911927,
+      "avg_power_w": 2.7112910164559634,
+      "energy_wh": 0.04589613181745178,
+      "measured_s": 60.94
+    }
+  },
+  "baseline": {
+    "classify_us": [],
+    "demosaic_us": [
+      262621,
+      235772,
+      234823,
+      237408,
+      238099,
+      233439,
+      236295,
+      238603,
+      239707,
+      242081,
+      239650,
+      239807,
+      241538,
+      240785,
+      239188,
+      239079,
+      239329,
+      239367,
+      239484,
+      239391
+    ],
+    "energy": {
+      "avg_current_a": 0.5844268332671616,
+      "avg_power_w": 2.922134166335808,
+      "energy_wh": 0.09785659130304056,
+      "measured_s": 120.557
+    },
+    "idle_after": {
+      "avg_current_a": 0.5425114774581246,
+      "avg_power_w": 2.712557387290623,
+      "energy_wh": 0.04552123388771547,
+      "measured_s": 60.414
+    },
+    "module_log": "\nroot@fsimx8mp:/tmp/stage_demosaic-onepass# ( L=$({ ls -t /home/root/logs/tflite_c\nclassification_* 2>/dev/null | head -n 1; }); if [ -n \"$L\" ]; then grep -a 'Top c\nclass' \"$L\" | head -n 1; grep -a 'Top class' \"$L\" | tail -n 1; grep -ac 'Top cla \nss' \"$L\"; else echo NOLOG; fi ) < /dev/null\nNOLOG\nroot@fsimx8mp:/tmp/stage_demosaic-onepass# ",
+    "module_span_ms": null,
+    "module_tiles": null
+  }
+}

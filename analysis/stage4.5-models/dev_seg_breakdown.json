@@ -1,0 +1,53 @@
+{
+  "seg_low:0.5:5": {
+    "classify_us": [
+      2885031
+    ],
+    "demosaic_us": [
+      676924
+    ],
+    "energy": {
+      "avg_current_a": 0.5718379729699838,
+      "avg_power_w": 2.8591898648499194,
+      "energy_wh": 0.04490039994984037,
+      "measured_s": 56.534
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_segmentation_\n_* | head -n 1; }); grep -a 'Kept pixels' $L | head -n 1; grep -a 'Kept pixels' $\n$L | tail -n 1; grep -ac 'Kept pixels' $L\n[1970-01-01 02:43:20.927189] INFO: Kept pixels: 149892 out of 150528\n[1970-01-01 02:43:25.706189] INFO: Kept pixels: 149694 out of 150528\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 4827.765306122449,
+    "module_tiles": 99
+  },
+  "seg_low:0.5:0": {
+    "classify_us": [
+      3944002
+    ],
+    "demosaic_us": [
+      670813
+    ],
+    "energy": {
+      "avg_current_a": 0.572638895919777,
+      "avg_power_w": 2.863194479598885,
+      "energy_wh": 0.04442166701917681,
+      "measured_s": 55.853
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_segmentation_\n_* | head -n 1; }); grep -a 'Kept pixels' $L | head -n 1; grep -a 'Kept pixels' $\n$L | tail -n 1; grep -ac 'Kept pixels' $L\n[1970-01-01 02:45:20.723583] INFO: Kept pixels: 149892 out of 150528\n[1970-01-01 02:45:25.449432] INFO: Kept pixels: 149694 out of 150528\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 4774.071948979592,
+    "module_tiles": 99
+  },
+  "seg_low:0": {
+    "classify_us": [
+      4847791
+    ],
+    "demosaic_us": [
+      674384
+    ],
+    "energy": {
+      "avg_current_a": 0.5708542644233621,
+      "avg_power_w": 2.8542713221168103,
+      "energy_wh": 0.04473277444273068,
+      "measured_s": 56.42
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# L=$({ ls -t /home/root/logs/tflite_segmentation \n_* | head -n 1; }); grep -a 'Kept pixels' $L | head -n 1; grep -a 'Kept pixels' $\n$L | tail -n 1; grep -ac 'Kept pixels' $L\n[1970-01-01 02:47:21.622763] INFO: Kept pixels: 1521 out of 150528\n[1970-01-01 02:47:26.377803] INFO: Kept pixels: 0 out of 150528\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 4803.560816326531,
+    "module_tiles": 99
+  }
+}

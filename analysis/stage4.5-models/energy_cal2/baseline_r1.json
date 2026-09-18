@@ -1,0 +1,71 @@
+{
+  "idle": {
+    "energy": {
+      "avg_current_a": 0.617084630889144,
+      "avg_power_w": 3.08542315444572,
+      "energy_wh": 0.05162427174580097,
+      "measured_s": 60.234
+    }
+  },
+  "baseline": {
+    "classify_us": [],
+    "demosaic_us": [
+      849275,
+      687856,
+      685273,
+      691725,
+      686626,
+      680511,
+      682241,
+      686681,
+      693458,
+      686261,
+      680860,
+      686052,
+      681480,
+      684295,
+      692624,
+      694474,
+      690395,
+      694822,
+      688155,
+      691644,
+      680637,
+      684064,
+      690371,
+      688227,
+      690862,
+      693486,
+      699507,
+      689083,
+      685954,
+      691973,
+      693849,
+      692168,
+      691052,
+      698109,
+      710241,
+      702123,
+      701882,
+      728241,
+      722412,
+      717907,
+      712871,
+      713220,
+      705640,
+      709826,
+      726460,
+      723861,
+      824173
+    ],
+    "energy": {
+      "avg_current_a": 0.7343996871496671,
+      "avg_power_w": 3.6719984357483355,
+      "energy_wh": 0.15775823279583787,
+      "measured_s": 154.665
+    },
+    "module_log": "\nroot@fsimx8mp:~# ( L=$({ ls -t /home/root/logs/tflite_classification_* 2>/dev/nul\nll | head -n 1; }); if [ -n \"$L\" ]; then grep -a 'Top class' \"$L\" | head -n 1; gr\nrep -a 'Top class' \"$L\" | tail -n 1; grep -ac 'Top class' \"$L\"; else echo NOLOG; \n fi ) < /dev/null\nNOLOG\nroot@fsimx8mp:~# ",
+    "module_span_ms": null,
+    "module_tiles": null
+  }
+}

@@ -1,0 +1,174 @@
+{
+ "target_bytes": 12000,
+ "tiles": 6,
+ "rungs": [
+  {
+   "name": "L1 plain",
+   "layers": 1,
+   "cblk_style": 0,
+   "precinct": null,
+   "tile": null,
+   "rate": 2.048583984375,
+   "bytes": 11527.5,
+   "psnr": 52.55042658561806,
+   "host_ms": 15.424184501171112,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 43.71576138386296
+    },
+    "lost2": {
+     "decode_rate": 0.9666666666666667,
+     "psnr": 40.059136780516546
+    }
+   }
+  },
+  {
+   "name": "L1 segsym+vsc",
+   "layers": 1,
+   "cblk_style": 40,
+   "precinct": null,
+   "tile": null,
+   "rate": 2.048583984375,
+   "bytes": 11719.333333333334,
+   "psnr": 52.55042658561806,
+   "host_ms": 16.718346974812448,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 43.37612135364811
+    },
+    "lost2": {
+     "decode_rate": 0.9666666666666667,
+     "psnr": 40.23623780856507
+    }
+   }
+  },
+  {
+   "name": "L1 termall+all",
+   "layers": 1,
+   "cblk_style": 46,
+   "precinct": null,
+   "tile": null,
+   "rate": 2.048583984375,
+   "bytes": 12562.666666666666,
+   "psnr": 52.55042658561806,
+   "host_ms": 16.42202993389219,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 43.9406303139539
+    },
+    "lost2": {
+     "decode_rate": 0.9833333333333333,
+     "psnr": 39.87619254141527
+    }
+   }
+  },
+  {
+   "name": "L3 termall+all",
+   "layers": 3,
+   "cblk_style": 46,
+   "precinct": null,
+   "tile": null,
+   "rate": 2.072998046875,
+   "bytes": 12892.666666666666,
+   "psnr": 52.55042658561806,
+   "host_ms": 21.960215526632965,
+   "survival": {
+    "lost1": {
+     "decode_rate": 0.9666666666666667,
+     "psnr": 43.70488841648507
+    },
+    "lost2": {
+     "decode_rate": 0.9833333333333333,
+     "psnr": 39.60597161417862
+    }
+   }
+  },
+  {
+   "name": "L1 prec64",
+   "layers": 1,
+   "cblk_style": 46,
+   "precinct": "[64,64]",
+   "tile": null,
+   "rate": 2.048583984375,
+   "bytes": 24940.5,
+   "psnr": 52.55042658561806,
+   "host_ms": 55.905326502397656,
+   "survival": {
+    "lost1": {
+     "decode_rate": 1.0,
+     "psnr": 46.01524318712831
+    },
+    "lost2": {
+     "decode_rate": 1.0,
+     "psnr": 39.64582685923217
+    }
+   }
+  },
+  {
+   "name": "L1 prec32",
+   "layers": 1,
+   "cblk_style": 46,
+   "precinct": "[32,32]",
+   "tile": null,
+   "rate": 2.048583984375,
+   "bytes": 49301.833333333336,
+   "psnr": 52.55042658561806,
+   "host_ms": 149.74654850084335,
+   "survival": {
+    "lost1": {
+     "decode_rate": 0.8,
+     "psnr": 44.424461424586546
+    },
+    "lost2": {
+     "decode_rate": 0.5833333333333334,
+     "psnr": 36.46002844560701
+    }
+   }
+  },
+  {
+   "name": "L3 prec64 t112",
+   "layers": 3,
+   "cblk_style": 46,
+   "precinct": "[64,64]",
+   "tile": "112,112",
+   "rate": 2.072998046875,
+   "bytes": 37558.5,
+   "psnr": 52.52280989576235,
+   "host_ms": 140.3441420989111,
+   "survival": {
+    "lost1": {
+     "decode_rate": 0.95,
+     "psnr": 44.768337892843
+    },
+    "lost2": {
+     "decode_rate": 0.9166666666666666,
+     "psnr": 39.02385205827049
+    }
+   }
+  },
+  {
+   "name": "L3 prec32 t56",
+   "layers": 3,
+   "cblk_style": 46,
+   "precinct": "[32,32]",
+   "tile": "56,56",
+   "rate": 2.072998046875,
+   "bytes": 95839.33333333333,
+   "psnr": 52.46624411088999,
+   "host_ms": 370.1683479594067,
+   "survival": {
+    "lost1": {
+     "decode_rate": 0.9166666666666666,
+     "psnr": 49.791801507658974
+    },
+    "lost2": {
+     "decode_rate": 0.9,
+     "psnr": 48.32332963238567
+    }
+   }
+  }
+ ]
+}

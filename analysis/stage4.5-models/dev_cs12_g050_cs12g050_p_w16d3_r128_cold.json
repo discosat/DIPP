@@ -1,0 +1,19 @@
+{
+  "cs12g050_p_w16d3_r128:1": {
+    "classify_us": [
+      3126299
+    ],
+    "demosaic_us": [
+      731289
+    ],
+    "energy": {
+      "avg_current_a": 0.5607154371569036,
+      "avg_power_w": 2.803577185784518,
+      "energy_wh": 0.06853811693514551,
+      "measured_s": 88.008
+    },
+    "module_log": "\nroot@fsimx8mp:~/tmp-experiments# ( L=$({ ls -t /home/root/logs/tflite_segmentatio\non_* 2>/dev/null | head -n 1; }); if [ -n \"$L\" ]; then grep -a 'Kept pixels' \"$L\"\n\" | head -n 1; grep -a 'Kept pixels' \"$L\" | tail -n 1; grep -ac 'Kept pixels' \"$L\nL\"; else echo NOLOG; fi ) < /dev/null\n[1970-01-03 08:01:57.365004] INFO: Kept pixels: 14100 out of 150528\n[1970-01-03 08:01:58.193047] INFO: Kept pixels: 744 out of 150528\n99\nroot@fsimx8mp:~/tmp-experiments# ",
+    "module_span_ms": 836.4924183673469,
+    "module_tiles": 99
+  }
+}

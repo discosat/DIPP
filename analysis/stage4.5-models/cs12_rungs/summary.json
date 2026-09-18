@@ -1,0 +1,93 @@
+[
+ {
+  "tag": "cs12_smoke",
+  "tflite": "/home/roba/dipp-paper/DIPP/analysis/stage4.5-models/cs12_rungs/ptq_cs12_smoke.tflite",
+  "val_iou": 0.2414371818304062,
+  "res": 96,
+  "bytes": 74608,
+  "npu_ok": true,
+  "contract_ok": true,
+  "masked_cloudy": 0.9678852325336699,
+  "masked_clear": 0.0002800355990460157,
+  "masked_mixed": 0.08379804994388328,
+  "separation": 0.9676051969346239
+ },
+ {
+  "tag": "cs12_p_w08d3_r096",
+  "tflite": "/home/roba/dipp-paper/DIPP/analysis/stage4.5-models/cs12_rungs/ptq_cs12_p_w08d3_r096.tflite",
+  "val_iou": 0.7308588027954102,
+  "res": 96,
+  "bytes": 74608,
+  "npu_ok": true,
+  "contract_ok": true,
+  "masked_cloudy": 1.0,
+  "masked_clear": 0.1986455264450056,
+  "masked_mixed": 0.37303701073232315,
+  "separation": 0.8013544735549945
+ },
+ {
+  "tag": "cs12_p_w16d3_r128",
+  "tflite": "/home/roba/dipp-paper/DIPP/analysis/stage4.5-models/cs12_rungs/ptq_cs12_p_w16d3_r128.tflite",
+  "val_iou": 0.7488894462585449,
+  "res": 128,
+  "bytes": 257840,
+  "npu_ok": true,
+  "contract_ok": true,
+  "masked_cloudy": 0.9990333017676768,
+  "masked_clear": 0.3972272776594066,
+  "masked_mixed": 0.5760202118844697,
+  "separation": 0.6018060241082702
+ },
+ {
+  "tag": "cs12_p_w16d4_r160",
+  "tflite": "/home/roba/dipp-paper/DIPP/analysis/stage4.5-models/cs12_rungs/ptq_cs12_p_w16d4_r160.tflite",
+  "val_iou": 0.7469241619110107,
+  "res": 160,
+  "bytes": 993368,
+  "npu_ok": true,
+  "contract_ok": true,
+  "masked_cloudy": 0.9900623421717173,
+  "masked_clear": 0.6779219933712122,
+  "masked_mixed": 0.6784114583333332,
+  "separation": 0.3121403488005051
+ },
+ {
+  "tag": "cs12_g_a10_r224",
+  "tflite": "/home/roba/dipp-paper/DIPP/analysis/stage4.5-models/cs12_rungs/ptq_cs12_g_a10_r224.tflite",
+  "val_iou": 0.811400294303894,
+  "res": 224,
+  "bytes": 4755088,
+  "npu_ok": true,
+  "contract_ok": true,
+  "masked_cloudy": 0.999986512123789,
+  "masked_clear": 0.712407074572253,
+  "masked_mixed": 0.7191224264326944,
+  "separation": 0.2875794375515359
+ },
+ {
+  "tag": "cs12_g_a035_r160",
+  "tflite": "/home/roba/dipp-paper/DIPP/analysis/stage4.5-models/cs12_rungs/ptq_cs12_g_a035_r160.tflite",
+  "val_iou": 0.7917484641075134,
+  "res": 160,
+  "bytes": 1399216,
+  "npu_ok": true,
+  "contract_ok": true,
+  "masked_cloudy": 0.582694917929293,
+  "masked_clear": 0.46770557133838386,
+  "masked_mixed": 0.5193272569444445,
+  "separation": 0.11498934659090909
+ },
+ {
+  "tag": "cs12_g_a14_r224",
+  "tflite": "/home/roba/dipp-paper/DIPP/analysis/stage4.5-models/cs12_rungs/ptq_cs12_g_a14_r224.tflite",
+  "val_iou": 0.8167967796325684,
+  "res": 224,
+  "bytes": 7403792,
+  "npu_ok": true,
+  "contract_ok": true,
+  "masked_cloudy": 0.5077054022366522,
+  "masked_clear": 0.6007840280998764,
+  "masked_mixed": 0.7382931273835291,
+  "separation": -0.09307862586322424
+ }
+]

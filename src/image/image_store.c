@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <uuid/uuid.h>
 
@@ -333,4 +334,49 @@ int image_batch_setup_storage(ImageBatch *batch, StorageMode storage_mode)
     batch->data = NULL; // Will be set in read_data
 
     return persist_data_if_necessary(batch);
+}
+/* Release a batch's storage for good: the shared-memory segment (STORAGE_MEM)
+ * or the data file (STORAGE_MMAP). Called once a batch has been uploaded or
+ * quarantined -- never for a batch that is still queued.
+ *
+ * image_batch_cleanup only detaches/unmaps, which is right between modules,
+ * but nothing ever removed the FINAL segment of a completed batch: the last
+ * module reuses the input segment when its output fits, so the segment left
+ * behind is the largest one the pipeline touched (up to 30 MB of demosaiced
+ * frame). Measured on the board: 61 leaked segments holding 1.59 GB of the
+ * 1.95 GB after one session, until the first module to claim a frame died.
+ * For MMAP the file stayed too, reclaimed only by the startup orphan scan
+ * (412 files, 2.6 GB after one run). */
+int image_batch_release(ImageBatch *batch)
+{
+    if (!batch)
+        return FAILURE;
+    int result = image_batch_cleanup(batch);
+    switch (batch->storage_mode)
+    {
+    case STORAGE_MEM:
+        if (batch->shmid >= 0)
+        {
+            if (shmctl(batch->shmid, IPC_RMID, NULL) == -1)
+            {
+                set_error_param(SHM_REMOVE);
+                result = FAILURE;
+            }
+            batch->shmid = -1;
+        }
+        break;
+    case STORAGE_MMAP:
+        if (batch->filename[0] != '\0' && strncmp(batch->filename, "/usr/share/dipp/data/", 21) == 0)
+        {
+            if (remove(batch->filename) == -1 && errno != ENOENT)
+            {
+                set_error_param(MMAP_REMOVE);
+                result = FAILURE;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    return result;
 }

@@ -1,0 +1,18 @@
+{
+  "10": {
+    "classify_us": [
+      6076249
+    ],
+    "demosaic_us": [],
+    "energy": {
+      "avg_current_a": 0.5612476830899826,
+      "avg_power_w": 2.806238415449913,
+      "energy_wh": 0.0948259141007364,
+      "measured_s": 121.648
+    },
+    "idle_after": {},
+    "module_log": "\nroot@fsimx8mp:/tmp/stage_a9-monolith# ( L=$({ ls -t /home/root/logs/single_* 2>/d\ndev/null | head -n 1; }); if [ -n \"$L\" ]; then grep -a 'Top class' \"$L\" | head -n\nn 1; grep -a 'Top class' \"$L\" | tail -n 1; grep -ac 'Top class' \"$L\"; else echo  \nNOLOG; fi ) < /dev/null\n[1970-01-04 10:34:46.453301] INFO: Tile 0: Top class: 7 with score 0.9961\n[1970-01-04 10:34:52.130987] INFO: Tile 98: Top class: 9 with score 0.9961\n99\nroot@fsimx8mp:/tmp/stage_a9-monolith# ",
+    "module_span_ms": 5735.621571428572,
+    "module_tiles": 99
+  }
+}

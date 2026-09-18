@@ -1,0 +1,50 @@
+{
+  "idle": {
+    "energy": {
+      "avg_current_a": 0.5411850632643569,
+      "avg_power_w": 2.7059253163217845,
+      "energy_wh": 0.045765465204134576,
+      "measured_s": 60.887
+    }
+  },
+  "10": {
+    "classify_us": [
+      6145387,
+      6139657,
+      6145239,
+      6140548,
+      6158514,
+      6143590,
+      6152742,
+      6142573,
+      6153883,
+      6154142,
+      6157969,
+      6151472,
+      6138259,
+      6146998,
+      6144751,
+      6156402,
+      6171687,
+      6140665,
+      6143492,
+      6149039
+    ],
+    "demosaic_us": [],
+    "energy": {
+      "avg_current_a": 0.6944557327663649,
+      "avg_power_w": 3.4722786638318244,
+      "energy_wh": 0.24769789204999643,
+      "measured_s": 256.809
+    },
+    "idle_after": {
+      "avg_current_a": 0.5440106150634728,
+      "avg_power_w": 2.720053075317364,
+      "energy_wh": 0.046935271384899814,
+      "measured_s": 62.119
+    },
+    "module_log": "\nroot@fsimx8mp:/tmp/stage_a9-monolith# ( L=$({ ls -t /home/root/logs/single_* 2>/d\ndev/null | head -n 1; }); if [ -n \"$L\" ]; then grep -a 'Top class' \"$L\" | head -n\nn 1; grep -a 'Top class' \"$L\" | tail -n 1; grep -ac 'Top class' \"$L\"; else echo N\nNOLOG; fi ) < /dev/null\n[1970-01-04 10:42:25.138390] INFO: Tile 0: Top class: 7 with score 0.9961\n[1970-01-04 10:42:30.878183] INFO: Tile 98: Top class: 9 with score 0.9961\n99\nroot@fsimx8mp:/tmp/stage_a9-monolith# ",
+    "module_span_ms": 5798.36231632653,
+    "module_tiles": 99
+  }
+}

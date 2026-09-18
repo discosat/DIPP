@@ -27,6 +27,7 @@ extern PriorityQueue *ingest_pq;
 extern PriorityQueue *partially_processed_pq;
 extern CostStore *cost_store;
 extern StorageMode global_storage_mode;
+extern int retry_lowest_effort;
 
 // Main processing loop running in a thread
 // This loop first initialiazes queues, which possibly already hold elements,

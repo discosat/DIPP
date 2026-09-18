@@ -25,6 +25,7 @@ sources = files(
 	'src/dipp_config.c',
 	'src/dipp_error.c',
 	'src/dipp_process.c',
+	'src/quarantine.c',
 	'src/main.c',
 	'src/serial.c',
 	'src/vmem/vmem_upload_local.c',

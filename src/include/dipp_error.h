@@ -55,12 +55,14 @@ typedef enum ERROR_CODE
     MODULE_EXIT_CRASH = 600,
     MODULE_EXIT_NORMAL = 601,
     MODULE_EXIT_TIMEOUT = 602,
+    MODULE_RESULT_INVALID = 603, /* the child's ImageBatch failed validation */
 
     MODULE_EXIT_CUSTOM = 700
 } ERROR_CODE;
 
 extern uint8_t err_current_pipeline;
 extern uint8_t err_current_module;
+extern uint32_t err_last_value;
 
 /**
  * Set the dipp error parameter to the specified error code value

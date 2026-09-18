@@ -82,18 +82,58 @@ static void sample_resources(ResourceSample *out)
     }
 }
 
+/* Sanity-check a module's result against the batch it was given.
+ *
+ * A module may change: num_images, batch_size, progress (to exactly its own
+ * index), shmid (STORAGE_MEM: a new or the same segment) and filename
+ * (STORAGE_MMAP: a new file under the data directory). It may not change
+ * the identity of the batch -- pipeline_id, priority, uuid -- and every
+ * string it returns must be terminated inside its buffer. A module that
+ * keeps nothing returns num_images 0 and batch_size 0; that is a legitimate
+ * outcome (open ocean, full cloud), not an error. */
+static int validate_module_result(const ImageBatch *in, const ImageBatch *res, size_t module_index)
+{
+    const char *why = NULL;
+    if (memchr(res->uuid, '\0', sizeof(res->uuid)) == NULL)
+        why = "uuid not terminated";
+    else if (strcmp(res->uuid, in->uuid) != 0)
+        why = "uuid changed";
+    else if (res->pipeline_id != in->pipeline_id)
+        why = "pipeline_id changed";
+    else if (res->priority != in->priority)
+        why = "priority changed";
+    else if (res->progress != (int)module_index)
+        why = "progress is not this module's index";
+    else if (res->num_images < 0 || res->batch_size < 0)
+        why = "negative num_images or batch_size";
+    else if ((res->num_images == 0) != (res->batch_size == 0))
+        why = "num_images and batch_size disagree about emptiness";
+    else if (res->batch_size > 0 && res->num_images > res->batch_size)
+        why = "more images than bytes";
+    else if (memchr(res->filename, '\0', sizeof(res->filename)) == NULL)
+        why = "filename not terminated";
+    else if (in->storage_mode == STORAGE_MMAP && res->batch_size > 0 &&
+             strncmp(res->filename, "/usr/share/dipp/data/", 21) != 0)
+        why = "filename outside the data directory";
+    else if (in->storage_mode == STORAGE_MEM && res->batch_size > 0 && res->shmid < 0)
+        why = "no shared-memory segment for a non-empty batch";
+    if (why)
+    {
+        printf("MODULE_RESULT_INVALID uuid=%s module_index=%zu reason=%s "
+               "num_images=%d batch_size=%d progress=%d shmid=%d\n",
+               in->uuid, module_index, why, res->num_images, res->batch_size,
+               res->progress, res->shmid);
+        return -1;
+    }
+    return 0;
+}
+
 // Execute the pipeline on the given batch. It picks up from the possibly partially executed state,
 // and for each module it picks the best effort level that fulfills the requirements based on the current state.
 // If no such effort level is found, it stops the execution and returns an error.
 int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 {
     MTR_BEGIN_FUNC();
-    /* Initiate communication pipes */
-    if (pipe(output_pipe) == -1 || pipe(error_pipe) == -1)
-    {
-        set_error_param(PIPE_CREATE);
-        return -1;
-    }
 
     printf("Starting pipeline execution from module %d out of %zu modules\n", data->progress + 1, pipeline->num_modules);
 
@@ -107,18 +147,16 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 
         // printf("Looking up the best param_id using heuristic\r\n");
         // pick the module effort level using the currently set heuristic
-        COST_MODEL_LOOKUP_RESULT lookup_result = current_heuristic->heuristic_function(&pipeline->modules[i], data, pipeline->num_modules, &module_param_id, &picked_hash);
+        /* A batch on its one retry runs every remaining stage at the lowest
+           effort, whatever the heuristic would pick (quarantine.h). */
+        Heuristic *h = retry_lowest_effort ? &lowest_effort_heuristic : current_heuristic;
+        COST_MODEL_LOOKUP_RESULT lookup_result = h->heuristic_function(&pipeline->modules[i], data, pipeline->num_modules, &module_param_id, &picked_hash);
         // printf("Got back a param_id=%d\r\n", module_param_id);
 
         // No new progress can be made, as no module fulfills the requirements
         if (lookup_result == NOT_FOUND)
         {
             // printf("No matching module found. No effort level fulfills the requirements\r\n");
-            /* Close all active pipes */
-            close(output_pipe[0]); // Close the read end of the pipe
-            close(output_pipe[1]); // Close the write end of the pipe
-            close(error_pipe[0]);
-            close(error_pipe[1]);
             MTR_END(__FILE__, "execute_module_loop");
             MTR_END_FUNC();
             return 0;
@@ -165,7 +203,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         // printf("Starting execution in process\r\n");
-        int module_status = execute_module_in_process(module_function, data, module_config);
+        ImageBatch result;
+        int module_status = execute_module_in_process(module_function, data, module_config, &result);
         // printf("Finished execution\r\n");
 
         clock_gettime(CLOCK_MONOTONIC, &end);
@@ -191,14 +230,9 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
                 energy_cost = (float)module_config->energy_cost;
         }
 
-        // error encountered, clean up
+        // error encountered: the launcher has recorded it
         if (module_status == -1)
         {
-            /* Close all active pipes */
-            close(output_pipe[0]); // Close the read end of the pipe
-            close(output_pipe[1]); // Close the write end of the pipe
-            close(error_pipe[0]);
-            close(error_pipe[1]);
             MTR_END(__FILE__, "execute_module_loop");
             MTR_END_FUNC();
             return -1;
@@ -255,18 +289,15 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
                    res.io_read_bytes, res.io_write_bytes);
         }
 
-        ImageBatch result;
-        int res = read(output_pipe[0], &result, sizeof(result)); // Read the result from the pipe
-        if (res == -1)
+        /* The result came from a child process, i.e. from a module that may
+           have crashed halfway through writing it or that is simply wrong.
+           Nothing below may trust it: every field is checked against what this
+           execution is allowed to change before it replaces the batch. The old
+           code strcpy'd the child's uuid and filename into fixed buffers and
+           took num_images/batch_size/shmid as given. */
+        if (validate_module_result(data, &result, i) != 0)
         {
-            set_error_param(PIPE_READ);
-            MTR_END(__FILE__, "execute_module_loop");
-            MTR_END_FUNC();
-            return -1;
-        }
-        if (res == 0)
-        {
-            set_error_param(PIPE_EMPTY);
+            set_error_param(MODULE_RESULT_INVALID);
             MTR_END(__FILE__, "execute_module_loop");
             MTR_END_FUNC();
             return -1;
@@ -279,12 +310,12 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 
         data->num_images = result.num_images;
         data->batch_size = result.batch_size;
-        data->pipeline_id = result.pipeline_id;
-        data->priority = result.priority;
         data->progress = result.progress;
         data->shmid = result.shmid;
-        strcpy(data->uuid, result.uuid);
-        strcpy(data->filename, result.filename);
+        /* pipeline_id, priority and uuid are the daemon's, not the module's:
+           validate_module_result has checked the module left them alone. */
+        strncpy(data->filename, result.filename, sizeof(data->filename) - 1);
+        data->filename[sizeof(data->filename) - 1] = '\0';
 
         /* Checkpoint after EVERY module, not once per pipeline.
          *
@@ -317,12 +348,6 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 
         MTR_END(__FILE__, "execute_module_loop");
     }
-
-    /* Close communication pipes */
-    close(output_pipe[0]); // Close the read end of the pipe
-    close(output_pipe[1]); // Close the write end of the pipe
-    close(error_pipe[0]);
-    close(error_pipe[1]);
 
     MTR_END_FUNC();
 

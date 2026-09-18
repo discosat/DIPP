@@ -17,6 +17,7 @@
 #include "dipp_error.h"
 #include "dipp_config.h"
 #include "dipp_process.h"
+#include "quarantine.h"
 #include "dipp_paramids.h"
 #include "priority_queue.h"
 #include "cost_store.h"
@@ -43,6 +44,9 @@ Heuristic *current_heuristic = NULL;
    can checkpoint progress into it after every module. Single-threaded: only
    run_one_batch sets it. */
 PriorityQueue *current_batch_source = NULL;
+/* Set while a batch that failed once is being re-run: the executor then picks
+   the lowest effort of every remaining stage regardless of the heuristic. */
+int retry_lowest_effort = 0;
 
 // Process a single image batch, either fully or partially
 // It executes the pipeline, either fully or partially, depending
@@ -86,7 +90,10 @@ BatchOutcome process(ImageBatch *input_batch)
 
             upload(input_batch->data, input_batch->num_images, input_batch->batch_size);
 
-            image_batch_cleanup(input_batch);
+            /* Uploaded: the segment / file has done its job. Release it, do
+               not merely detach -- see image_batch_release. */
+            image_batch_release(input_batch);
+            quarantine_clear(input_batch);
 
             // TODO: Uncomment the following lines to delete the files after processing
 
@@ -413,7 +420,11 @@ static int run_one_batch(PriorityQueue *src)
     update_heuristic(pq_impl->get_queue_size(ingest_pq),
                      pq_impl->get_queue_size(partially_processed_pq));
 
+    retry_lowest_effort = quarantine_retry_pending(&batch);
+    if (retry_lowest_effort)
+        printf("RETRY uuid=%s progress=%d at lowest effort\n", batch.uuid, batch.progress);
     BatchOutcome outcome = process(&batch);
+    retry_lowest_effort = 0;
     current_batch_source = NULL;
 
     switch (outcome)
@@ -459,10 +470,25 @@ static int run_one_batch(PriorityQueue *src)
     case BATCH_FAILED:
     default:
     {
-        /* Drop it, as before, but say so. A8 replaces this with a quarantine
-           queue carrying a retry counter and an error code. */
-        printf("Batch %s FAILED; dropping (A8 will quarantine instead)\n", batch.uuid);
-        remove_from_queue(src, batch.uuid, "failed");
+        /* First failure: leave the batch where it is (still the head of its
+           queue, its data untouched) and let the next pass re-run it at the
+           lowest effort. Second failure: quarantine -- record for downlink,
+           release storage, remove. See quarantine.h. */
+        int failures = quarantine_record_failure(&batch, err_last_value);
+        if (failures <= QUARANTINE_MAX_RETRIES)
+        {
+            printf("Batch %s FAILED (%d); will retry once at lowest effort\n",
+                   batch.uuid, failures);
+            /* progress may have advanced before the failing module; keep it
+               durable so the retry resumes there rather than from scratch. */
+            if (pq_impl->commit_head)
+                pq_impl->commit_head(src, &batch);
+        }
+        else
+        {
+            quarantine_finalize(&batch);
+            remove_from_queue(src, batch.uuid, "quarantined");
+        }
         break;
     }
     }

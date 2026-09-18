@@ -25,4 +25,8 @@ int image_batch_cleanup(ImageBatch *batch);
  */
 int image_batch_setup_storage(ImageBatch *batch, StorageMode storage_mode);
 
+/* Release the batch's storage for good (IPC_RMID / unlink). Only after upload
+   or quarantine -- never while the batch is still queued. */
+int image_batch_release(ImageBatch *batch);
+
 #endif // DIPP_IMAGE_STORE_H

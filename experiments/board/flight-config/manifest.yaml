@@ -26,4 +26,4 @@ modules:
   18: module_18.yaml
   19: module_19.yaml
 radio_node_id: 0
-module_timeout: 0
+module_timeout: 30   # SECONDS: the daemon passes this straight to alarm(). 0 = alarm(0) = no timeout, which is why MODULE_EXIT_TIMEOUT never fired; the daemon now floors 0 to 30 s. Must exceed the slowest stage, JPEG XL e5 at 20.3 s per frame.

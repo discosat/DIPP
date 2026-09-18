@@ -193,6 +193,15 @@ parameters:
   value: {resync}
 """
 
+# The monolith: one module, one implementation, the effort pinned by slot
+# (9 low, 10 high) so the placeholder cost hints cannot steer the choice.
+PIPE_MONO = """pipeline:
+- name: libsingle_module
+  implementations:
+  - param_id: {slot}
+    effort_level: default
+"""
+
 KINDS = {
     "classification": dict(pipe=PIPE_CLASSIFY, module=MODULE_CLASSIFY, slot=3,
                            exec_name="classification",
@@ -211,6 +220,8 @@ KINDS = {
                            log=None, mark=None),
     "j2k":            dict(pipe=PIPE_J2K, exec_name="jpeg2000",       module=MODULE_J2K,      slot=16,
                            log=None, mark=None),
+    "monolith":       dict(pipe=PIPE_MONO, exec_name="single", module=None, slot=None,
+                           log="single", mark="Top class"),
     # Segmentation + encoder: validates pixel_threshold (kept pixels) and
     # mask_lowpass (encoded bytes) on the device, both so far only host-checked.
     # Same, but JPEG XL at a fixed Butteraugli distance. JPEG 2000 here runs at
@@ -244,8 +255,14 @@ def make_vmem(model, out_path, kind="classification"):
         if f.endswith(".yaml"):
             shutil.copy(os.path.join(FLIGHT, f), tmp)
     k = KINDS[kind]
-    open(os.path.join(tmp, "pipeline_2.yaml"), "w").write(
-        PIPE_BASE if model is None else k["pipe"])
+    if kind == "monolith" and model is not None:
+        # the model string is the slot: the flight module_<slot>.yaml is used as is
+        open(os.path.join(tmp, "pipeline_2.yaml"), "w").write(PIPE_MONO.format(slot=int(model)))
+        model = None
+        k = dict(k, pipe=None)
+    else:
+        open(os.path.join(tmp, "pipeline_2.yaml"), "w").write(
+            PIPE_BASE if model is None else k["pipe"])
     if model is not None:
         if kind == "encoding":
             effort, distance = model.split(":")

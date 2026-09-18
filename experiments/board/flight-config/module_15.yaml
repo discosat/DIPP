@@ -1,3 +1,11 @@
+# Fault injection: libcrash_and_burn, one deliberate fault per fail_case.
+#   0 arithmetic (SIGFPE)   1 null deref   2 protected page   3 write .rodata
+#   4 stack overflow        5 memcpy to NULL   6 index out of bounds
+#   7 null function pointer 8 1 TB malloc (reported, not a crash)
+#   9 double free (SIGABRT) 10 buffer overflow 11 SHM grow   12 hang (timeout)
+# Built at -O0 with volatile operands so every case reaches its fault
+# (tf-dipp-module/src/crash_and_burn.c). Cost hints are placeholders: the
+# module never completes.
 latency_cost: 10
 energy_cost: 5
 parameters:

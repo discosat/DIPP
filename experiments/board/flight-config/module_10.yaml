@@ -1,15 +1,28 @@
-latency_cost: 10
-energy_cost: 5
+# Monolith (libsingle_module), high effort: the five flight stages in ONE
+# process with the SAME parameters as slots 5 · 7 · 18, so the decomposed-vs-monolithic
+# comparison differs in structure only (tf-dipp-module/src/single_module.cpp,
+# rewritten 2026-09-18 -- it used to hardcode Residential, NORM_MINMAX, a JPEG XL
+# encoder and a 0.05/0.7 threshold pair). The 188-byte slot cannot hold every
+# key, so only what differs between the rungs is here; the code's defaults ARE
+# the flight values: normalization 255, gain 0.050, tile 224, class_index 9,
+# train_res 56, class_index_segmentation 0, threshold_percentage 0.5,
+# pixel_threshold 0.5, mask_lowpass 5, use_npu 1, resolutions 6,
+# resync_markers 1. A model name without a directory is /usr/share/models/.
+# Cost hints MEASURED 2026-09-18 on cs12_test_matched_00 (Earth-average mix,
+# n=20, bracketed idle floor): the monolith's per-frame cost depends on the
+# frame's retention by construction, as the decomposed pipeline's does.
+latency_cost: 6147000
+energy_cost: 2708
 parameters:
 - key: model_filename_classifier
   type: 5
-  value: /home/root/models/landcover-l.tflite
+  value: landcover_ms_high.tflite
 - key: model_filename_segmentation
   type: 5
-  value: /home/root/models/unet-l.tflite
-- key: threshold_percentage
+  value: cs12g050q_g_a14_r224.tflite
+- key: compression_ratio
   type: 4
-  value: 0.699999988079071
-- key: effort_level
+  value: 147.56
+- key: quality_layers
   type: 3
-  value: 7
+  value: 3

@@ -15,7 +15,7 @@ interactive uploads, which is what made the original runs unreproducible:
       1: yaml/demosaic_config.yaml
       3: yaml/classification_low_config.yaml
     radio_node_id: 0        # optional
-    module_timeout: 15000000  # optional, microseconds
+    module_timeout: 30  # optional, SECONDS (goes straight into alarm())
 
 Paths are resolved relative to the manifest. Verified byte-identical against
 the flight configuration recovered from the board.

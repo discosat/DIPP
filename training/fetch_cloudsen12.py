@@ -40,7 +40,16 @@ import warnings
 warnings.filterwarnings("ignore")
 import numpy as np                                            # noqa: E402
 import rasterio as rio                                        # noqa: E402
-import tacoreader                                             # noqa: E402
+# tacoreader 2.0 removed the v1 "tacofoundation:" format and moved it behind a
+# legacy import. 0.x/1.x have no such submodule, so try the legacy path first
+# and fall back, which keeps this working on both without pinning an old
+# release onto a new Python.
+try:
+    import tacoreader.v1 as tacoreader          # tacoreader >= 2.0
+    _TACO_API = "v1-legacy"
+except ImportError:
+    import tacoreader                           # tacoreader < 2.0
+    _TACO_API = "native"                                             # noqa: E402
 
 SIZE = 512
 RGB_BANDS = [4, 3, 2]          # Sentinel-2 B4/B3/B2
@@ -53,12 +62,20 @@ def main():
     ap.add_argument("--mode", default="cloudsen12-l1c")
     # Each sample is an independent HTTP range read, so this is I/O bound, not
     # CPU bound: serial fetching runs at ~15/min, i.e. 11 hours for the set.
+    # --split matters for building a VALIDATION corpus rather than a training
+    # one: --limit takes the first N of everything, which is mostly train, so
+    # asking for "a few hundred test samples" without this silently gets none.
+    ap.add_argument("--split", choices=["train", "validation", "test"],
+                    help="fetch only this split (default: all)")
     ap.add_argument("--workers", type=int, default=6)
     a = ap.parse_args()
 
+    print(f"tacoreader API: {_TACO_API}", flush=True)
     ds = tacoreader.load(f"tacofoundation:{a.mode}")
+    splits_all = list(ds["tortilla:data_split"])
     keep = [i for i, (lt, sh) in enumerate(zip(ds["label_type"], ds["real_proj_shape"]))
-            if lt == "high" and sh == 509]
+            if lt == "high" and sh == 509
+            and (a.split is None or splits_all[i] == a.split)]
     splits = list(ds["tortilla:data_split"])
     ids = list(ds["tortilla:id"])
     if a.limit:

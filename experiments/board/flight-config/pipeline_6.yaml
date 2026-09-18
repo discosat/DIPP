@@ -1,0 +1,24 @@
+# Static MEDIUM effort -- the sibling of pipeline 2 (static LOW) and 3 (static
+# HIGH), added 2026-09-14 so every stage's middle rung can run end to end
+# without the scheduler: classification 4, segmentation 19, JPEG XL 12.
+pipeline:
+- name: libdemosaic
+  implementations:
+  - param_id: 1
+    effort_level: default
+- name: libtile
+  implementations:
+  - param_id: 2
+    effort_level: default
+- name: libtflite_classification
+  implementations:
+  - param_id: 4
+    effort_level: default
+- name: libtflite_binary_segmentation
+  implementations:
+  - param_id: 19
+    effort_level: default
+- name: libjpeg2000_module
+  implementations:
+  - param_id: 17
+    effort_level: default

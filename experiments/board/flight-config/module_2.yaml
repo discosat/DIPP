@@ -1,5 +1,8 @@
-latency_cost: 143000
-energy_cost: 264
+latency_cost: 98596
+# energy_cost MEASURED 2026-09-17 (tools/update_energy_hints.py): tile's share of the fixed stages, split by latency (241:99 ms);
+# idle floor read before every run, settled reps [2], I/O term removed
+# (analysis/stage4.5-models/stage_energy.json, encoder_energy.json).
+energy_cost: 17
 parameters:
 - key: tile_height
   type: 3

@@ -4,6 +4,7 @@ pipelines:
   3: pipeline_3.yaml
   4: pipeline_4.yaml
   5: pipeline_5.yaml
+  6: pipeline_6.yaml
 modules:
   1: module_1.yaml
   2: module_2.yaml
@@ -23,5 +24,6 @@ modules:
   16: module_16.yaml
   17: module_17.yaml
   18: module_18.yaml
+  19: module_19.yaml
 radio_node_id: 0
 module_timeout: 0

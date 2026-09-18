@@ -15,7 +15,7 @@ pipeline:
   implementations:
   - param_id: 7
     effort_level: default
-- name: libjpegxl_module
+- name: libjpeg2000_module
   implementations:
-  - param_id: 13
+  - param_id: 18
     effort_level: default

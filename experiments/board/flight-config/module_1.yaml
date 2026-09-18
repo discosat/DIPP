@@ -1,6 +1,102 @@
-latency_cost: 373000
-energy_cost: 718
+# Demosaic + radiometric calibration.
+#
+# THE GAIN IS 0.050 -- FROZEN 2026-09-13 BY PHASE 0 OF THE COMPLETION PLAN.
+# Do not change it without re-running everything measured after it.
+#
+# The sweep below chose 0.060 on a separability PROXY for segmentation. Phase 0
+# closed that gap with real IoU: two plain U-Nets trained 12 epochs at 0.050 and
+# 0.060, PTQ-exported, scored on 535 validation scenes against expert masks:
+#     0.050  IoU 0.6282  precision 0.8467  recall 0.7089  FP-on-clear 5.45%
+#     0.060  IoU 0.6393  precision 0.8163  recall 0.7468  FP-on-clear 6.66%
+# A tie within noise -- the proxy was wrong about the margin. Secondary criteria
+# both favour 0.050: thick-cloud saturation 14% against 23% (saturation is a
+# veto, not a trade-off), and lower false positives on clear ground, which is
+# the mission-asymmetric error. Classification is indifferent (53.5/53.5 vs
+# 55.0/52.5 across the two rungs).
+#
+# Superseded reasoning, kept for the record -- the gain was 0.060, chosen by sweep. An earlier version of this
+# file used 0.0932 because that is EuroSAT's own rendering
+# (`L1C reflectance x 0.093`, measured per class against EuroSAT-MS) and the
+# classifiers are trained on EuroSAT. That reasoning was incomplete: there is
+# one demosaic stage, so segmentation consumes the same tiles, and 0.0932
+# saturates 50.7% of thick-cloud pixels. Swept over 0.040-0.0932:
+#
+#   gain    cls a050  cls a140   sep thin/thick   sat thick
+#   0.040     54.5%     51.5%        0.826           5.8%
+#   0.060     55.0%     52.5%        0.895 <- peak  23.2%
+#   0.0932    56.4%     57.9%        0.764          50.7%
+#
+# Classification spans 3-6 points across the whole range against a ~3.5 pp
+# standard error, i.e. mostly noise -- the +29 points won earlier came from
+# removing the OFFSETS and matching resolution, not from the gain magnitude.
+# Segmentation is not indifferent: thin-versus-thick separability PEAKS at
+# 0.060 and collapses at 0.0932, and that distinction is the entire reason
+# CloudSEN12 gives model capacity something to buy.
+#
+# The cost is real and stated: alpha=1.4 loses ~5 points of coarse agreement
+# (57.9 -> 52.5), about 1.5 standard errors. Saturation is not a tradeoff --
+# clipped cloud cannot be recovered by any amount of retraining -- so it wins.
+#
+# Still imperfect at 0.060: 23.2% of thick cloud clips, so degrees of thick
+# cloud remain indistinguishable. Lower gain would fix that at classification's
+# expense; revisit if the top segmentation rung needs it.
+#
+# For the original reasoning, kept because it is what made the offsets
+# diagnosable: the
+# classifiers are trained on EuroSAT RGB, which is exactly
+# `L1C reflectance x 0.093` -- a single uniform gain, no offset, measured per
+# class against EuroSAT-MS (Forest 0.096/0.094/0.093, SeaLake 0.097/0.095/0.094,
+# Residential 0.093/0.094/0.093, AnnualCrop 0.093/0.093/0.093). Rendering the
+# device's imagery the same way puts training and deployment in one domain.
+#
+# The previous constants (gain 0.0403/0.0314/0.0252, offset 17.27/36.86/60.98)
+# were fitted to match EuroSAT's POOLED mean and std, which is a different and
+# wrong target: pooled statistics agree while per-pixel colour does not. They
+# were less than half the gain, non-uniform across channels, and offset-shifted,
+# with two consequences -- everything too dark (AnnualCrop rendered at 83 where
+# EuroSAT gives 153), and at low signal the offsets dominated so dark vegetation
+# turned BLUE. Forest then looks like water, which is why the classifiers
+# predicted SeaLake for it and scored 0-2% recall on tree-covered tiles.
+#
+# Measured on 202 expert-verified Sentinel-2 tiles, coarse land-cover agreement
+# (this change together with train_res on slots 3/4/5):
+#     alpha=0.5   27.2% -> 56.4%       alpha=1.4   30.7% -> 57.9%
+#     tree recall  0-2% -> 23.8%
+#
+# radiometric_mode is stated explicitly rather than inherited from the module
+# default: relying on that default already cost one investigation.
+#
+# 2026-09-17: with equal gains and zero offsets the module renders in ONE
+# pass (convertTo, rounds to nearest, 8-bit output) -- 241 ms instead of 683;
+# the per-channel float path only runs for non-uniform gains. Rotation is
+# cv::rotate (the old warpAffine shifted the frame by one pixel).
+latency_cost: 240883
+# energy_cost MEASURED 2026-09-17 (tools/update_energy_hints.py): demosaic's share of the fixed stages, split by latency (241:99 ms);
+# idle floor read before every run, settled reps [2], I/O term removed
+# (analysis/stage4.5-models/stage_energy.json, encoder_energy.json).
+energy_cost: 41
 parameters:
 - key: normalization_value
   type: 3
   value: 255
+- key: radiometric_mode
+  type: 3
+  value: 1
+- key: calib_gain_r
+  type: 4
+  value: 0.0500
+- key: calib_gain_g
+  type: 4
+  value: 0.0500
+- key: calib_gain_b
+  type: 4
+  value: 0.0500
+- key: calib_offset_r
+  type: 4
+  value: 0.0
+- key: calib_offset_g
+  type: 4
+  value: 0.0
+- key: calib_offset_b
+  type: 4
+  value: 0.0

@@ -1,0 +1,58 @@
+# Cloud segmentation, MEDIUM effort -- MobileNetV2 a=0.35 encoder U-Net @160,
+# selective QAT. IoU 0.789, precision 0.914, recall 0.853, FP on cloud-free
+# scenes 0.67%. 13.6 ms/tile on the NPU.
+#
+# Why this and not the plain w16 d3 @128 (IoU 0.730, 8.1 ms/tile): that one
+# is dominated on every quality axis and is WORSE than the low rung on
+# precision (0.854) and FP-on-clear (4.63%) -- a rung that discards more
+# cloud-free ground than the one below it is not a rung.
+#
+# Selective QAT: every layer but Conv2DTranspose learns its ranges. Plain
+# PTQ cost this encoder 0.15 IoU (0.641, 27% FP on clear) and full QAT leaves
+# runtime TRANSPOSE ops that push the model off the NPU.
+#
+# threshold_percentage is FIXED at 0.5 across all efforts, deliberately.
+# The module keeps a tile when kept_pixels > threshold_percentage * img_size,
+# i.e. the threshold is the minimum fraction of CLEAR pixels, so 0.5 means
+# "keep unless the tile is majority cloud" -- the same rule the encoder
+# downstream is supposed to be fed by. It was 0.05 at low effort and 0.7 at
+# high, which made retention a function of the effort level rather than of
+# the scene, so every low-vs-high comparison measured two things at once.
+#
+# Model: CloudSEN12+ (Sentinel-2 L1C, expert masks) at the frozen rendering
+# (gain 0.050, module_1.yaml), TF 2.9.1 export, input quantisation (2/255,
+# 127|128) = the module's raw-uint8 passthrough contract; graph verified
+# TRANSPOSE=0, dynamic=0 before it reached the board, so it runs on the NPU
+# (use_npu 1). Quality is IoU against expert masks on the CloudSEN12
+# VALIDATION split, 535 scenes, device-footprint tiles; test is quoted once
+# at the end of Stage 4.5.
+#
+# Costs measured on the board 2026-09-13 (analysis/stage4.5-models/
+# dev_cs12_g050.json): warm run (one cold run discarded -- the VX graph
+# compile alone is 11-23 s), n=50 batches of koge-coast-full-clouds, median
+# EXEC latency, idle-corrected energy differenced against a demosaic+tile
+# baseline at the same n with P_idle = 2.7470 W from the same session.
+latency_cost: 1430600
+# energy_cost MEASURED 2026-09-17 (tools/update_energy_hints.py): segmentation medium, 99 tiles, I/O-matched;
+# idle floor read before every run, settled reps [2], I/O term removed
+# (analysis/stage4.5-models/stage_energy.json, encoder_energy.json).
+energy_cost: 496
+parameters:
+- key: model_filename
+  type: 5
+  value: /usr/share/models/cs12g050q_g_a035_r160.tflite
+- key: class_index
+  type: 3
+  value: 0
+- key: threshold_percentage
+  type: 4
+  value: 0.5
+- key: pixel_threshold
+  type: 4
+  value: 0.5
+- key: mask_lowpass
+  type: 3
+  value: 5
+- key: use_npu
+  type: 3
+  value: 1

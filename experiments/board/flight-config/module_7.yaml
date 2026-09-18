@@ -1,15 +1,48 @@
-latency_cost: 1472000
-energy_cost: 3540
+# Cloud segmentation, HIGH effort -- MobileNetV2 a=1.4 encoder U-Net @224,
+# selective QAT (the paper's mobilenetv2_14_unet architecture). IoU 0.811,
+# precision 0.904, recall 0.887, FP on cloud-free scenes 1.43%. 40.3 ms/tile.
+#
+# The step above medium is +0.021 IoU (paired scene bootstrap 95% CI
+# [+0.009, +0.034] -- above noise) for 2.9x the latency and 7.7x the energy.
+# That is the measured value of the top effort level; it is reported, not
+# tuned away.
+#
+# threshold_percentage is FIXED at 0.5 across all efforts, deliberately.
+# The module keeps a tile when kept_pixels > threshold_percentage * img_size,
+# i.e. the threshold is the minimum fraction of CLEAR pixels, so 0.5 means
+# "keep unless the tile is majority cloud" -- the same rule the encoder
+# downstream is supposed to be fed by. It was 0.05 at low effort and 0.7 at
+# high, which made retention a function of the effort level rather than of
+# the scene, so every low-vs-high comparison measured two things at once.
+#
+# Model: CloudSEN12+ (Sentinel-2 L1C, expert masks) at the frozen rendering
+# (gain 0.050, module_1.yaml), TF 2.9.1 export, input quantisation (2/255,
+# 127|128) = the module's raw-uint8 passthrough contract; graph verified
+# TRANSPOSE=0, dynamic=0 before it reached the board, so it runs on the NPU
+# (use_npu 1). Quality is IoU against expert masks on the CloudSEN12
+# VALIDATION split, 535 scenes, device-footprint tiles; test is quoted once
+# at the end of Stage 4.5.
+#
+# Costs measured on the board 2026-09-13 (analysis/stage4.5-models/
+# dev_cs12_g050.json): warm run (one cold run discarded -- the VX graph
+# compile alone is 11-23 s), n=50 batches of koge-coast-full-clouds, median
+# EXEC latency, idle-corrected energy differenced against a demosaic+tile
+# baseline at the same n with P_idle = 2.7470 W from the same session.
+latency_cost: 4158100
+# energy_cost MEASURED 2026-09-17 (tools/update_energy_hints.py): segmentation high, 99 tiles, I/O-matched;
+# idle floor read before every run, settled reps [2], I/O term removed
+# (analysis/stage4.5-models/stage_energy.json, encoder_energy.json).
+energy_cost: 2486
 parameters:
 - key: model_filename
   type: 5
-  value: /usr/share/models/seg_high.tflite
+  value: /usr/share/models/cs12g050q_g_a14_r224.tflite
 - key: class_index
   type: 3
   value: 0
 - key: threshold_percentage
   type: 4
-  value: 0.699999988079071
+  value: 0.5
 - key: pixel_threshold
   type: 4
   value: 0.5

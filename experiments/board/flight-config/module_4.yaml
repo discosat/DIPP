@@ -1,9 +1,51 @@
-latency_cost: 598000
-energy_cost: 1200
+# Classification medium effort -- landcover_ms_medop (MobileNetV2 a=0.5 @224),
+# 92.09% top-1 on the EuroSAT-MS holdout. CloudSEN12 water recall 96.4% /
+# precision 82.5%.
+#
+# This rung is an OPERATING POINT: a=0.5 trained to exhaustion scores 98.57%,
+# indistinguishable from a=1.4's 98.52%, so it was stopped at val 0.90 (as the
+# paper's original 89.98% medium rung was). Snapshots of every epoch are in
+# training/out/snap/ms_medop*/ if the point needs moving.
+#
+# Costs measured on the board 2026-09-13 (analysis/stage4.5-models/dev_cls_ms_tr56.json),
+# n=47 completed executions at n=50 batches, median EXEC latency and
+# idle-corrected energy differenced against a demosaic+tile baseline run at the
+# same batch count:
+#     E_work = (E_run - P_idle*T_run)/N  -  (E_base - P_idle*T_base)/N
+# with P_idle = 2.7486 W measured in the same session (the floor has read
+# 2.739, 2.749, 3.097 and 3.290 W on different sessions -- per-session idle is
+# mandatory).
+#
+# Measured WITH train_res in place. The previous hints in this file were
+# measured through a bench config that lacked it, so they omitted the two
+# per-tile OpenCV resizes. At train_res 64 they cost ~320 ms per 99-tile frame
+# (3.3 ms/tile: 224/64 = 3.5 is a non-integer scale, so INTER_AREA takes its
+# generic path). train_res 56 is an integer 4x scale, ~1.9x faster on the
+# resize (dev_cls_ms.json has the 64 figures: 659.7 / 1077.1 / 2028.6 ms), and
+# on the CloudSEN12 gate it scores the same as 64 (40.2 / 49.5 / 60.9 % vs
+# 39.4 / 49.5 / 59.4 %; 112 loses 4-7 points). The resize is part of this
+# stage as configured, so it is part of its cost.
+#
+# Energy noise: the medium rung read 145 uWh/exec at train_res 64 and 83 at
+# 56 in the same session -- the difference between two ~155 s runs at ~2.75 W
+# is ~+-60 uWh per execution at n=50. Ordering of the rungs is unaffected.
+#
+# Model: EuroSAT-MS retrain at the frozen rendering (gain 0.050), QAT, TF 2.9.1
+# export with input quantisation (2/255, 128) -- the module's raw-uint8
+# passthrough contract. class_index 9 = SeaLake: water is the mission target;
+# on CloudSEN12 validation this rung finds it with the recall/precision below.
+latency_cost: 850500
+# energy_cost MEASURED 2026-09-17 (tools/update_energy_hints.py): classification medium, all 99 tiles, no upload;
+# idle floor read before every run, settled reps [2], I/O term removed
+# (analysis/stage4.5-models/stage_energy.json, encoder_energy.json).
+energy_cost: 394
 parameters:
 - key: model_filename
   type: 5
-  value: /usr/share/models/qat_a050r224.tflite
+  value: /usr/share/models/landcover_ms_medop.tflite
 - key: class_index
   type: 3
-  value: 7
+  value: 9
+- key: train_res
+  type: 3
+  value: 56

@@ -1,17 +1,42 @@
-# JPEG 2000 medium effort -- ~4300 B, mirrors jxl d=1.0
-# Costs are placeholders until measured on the board.
-latency_cost: 149000
-energy_cost: 264
+# JPEG 2000, MEDIUM effort -- 2 quality layers, ratio 98.2 (3,000 B/tile),
+# resync on, 6 resolutions. Clean 41.17 dB; one frame lost 36.04 dB
+# (+3.35 [+3.03, +3.66] over one layer). 55.1 ms/tile.
+#
+# Byte budget FROZEN across effort levels: 3,000 B/tile mean on the CloudSEN12
+# corpus (300 retained validation tiles at the frozen rendering, gain 0.050,
+# expert-mask 5x5 fill), so effort trades compute for quality and nothing
+# else. Quality is measured on that corpus with the board's own codec version
+# (libjxl 0.10.2 / openjpeg 2.4.0); host and board bytes agree to <2% on the
+# koge-coast-no-clouds frame (analysis/enc_host_vs_board.py).
+#
+# Costs measured on the board 2026-09-14 (analysis/stage4.5-models/
+# dev_enc_g050*.json): koge-coast-no-clouds (a CLEAR frame -- the encoder only
+# sees retained tiles; the full-cloud frame saturates white at this gain),
+# 3 independent launches x 4 batches, median EXEC latency, idle-corrected
+# energy per execution with P_idle = 2.7466 W from the same session.
+#
+# Costs re-measured 2026-09-14 on a CloudSEN12+ frame (cs12_validation_00,
+# analysis/stage4.5-models/dev_enc_cs12.json; one launch x 4 batches, idle
+# 2.7033 W) after the device frames were retired. 10-12% above the retired
+# frame's figures -- real 10 m content costs the coder more -- with the same
+# ladder shape; launch-to-launch spread on the earlier 3-launch set was
+# <= 28 uWh. JXL bytes on this frame land on the 3,000 B corpus target
+# (2,988 / 3,014), as they must for corpus content.
+latency_cost: 6117100
+# energy_cost MEASURED 2026-09-17 (tools/update_energy_hints.py): J2K L2, 99 tiles, n=20, bracketed floor, matched frame;
+# idle floor read before every run, settled reps [2], I/O term removed
+# (analysis/stage4.5-models/stage_energy.json, encoder_energy.json).
+energy_cost: 741
 parameters:
 - key: compression_ratio
   type: 4
-  value: 35.0
+  value: 98.2
 - key: resolutions
   type: 3
   value: 6
 - key: quality_layers
   type: 3
-  value: 1
+  value: 2
 - key: resync_markers
   type: 3
-  value: 0
+  value: 1

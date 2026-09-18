@@ -1,9 +1,38 @@
+# ADAPTIVE with JPEG XL as the encoder -- the comparison to pipeline 1
+# (adaptive with JPEG 2000). Redefined 2026-09-14: this slot used to be
+# "demosaic + JPEG XL" (no ML stages), a baseline the resubmission does not
+# re-run. JPEG XL is a two-level module (slots 11 = effort 3, 12 = effort 5):
+# its effort curve at fixed bytes is a step function and the exhaustive tier
+# was measured at +0.06 dB for 1.6x the energy (module_13.yaml, not a level).
+# Same classification and segmentation rungs as pipeline 1.
 pipeline:
 - name: libdemosaic
   implementations:
   - param_id: 1
     effort_level: default
+- name: libtile
+  implementations:
+  - param_id: 2
+    effort_level: default
+- name: libtflite_classification
+  implementations:
+  - param_id: 3
+    effort_level: low
+  - param_id: 4
+    effort_level: medium
+  - param_id: 5
+    effort_level: high
+- name: libtflite_binary_segmentation
+  implementations:
+  - param_id: 6
+    effort_level: low
+  - param_id: 19
+    effort_level: medium
+  - param_id: 7
+    effort_level: high
 - name: libjpegxl_module
   implementations:
-  - param_id: 13
-    effort_level: default
+  - param_id: 11
+    effort_level: low
+  - param_id: 12
+    effort_level: high

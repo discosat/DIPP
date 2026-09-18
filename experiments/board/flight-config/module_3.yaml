@@ -1,9 +1,51 @@
-latency_cost: 235000
-energy_cost: 465
+# Classification low effort -- landcover_ms_low (custom_conv), 75.13% top-1 on
+# the EuroSAT-MS holdout (5,400). CloudSEN12 water recall 78.3% / precision 71.4%.
+#
+# Costs measured on the board 2026-09-13 (analysis/stage4.5-models/dev_cls_ms_tr56.json),
+# n=47 completed executions at n=50 batches, median EXEC latency and
+# idle-corrected energy differenced against a demosaic+tile baseline run at the
+# same batch count:
+#     E_work = (E_run - P_idle*T_run)/N  -  (E_base - P_idle*T_base)/N
+# with P_idle = 2.7486 W measured in the same session (the floor has read
+# 2.739, 2.749, 3.097 and 3.290 W on different sessions -- per-session idle is
+# mandatory).
+#
+# Measured WITH train_res in place. The previous hints in this file were
+# measured through a bench config that lacked it, so they omitted the two
+# per-tile OpenCV resizes. At train_res 64 they cost ~320 ms per 99-tile frame
+# (3.3 ms/tile: 224/64 = 3.5 is a non-integer scale, so INTER_AREA takes its
+# generic path). train_res 56 is an integer 4x scale, ~1.9x faster on the
+# resize (dev_cls_ms.json has the 64 figures: 659.7 / 1077.1 / 2028.6 ms), and
+# on the CloudSEN12 gate it scores the same as 64 (40.2 / 49.5 / 60.9 % vs
+# 39.4 / 49.5 / 59.4 %; 112 loses 4-7 points). The resize is part of this
+# stage as configured, so it is part of its cost.
+#
+# Energy noise: the medium rung read 145 uWh/exec at train_res 64 and 83 at
+# 56 in the same session -- the difference between two ~155 s runs at ~2.75 W
+# is ~+-60 uWh per execution at n=50. Ordering of the rungs is unaffected.
+#
+# Model: EuroSAT-MS retrain at the frozen rendering (gain 0.050), QAT, TF 2.9.1
+# export with input quantisation (2/255, 128) -- the module's raw-uint8
+# passthrough contract. class_index 9 = SeaLake: water is the mission target;
+# on CloudSEN12 validation this rung finds it with the recall/precision below.
+#
+# energy_cost was an estimate until 2026-09-15 (the rung measured -92 uWh
+# against a baseline that uploads 15 MB the model run never uploads -- a
+# -304 uWh/frame I/O bias, analysis/stage4.5-models/README.md "Energy,
+# calibrated"). Now measured: class_index 10 (keeps and uploads nothing)
+# differenced against the fixed stages, per-run idle floor.
+latency_cost: 497800
+# energy_cost MEASURED 2026-09-17 (tools/update_energy_hints.py): classification low, all 99 tiles, no upload;
+# idle floor read before every run, settled reps [2], I/O term removed
+# (analysis/stage4.5-models/stage_energy.json, encoder_energy.json).
+energy_cost: 219
 parameters:
 - key: model_filename
   type: 5
-  value: /usr/share/models/custom_conv_model_landcover.tflite
+  value: /usr/share/models/landcover_ms_low.tflite
 - key: class_index
   type: 3
-  value: 7
+  value: 9
+- key: train_res
+  type: 3
+  value: 56

@@ -1,9 +1,30 @@
-latency_cost: 5845000
-energy_cost: 10300
+# RETIRED as an effort level (2026-09-14) -- JPEG XL effort 8, kept as a MEASUREMENT.
+# Not referenced by any pipeline. Originally: JPEG XL, HIGH effort -- effort 8, distance 2.590 (3,000 B/tile corpus mean).
+# PSNR at iso-rate 40.99 dB: +0.06 dB [+0.04, +0.07] over the medium rung for
+# 4.7x the latency and 1.6x the energy. 934 ms/tile.
+#
+# This is the measured value of JPEG XL's top effort tier at fixed bytes:
+# above noise on 259 paired tiles, and practically nothing. It is reported as
+# such, not tuned away; e9 costs 1.4x more than e8 for -0.02 dB.
+#
+# Byte budget FROZEN across effort levels: 3,000 B/tile mean on the CloudSEN12
+# corpus (300 retained validation tiles at the frozen rendering, gain 0.050,
+# expert-mask 5x5 fill), so effort trades compute for quality and nothing
+# else. Quality is measured on that corpus with the board's own codec version
+# (libjxl 0.10.2 / openjpeg 2.4.0); host and board bytes agree to <2% on the
+# koge-coast-no-clouds frame (analysis/enc_host_vs_board.py).
+#
+# Costs measured on the board 2026-09-14 (analysis/stage4.5-models/
+# dev_enc_g050*.json): koge-coast-no-clouds (a CLEAR frame -- the encoder only
+# sees retained tiles; the full-cloud frame saturates white at this gain),
+# 3 independent launches x 4 batches, median EXEC latency, idle-corrected
+# energy per execution with P_idle = 2.7466 W from the same session.
+latency_cost: 92474900
+energy_cost: 3982
 parameters:
 - key: effort_level
   type: 3
-  value: 7
+  value: 8
 - key: distance
   type: 4
-  value: 0.0
+  value: 2.59

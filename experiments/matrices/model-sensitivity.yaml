@@ -1,3 +1,4 @@
+# RETIRED 2026-09-14: the five device frames are no longer used for anything; see ~/dipp-datasets/cs12-frames.
 # Does the pipeline's output depend on its input at all?
 #
 # Five scenes that should be trivially separable: amager is urban Copenhagen

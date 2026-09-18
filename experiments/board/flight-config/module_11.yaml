@@ -1,9 +1,40 @@
-latency_cost: 149000
-energy_cost: 264
+# JPEG XL, LOW effort -- effort 3, distance 2.358 (3,000 B/tile corpus mean).
+# PSNR at iso-rate 40.49 dB. 27.1 ms/tile.
+#
+# Effort 3, not 1: at the same byte budget e3 is +0.27 dB [+0.26, +0.28] over
+# e1 (paired over 259 tiles) at an energy difference inside the launch-to-
+# launch noise (264+-6 vs 251+-17 uWh), so e1 is a dominated point and not an
+# operating level. e1 and e2 are identical in libjxl 0.10.2.
+#
+# Byte budget FROZEN across effort levels: 3,000 B/tile mean on the CloudSEN12
+# corpus (300 retained validation tiles at the frozen rendering, gain 0.050,
+# expert-mask 5x5 fill), so effort trades compute for quality and nothing
+# else. Quality is measured on that corpus with the board's own codec version
+# (libjxl 0.10.2 / openjpeg 2.4.0); host and board bytes agree to <2% on the
+# koge-coast-no-clouds frame (analysis/enc_host_vs_board.py).
+#
+# Costs measured on the board 2026-09-14 (analysis/stage4.5-models/
+# dev_enc_g050*.json): koge-coast-no-clouds (a CLEAR frame -- the encoder only
+# sees retained tiles; the full-cloud frame saturates white at this gain),
+# 3 independent launches x 4 batches, median EXEC latency, idle-corrected
+# energy per execution with P_idle = 2.7466 W from the same session.
+#
+# Costs re-measured 2026-09-14 on a CloudSEN12+ frame (cs12_validation_00,
+# analysis/stage4.5-models/dev_enc_cs12.json; one launch x 4 batches, idle
+# 2.7033 W) after the device frames were retired. 10-12% above the retired
+# frame's figures -- real 10 m content costs the coder more -- with the same
+# ladder shape; launch-to-launch spread on the earlier 3-launch set was
+# <= 28 uWh. JXL bytes on this frame land on the 3,000 B corpus target
+# (2,988 / 3,014), as they must for corpus content.
+latency_cost: 2757800
+# energy_cost MEASURED 2026-09-17 (tools/update_energy_hints.py): JXL e3, 99 tiles, n=20, bracketed floor, matched frame;
+# idle floor read before every run, settled reps [2], I/O term removed
+# (analysis/stage4.5-models/stage_energy.json, encoder_energy.json).
+energy_cost: 607
 parameters:
 - key: effort_level
   type: 3
-  value: 1
+  value: 3
 - key: distance
   type: 4
-  value: 3.0
+  value: 2.358

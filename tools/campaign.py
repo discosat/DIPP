@@ -146,10 +146,16 @@ def power_cycle():
     The board hangs mid-U-Boot roughly one boot in twenty. Without this, one
     wedge at run 12 of 100 fails every run after it as well -- each one still
     paying the full reboot timeout -- which is a whole overnight campaign lost
-    to a fault that a five-second power cut clears.
+    to a fault that a power cut clears.
+
+    SIXTY seconds, not five. After a hard hang (2026-09-14: a classification
+    run that never produced a batch, console dead on both ports) 5 s and 10 s
+    cuts restored power to a board that drew a normal 3.1 W and never printed
+    a byte of U-Boot; a 60 s cut booted it cleanly. Whatever latches in the
+    PMIC/SoC outlives a short cut.
     """
     try:
-        r = subprocess.run([os.path.join(HERE, "otii_power.py"), "cut", "5"],
+        r = subprocess.run([os.path.join(HERE, "otii_power.py"), "cut", "60"],
                            capture_output=True, text=True, timeout=180)
         print(f"    power cycle: {r.stdout.strip() or r.stderr.strip()}")
         return r.returncode == 0

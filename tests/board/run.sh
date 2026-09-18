@@ -3,7 +3,7 @@
 #
 #   run.sh --label adaptive-mmap-01 --pipeline 1 --storage MMAP \
 #          --heuristic BEST_EFFORT --load populate --n 20 --images 1 [--seed 43]
-#          [--image koge-coast-no-clouds.bayerRG]
+#          [--image cs12_validation_00.bayerRG]
 #          [--keep-cost-cache] [--no-trace]
 #
 # Writes runs/<label>/{board.json,console.log,trace.json,storage.vmem,pre.txt,post.txt}
@@ -12,8 +12,8 @@
 set -u
 
 DIR=/home/root/tmp-experiments
-IMG_DIR=/mnt/flash/2025-11-10/sentinel2-dataset
-IMAGE=amager-no-clouds.bayerRG
+IMG_DIR=/mnt/flash/cs12-frames
+IMAGE=cs12_validation_00.bayerRG
 
 LABEL=""; PIPELINE=2; STORAGE=MMAP; HEURISTIC=BEST_EFFORT
 LOAD=populate; N=20; IMAGES=1; SEED=43; KEEP_CACHE=0; TRACE=1; MIN_DRAIN=20
@@ -118,19 +118,21 @@ else
 fi
 
 echo "--- draining ---"
-# Counting completions cannot tell "slow" from "finished": a module that takes
-# longer than the stability window leaves the count at zero, four identical
-# reads in a row look stable, and the run is cut off mid-execution. JPEG XL at
-# effort 7 does exactly this. So while nothing has completed yet, keep waiting
-# until MIN_DRAIN has elapsed.
-LAST=-1; STABLE=0; DRAIN_START=$(date -u +%s)
-while [ "$STABLE" -lt 4 ]; do
+# Counting completions cannot tell "slow" from "finished": a batch that takes
+# longer than the stability window looks like a finished run. The old rule
+# (four identical 5 s reads, MIN_DRAIN only while the count was still zero)
+# cut JPEG XL effort 5 -- 20.3 s per batch -- off after its first inter-batch
+# gap: 4 of 20 batches, the other 16 ingested and never run (2026-09-15). So
+# the run is drained only when MIN_DRAIN seconds have passed since the count
+# last changed; MIN_DRAIN must exceed one batch of the slowest stage.
+LAST=-1; LAST_CHANGE=$(date -u +%s)
+while :; do
     sleep 5
     NOW=$(cnt 'fully executed' "$OUT/console.log")
-    if [ "$NOW" = "$LAST" ]; then STABLE=$((STABLE + 1)); else STABLE=0; fi
+    T=$(date -u +%s)
+    if [ "$NOW" != "$LAST" ]; then LAST_CHANGE=$T; fi
     LAST=$NOW
-    ELAPSED=$(( $(date -u +%s) - DRAIN_START ))
-    if [ "$NOW" -eq 0 ] && [ "$ELAPSED" -lt "$MIN_DRAIN" ]; then STABLE=0; fi
+    if [ $(( T - LAST_CHANGE )) -ge "$MIN_DRAIN" ]; then break; fi
 done
 END=$(date -u +%s)
 
@@ -155,7 +157,7 @@ cp "$DIR/storage.vmem" "$OUT/storage.vmem" 2>/dev/null
 # These are the only record of what the models actually predicted, so they are
 # a first-class artifact of a run, not a debug aid.
 cat /home/root/logs/tflite_classification_* 2>/dev/null | grep 'Top class' > "$OUT/predictions.txt"
-cat /home/root/logs/tflite_binary_segmentation_* 2>/dev/null | grep 'Kept pixels' > "$OUT/kept_pixels.txt"
+cat /home/root/logs/tflite_segmentation_* 2>/dev/null | grep 'Kept pixels' > "$OUT/kept_pixels.txt"
 HIST=$(awk '{for(i=1;i<=NF;i++) if($i=="class:"){c[$(i+1)]++}} END{s="";for(k in c) s=s k ":" c[k] " ";print s}' "$OUT/predictions.txt" 2>/dev/null)
 NPRED=$(cnt . "$OUT/predictions.txt")
 

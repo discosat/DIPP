@@ -1,9 +1,44 @@
-latency_cost: 1689000
-energy_cost: 3010
+# JPEG XL, HIGH effort (of two) -- effort 5, distance 2.884 (3,000 B/tile corpus mean).
+# PSNR at iso-rate 40.93 dB: +0.44 dB [+0.37, +0.52] over the low rung for
+# 7.4x the latency and 9.6x the energy. 200.4 ms/tile. Efforts 6 and 7 cost
+# more and score -0.10 dB against e5 at iso-rate, so e5 is the tier's point.
+#
+# JPEG XL is a TWO-level module (decided 2026-09-14). Its effort curve at
+# fixed bytes is a step function: {1-4} < {5-9}, and the exhaustive tier
+# (8/9) buys +0.06 dB for 1.6x the energy -- measured, in module_13.yaml, and
+# not an effort level. JPEG 2000 (slots 16-18) is the flight encoder: three
+# levels whose top buys robustness on a CCSDS-framed link; JPEG XL is the
+# comparison encoder (pipeline 5).
+#
+# Byte budget FROZEN across effort levels: 3,000 B/tile mean on the CloudSEN12
+# corpus (300 retained validation tiles at the frozen rendering, gain 0.050,
+# expert-mask 5x5 fill), so effort trades compute for quality and nothing
+# else. Quality is measured on that corpus with the board's own codec version
+# (libjxl 0.10.2 / openjpeg 2.4.0); host and board bytes agree to <2% on the
+# koge-coast-no-clouds frame (analysis/enc_host_vs_board.py).
+#
+# Costs measured on the board 2026-09-14 (analysis/stage4.5-models/
+# dev_enc_g050*.json): koge-coast-no-clouds (a CLEAR frame -- the encoder only
+# sees retained tiles; the full-cloud frame saturates white at this gain),
+# 3 independent launches x 4 batches, median EXEC latency, idle-corrected
+# energy per execution with P_idle = 2.7466 W from the same session.
+#
+# Costs re-measured 2026-09-14 on a CloudSEN12+ frame (cs12_validation_00,
+# analysis/stage4.5-models/dev_enc_cs12.json; one launch x 4 batches, idle
+# 2.7033 W) after the device frames were retired. 10-12% above the retired
+# frame's figures -- real 10 m content costs the coder more -- with the same
+# ladder shape; launch-to-launch spread on the earlier 3-launch set was
+# <= 28 uWh. JXL bytes on this frame land on the 3,000 B corpus target
+# (2,988 / 3,014), as they must for corpus content.
+latency_cost: 20280500
+# energy_cost MEASURED 2026-09-17 (tools/update_energy_hints.py): JXL e5, 99 tiles, n=20, bracketed floor, matched frame;
+# idle floor read before every run, settled reps [2], I/O term removed
+# (analysis/stage4.5-models/stage_energy.json, encoder_energy.json).
+energy_cost: 2770
 parameters:
 - key: effort_level
   type: 3
-  value: 4
+  value: 5
 - key: distance
   type: 4
-  value: 1.0
+  value: 2.884

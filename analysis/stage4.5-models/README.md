@@ -2035,9 +2035,14 @@ the test corpus: **89 / 7 / 2,907** of 3,900 crops (897 disagree somewhere).
 Those proportions are the corpus's, and CloudSEN12 samples *land* — so the
 mix is set from the mission, not the corpus: **Earth-average surface, 71 %
 ocean with ~⅔ cloud cover → 23 clear-water / 48 cloudy-water / 28 land tiles
-per 99-tile frame** (`--mix 23:48:28`, decided 2026-09-17). The cloudy class
-cycles its 7 tiles; harmless for cost, since a segmenter's work does not
-depend on which cloud it looks at. Frames `cs12_test_matched_NN` (this mix)
+per 99-tile frame** (`--mix 23:48:28`, decided 2026-09-17). **The mix is a
+sampling distribution, not a per-frame quota** (2026-09-19): each tile slot
+draws its class with those probabilities, so frames vary binomially around
+the mean the way real frames do — the ten `cs12_test_matched_00–09` frames
+carry 24, 25, 25, 32, 22, 26, 30, 23, 26, 21 encoder-bound tiles
+(`--mix-mode exact` restores the quota). The cloudy class cycles its 8
+tiles; harmless for cost, since a segmenter's work does not depend on which
+cloud it looks at. Frames `cs12_test_matched_NN` (this mix)
 and `cs12_test_matchedkeep_NN` (all 99 reach the encoder, for per-execution
 cost hints) are in `~/dipp-datasets/cs12-frames/`.
 

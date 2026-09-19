@@ -126,6 +126,9 @@ def main():
                          "water / 28 land), decided 2026-09-17; 'natural' = the corpus's own "
                          "proportions, which are land-heavy (CloudSEN12 samples land: 89 / 7 / "
                          "2907 on test); a bare fraction sets the encoder share alone")
+    ap.add_argument("--mix-mode", default="proportional", choices=["proportional", "exact"],
+                    help="proportional: each tile slot draws its class from --mix, so frames vary "
+                         "around the mean (default); exact: every frame carries the quota")
     ap.add_argument("--name", default="", help="frame name stem (default cs12_<split>[_matched])")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
@@ -165,26 +168,36 @@ def main():
             f = float(a.mix); rest = 1 - f
             cr = len(cls_["cloudy"]) + len(cls_["reject"])
             share = {"keep": f, "cloudy": rest * len(cls_["cloudy"]) / cr, "reject": rest * len(cls_["reject"]) / cr}
-        per = {k: int(round(share[k] * N)) for k in share}
-        per["keep"] += N - sum(per.values())                 # rounding remainder
+        # The mix is a sampling DISTRIBUTION, not a per-frame quota: each of the
+        # 99 tile slots draws its class with these probabilities, so frames vary
+        # binomially around the mean (an encoder count of 23 +- 4) the way real
+        # frames would, instead of every frame carrying the same retention.
+        # (--mix-mode exact restores the quota, e.g. for a cost hint.)
         n_frames = a.frames or 3
+        keys = ("keep", "cloudy", "reject")
+        probs = np.array([share[k] for k in keys]); probs /= probs.sum()
         pools = {k: rng.permutation(np.array(v)) if v else np.array([], int) for k, v in cls_.items()}
+        cursor = {k: 0 for k in keys}
         order, comp = [], []
         for fi in range(n_frames):
+            if a.mix_mode == "exact":
+                per = {k: int(round(probs[j] * N)) for j, k in enumerate(keys)}
+                per["keep"] += N - sum(per.values())
+                classes = np.repeat(np.arange(3), [per[k] for k in keys])
+            else:
+                classes = rng.choice(3, size=N, p=probs)
+            classes = rng.permutation(classes)               # mixed across the grid
             sel = []
-            for k in ("keep", "cloudy", "reject"):
-                need = per[k]
-                if need == 0:
-                    continue
-                pool = pools[k]
-                if len(pool) < (fi + 1) * need:                # cycle a short class
-                    pool = np.tile(pool, -(-(fi + 1) * need // len(pool)))
-                sel.extend(pool[fi * need:(fi + 1) * need].tolist())
-            sel = rng.permutation(np.array(sel))                # mix classes across the grid
-            order.extend(sel.tolist()); comp.append(dict(per))
+            for c in classes:
+                k = keys[c]; pool = pools[k]
+                if len(pool) == 0:
+                    k = "keep"; pool = pools[k]
+                sel.append(int(pool[cursor[k] % len(pool)])); cursor[k] += 1   # cycle a short class
+            order.extend(sel)
+            comp.append({k: int(np.sum(classes == j)) for j, k in enumerate(keys)})
         order = np.array(order)
-        print(f"{n_frames} matched frame(s): per frame {per['keep']} reach the encoder, {per['cloudy']} stop at "
-              f"segmentation, {per['reject']} stop at classification (mix={a.mix})", flush=True)
+        print(f"{n_frames} matched frame(s), mix={a.mix} ({a.mix_mode}): tiles reaching the encoder per frame "
+              + ", ".join(str(c["keep"]) for c in comp), flush=True)
     else:
         order = rng.permutation(len(items))
         n_frames = len(order) // (COLS * ROWS)

@@ -3,10 +3,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <sys/shm.h>
 #include <sys/mman.h>
 #include <param/param.h>
 #include <csp/csp_types.h>
@@ -47,6 +49,29 @@ PriorityQueue *current_batch_source = NULL;
 /* Set while a batch that failed once is being re-run: the executor then picks
    the lowest effort of every remaining stage regardless of the heuristic. */
 int retry_lowest_effort = 0;
+
+/* Durable record of every batch handed to the uplink, written after the
+   upload and before the batch leaves its queue. The daemon's stdout is not
+   durable under a power cut (ext4 drops its last seconds), so without this
+   a batch that completed just before a reset is indistinguishable from one
+   that was lost -- which is what the C3 tally must tell apart, and what the
+   ground needs to reconcile downlinks after a reset. One line per batch,
+   fsync'd; a few milliseconds on eMMC. */
+#define COMPLETION_LEDGER "/usr/share/dipp/completed.log"
+static void completion_ledger_append(const ImageBatch *b)
+{
+    int fd = open(COMPLETION_LEDGER, O_WRONLY | O_APPEND | O_CREAT, 0644);
+    if (fd == -1)
+    {
+        printf("LEDGER_FAIL %s: %s\n", COMPLETION_LEDGER, strerror(errno));
+        return;
+    }
+    char line[96];
+    int n = snprintf(line, sizeof(line), "%s pipeline=%d num_images=%d\n", b->uuid, b->pipeline_id, b->num_images);
+    if (write(fd, line, n) != n || fsync(fd) != 0)
+        printf("LEDGER_FAIL %s: %s\n", COMPLETION_LEDGER, strerror(errno));
+    close(fd);
+}
 
 // Process a single image batch, either fully or partially
 // It executes the pipeline, either fully or partially, depending
@@ -89,9 +114,14 @@ BatchOutcome process(ImageBatch *input_batch)
             }
 
             upload(input_batch->data, input_batch->num_images, input_batch->batch_size);
+            completion_ledger_append(input_batch);
 
             /* Uploaded: the segment / file has done its job. Release it, do
-               not merely detach -- see image_batch_release. */
+               not merely detach -- see image_batch_release. In HYBRID mode
+               the batch was presented to the modules as MEM; restore the
+               mode so the ingest/checkpoint file goes too. */
+            if (global_storage_mode == STORAGE_HYBRID)
+                input_batch->storage_mode = STORAGE_HYBRID;
             image_batch_release(input_batch);
             quarantine_clear(input_batch);
 
@@ -220,6 +250,10 @@ void get_env_vars()
         else if (strcmp(storage_mode_str, "MMAP") == 0)
         {
             global_storage_mode = STORAGE_MMAP;
+        }
+        else if (strcmp(storage_mode_str, "HYBRID") == 0)
+        {
+            global_storage_mode = STORAGE_HYBRID;
         }
         else
         {
@@ -371,6 +405,15 @@ static void remove_from_queue(PriorityQueue *src, const char *expect_uuid, const
     }
 }
 
+/* HYBRID: forget a segment whose contents no longer match the batch's
+   durable (file, progress) pair. */
+static void hybrid_drop_segment(ImageBatch *b)
+{
+    if (b->shmid >= 0)
+        shmctl(b->shmid, IPC_RMID, NULL);
+    b->shmid = -1;
+}
+
 /* Run at most one batch from `src`, using peek-process-commit.
  *
  * The batch stays in its durable queue for the whole time it is being
@@ -423,7 +466,36 @@ static int run_one_batch(PriorityQueue *src)
     retry_lowest_effort = quarantine_retry_pending(&batch);
     if (retry_lowest_effort)
         printf("RETRY uuid=%s progress=%d at lowest effort\n", batch.uuid, batch.progress);
-    BatchOutcome outcome = process(&batch);
+
+    /* HYBRID: the queue entry names a file (the ingest frame at progress -1,
+       or a checkpoint written when the scheduler last halted this batch) and
+       a segment that may or may not still exist -- never after a reset. Load
+       the file into a segment when needed, then run the modules on shared
+       memory: they are handed STORAGE_MEM and know nothing of the file. */
+    BatchOutcome outcome;
+    char file_before[sizeof(batch.filename)];
+    strncpy(file_before, batch.filename, sizeof(file_before));
+    int progress_before = batch.progress;   /* the progress the durable file corresponds to */
+    if (global_storage_mode == STORAGE_HYBRID)
+    {
+        if (!image_batch_shm_exists(&batch))
+        {
+            printf("HYBRID_LOAD uuid=%s progress=%d file=%s\n", batch.uuid, batch.progress, batch.filename);
+            if (image_batch_load_to_shm(&batch) != SUCCESS)
+            {
+                /* The durable copy is unreadable: nothing can be done for
+                   this batch. Count it as a failure so it is quarantined. */
+                batch.storage_mode = STORAGE_HYBRID;
+                outcome = BATCH_FAILED;
+                goto dispose;
+            }
+        }
+        batch.storage_mode = STORAGE_MEM;
+    }
+    outcome = process(&batch);
+    if (global_storage_mode == STORAGE_HYBRID)
+        batch.storage_mode = STORAGE_HYBRID;
+dispose:
     retry_lowest_effort = 0;
     current_batch_source = NULL;
 
@@ -445,6 +517,35 @@ static int run_one_batch(PriorityQueue *src)
         break;
     }
     case BATCH_PARTIAL:
+        /* The scheduler halted this batch (no effort level met the energy or
+           latency gate), so it will wait -- possibly for a long time -- and a
+           reset during that wait would otherwise cost the work done so far.
+           This is the one point where checkpointing an intermediate pays
+           (analysis/stage5/README.md, persistence): write the segment to a
+           file, fsync, then commit the queue entry naming it, then drop the
+           previous file. A reset between write and commit leaves an orphan
+           the startup scan reclaims and an entry still naming the old file. */
+        if (global_storage_mode == STORAGE_HYBRID && batch.progress == progress_before)
+        {
+            /* Halted before any new module ran: the file already holds this
+               state, nothing to checkpoint. */
+        }
+        else if (global_storage_mode == STORAGE_HYBRID)
+        {
+            if (image_batch_checkpoint(&batch) == SUCCESS)
+                printf("CHECKPOINT uuid=%s progress=%d file=%s\n", batch.uuid, batch.progress, batch.filename);
+            else
+            {
+                /* The durable pair is always (file, progress). Without a
+                   checkpoint the entry keeps the old file AND the old
+                   progress, and the segment -- which holds a later state --
+                   is dropped so the next run reloads from the file. */
+                printf("CHECKPOINT_FAIL uuid=%s progress=%d; entry keeps %s at progress %d\n",
+                       batch.uuid, batch.progress, file_before, progress_before);
+                hybrid_drop_segment(&batch);
+                batch.progress = progress_before;
+            }
+        }
         if (src == partially_processed_pq)
         {
             int rc = pq_impl->commit_head(src, &batch);
@@ -466,6 +567,8 @@ static int run_one_batch(PriorityQueue *src)
             }
             remove_from_queue(src, batch.uuid, "moved_to_partial");
         }
+        if (global_storage_mode == STORAGE_HYBRID && strcmp(file_before, batch.filename) != 0)
+            remove(file_before);           /* the checkpoint is committed; the old file is dead */
         break;
     case BATCH_FAILED:
     default:
@@ -479,8 +582,17 @@ static int run_one_batch(PriorityQueue *src)
         {
             printf("Batch %s FAILED (%d); will retry once at lowest effort\n",
                    batch.uuid, failures);
-            /* progress may have advanced before the failing module; keep it
-               durable so the retry resumes there rather than from scratch. */
+            if (global_storage_mode == STORAGE_HYBRID)
+            {
+                /* The segment holds a state later than the file's; the entry
+                   may only carry the file's progress, so the retry reloads
+                   the file and redoes the earlier modules (bounded by one
+                   batch's work). */
+                hybrid_drop_segment(&batch);
+                batch.progress = progress_before;
+            }
+            /* In MMAP mode progress advanced durably per module already; keep
+               it so the retry resumes there rather than from scratch. */
             if (pq_impl->commit_head)
                 pq_impl->commit_head(src, &batch);
         }
@@ -522,8 +634,24 @@ void process_images_loop()
 
     /* Both queues are mapped now, so anything on disk they do not reference is
        unreachable and can be reclaimed. */
-    if (global_storage_mode == STORAGE_MMAP)
+    if (global_storage_mode == STORAGE_MMAP || global_storage_mode == STORAGE_HYBRID)
         reclaim_orphaned_batch_files();
+
+    /* HYBRID: no segment survives a reset, and the kernel may hand a new
+       segment the id an entry still carries -- so forget them all here.
+       Every entry is reloaded from its file when it is next selected:
+       ingest entries restart from the raw frame, halted entries resume from
+       their checkpoint. */
+    if (global_storage_mode == STORAGE_HYBRID)
+    {
+        PriorityQueue *qs[2] = {ingest_pq, partially_processed_pq};
+        for (int q = 0; q < 2; q++)
+        {
+            size_t n = pq_impl->get_queue_size(qs[q]);
+            for (size_t k = 0; k < n; k++)
+                qs[q]->items[k].shmid = -1;
+        }
+    }
 
     // Track last flush time to ensure mtr_flush is called at most once per 100ms
     struct timespec last_mtr_flush = {0, 0};

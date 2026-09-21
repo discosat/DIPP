@@ -121,3 +121,84 @@ and per-module commitment against the monolith's two and whole-frame
 commitment. Files: `monolith/mono_{low,high}{,_cold}.json`; slots 9 / 10 / 14
 carry these as hints (`latency_cost` 1,781,000 / 6,147,000 µs; `energy_cost`
 459 / 2,708 µWh).
+
+## Persistence policy: durable at entry, exit and halts — STORAGE_HYBRID (2026-09-21)
+
+**The decision.** Persisting every module's output (the paper's MMAP mode)
+pays a fixed cost per batch to avoid a loss that only materialises if a
+reset lands inside the batch. With reset rate λ and batch time T the
+expected loss without checkpoints is ≈ λ·T²/2 per batch; checkpointing costs
+C_sync per batch always; it pays iff **λ > 2·C_sync/T²**. Measured: T is
+2.1–6.5 s on the Earth-average frame and C_sync ≈ 1.0–1.5 s (MMAP's
+per-frame overhead below), so the break-even is one reset every **4–14
+seconds** — four orders of magnitude from anything DISCO-2 could see. eMMC
+wear points the same way (~45 MB written per batch vs ~10 MB). So the
+default is **STORAGE_HYBRID**: the raw frame is persisted at ingest (the only
+copy; the producer boundary from Stage 3), modules run on shared memory, the
+output is persisted at upload, and the batch's storage is released. The one
+place an intermediate checkpoint can pay is a **scheduler halt** — a batch
+refused by the energy or latency gate waits indefinitely, so the expected
+loss term is unbounded — and that is the one place HYBRID writes one
+(user's choice, option B, 2026-09-21).
+
+**Mechanism** (`src/image/image_store.c`, `src/dipp_process.c`). The
+durable form of a batch is always a *(file, progress)* pair in a durable
+queue entry; the shared-memory segment is a cache of it. Ingest writes the
+raw frame (progress −1). When a batch is selected and its segment is gone —
+always after a reset — the file is loaded into a fresh segment
+(`HYBRID_LOAD`). Modules are handed `STORAGE_MEM` and know nothing of the
+file. A halt with new progress writes the segment to a new file, fsyncs,
+commits the queue entry naming it, and only then removes the previous file
+(`CHECKPOINT`; write → sync → commit → unlink, the Stage 3 ordering); a halt
+with no new progress writes nothing. Completion releases segment and file.
+A failure keeps the file's progress and drops the segment, so the retry
+reloads the file. At startup every entry's segment id is forgotten — the
+kernel may reuse an id — and the orphan scan reclaims unreferenced files.
+`DIPP_HALT_AFTER_MODULE=k` is a test hook that halts each batch once at
+module k exactly as a refused gate does.
+
+**Cost on one frame** (`persistence/e2e_{MEM,HYBRID,MMAP}.json`,
+`cs12_test_matched_00` proportional, n=20, bracketed floors; MEM below is
+on the same frame):
+
+| mode | low | high |
+|---|---:|---:|
+| MEM (nothing durable) | see MEM row when landed | |
+| **HYBRID** (entry, exit, halts) | **758 µWh · 2.26 s** | **2,990 µWh · 6.67 s** |
+| MMAP (every module) | 1,072 µWh · 3.07 s | 3,451 µWh · 7.55 s |
+
+HYBRID's overhead over MEM is a constant ~240 µWh per frame — the 10 MB
+ingest write and fsync plus the load into shared memory — and almost nothing
+in latency: the modules run exactly as in MEM (demosaic 259 vs 242 ms, tile
+105 vs 103; MMAP: 531 and 410). MMAP costs ~550–700 µWh and 0.9–1.1 s per
+frame, on the two full-frame stages. Table VI is re-cut on these three rows.
+
+**Halt path on hardware** (`persistence/halt_log.txt`): five batches through
+low with the hook at module 3 — load from ingest at −1, halt, checkpoint at
+progress 2, move to the partial queue, resume from the segment, complete,
+remove.
+
+**Reset path — real power cuts** (`tools/c3_powercut.py --storage HYBRID`,
+`persistence/powercut_hybrid.txt`): 20 batches through the high pipeline
+(6.5 s each) with the halt hook at module 3, the first cut 8 s after the feed
+and one every ~8 s of daemon time thereafter, 10 cuts (three needed the
+60 s recovery cut). **fed 20 · completed 20 · lost 0 · duplicated 0**;
+16 batches checkpointed at a halt; boots found `ingest=15 partial=2` →
+`9/3` → `2/6` → `0/1` → `0/0` and resumed the partial-queue batches from
+their checkpoint files (`HYBRID_LOAD … progress=2`) while ingest batches
+restarted from their frames. The energy gate's start-up refusals (the
+simulated battery begins on the safety margin after every boot) exercised
+the "halt with no new progress" case repeatedly and wrote no redundant
+checkpoint.
+
+Three harness lessons on the way, each of which first produced a wrong
+number: (1) waiting 90 s on the feed let every batch finish before the first
+cut — a null trial that reported 12/12; (2) the daemon's log on the board is
+**not durable under a power cut** (ext4 drops its last seconds; 2 boots of 10
+survived in one trial), so the evidence is now read over the console before
+every cut and tallied host-side; (3) even so, a batch that completed in the
+seconds before a cut left the queue durably but its completion line did not
+survive — trial 3 reported 6 "lost" that were exactly those — so the daemon
+now writes a **durable completion ledger** (`/usr/share/dipp/completed.log`,
+one fsync'd line per uploaded batch, before the batch leaves its queue).
+That is also what the ground needs to reconcile downlinks after a reset.

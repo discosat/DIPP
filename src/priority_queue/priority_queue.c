@@ -6,6 +6,7 @@ PriorityQueueImpl *get_priority_queue_impl(StorageMode storage_type)
 {
     switch (storage_type)
     {
+    case STORAGE_HYBRID:
     case STORAGE_MMAP:
         return &priority_queue_mmap;
     case STORAGE_MEM:

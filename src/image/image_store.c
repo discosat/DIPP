@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <time.h>
 #include <uuid/uuid.h>
 
 int persist_data_if_necessary(ImageBatch *batch)
@@ -21,6 +22,7 @@ int persist_data_if_necessary(ImageBatch *batch)
     }
     switch (batch->storage_mode)
     {
+    case STORAGE_HYBRID:   /* ingest is persisted exactly as in MMAP mode */
     case STORAGE_MMAP:
     {
         // Check if the filename is set
@@ -272,6 +274,20 @@ int image_batch_read_data(ImageBatch *batch)
 
         break;
     }
+    case STORAGE_HYBRID:
+    {
+        /* The segment is a cache of the file: use it when it exists, else
+           load the file into a fresh segment first. */
+        if (!image_batch_shm_exists(batch) && image_batch_load_to_shm(batch) != SUCCESS)
+            return FAILURE;
+        batch->data = shmat(batch->shmid, NULL, 0);
+        if (batch->data == (void *)-1)
+        {
+            set_error_param(SHM_ATTACH);
+            return FAILURE;
+        }
+        break;
+    }
     case STORAGE_NOT_SET:
     default:
         return FAILURE;
@@ -302,6 +318,7 @@ int image_batch_cleanup(ImageBatch *batch)
         break;
     }
     case STORAGE_MEM:
+    case STORAGE_HYBRID:
     {
         // Detach from shared memory
         if (batch->data && shmdt(batch->data) == -1)
@@ -354,6 +371,24 @@ int image_batch_release(ImageBatch *batch)
     int result = image_batch_cleanup(batch);
     switch (batch->storage_mode)
     {
+    case STORAGE_HYBRID:
+        if (batch->shmid >= 0 && shmctl(batch->shmid, IPC_RMID, NULL) == -1 && errno != EINVAL && errno != EIDRM)
+        {
+            set_error_param(SHM_REMOVE);
+            result = FAILURE;
+        }
+        batch->shmid = -1;
+        /* fall through: the file too */
+    case STORAGE_MMAP:
+        if (batch->filename[0] != '\0' && strncmp(batch->filename, "/usr/share/dipp/data/", 21) == 0)
+        {
+            if (remove(batch->filename) == -1 && errno != ENOENT)
+            {
+                set_error_param(MMAP_REMOVE);
+                result = FAILURE;
+            }
+        }
+        break;
     case STORAGE_MEM:
         if (batch->shmid >= 0)
         {
@@ -365,18 +400,144 @@ int image_batch_release(ImageBatch *batch)
             batch->shmid = -1;
         }
         break;
-    case STORAGE_MMAP:
-        if (batch->filename[0] != '\0' && strncmp(batch->filename, "/usr/share/dipp/data/", 21) == 0)
-        {
-            if (remove(batch->filename) == -1 && errno != ENOENT)
-            {
-                set_error_param(MMAP_REMOVE);
-                result = FAILURE;
-            }
-        }
-        break;
     default:
         break;
     }
     return result;
+}
+
+/* ---- HYBRID mode: the file is the durable form, the segment a cache ---- */
+
+int image_batch_shm_exists(const ImageBatch *batch)
+{
+    struct shmid_ds ds;
+    return batch->shmid >= 0 && shmctl(batch->shmid, IPC_STAT, &ds) == 0 &&
+           ds.shm_segsz >= (size_t)batch->batch_size;
+}
+
+static int new_segment(size_t size)
+{
+    /* Same key discipline as the modules' memory_util: a monotonic-clock
+       nanosecond value, retried on collision. */
+    for (int tries = 0; tries < 1000; tries++)
+    {
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        int id = shmget((key_t)ts.tv_nsec, size, IPC_CREAT | IPC_EXCL | 0666);
+        if (id != -1)
+            return id;
+        if (errno != EEXIST)
+            return -1;
+    }
+    return -1;
+}
+
+int image_batch_load_to_shm(ImageBatch *batch)
+{
+    if (batch->batch_size <= 0)
+    {
+        batch->shmid = -1;   /* an empty batch has nothing to load */
+        return SUCCESS;
+    }
+    int fd = open(batch->filename, O_RDONLY);
+    if (fd == -1)
+    {
+        printf("HYBRID_LOAD_FAIL uuid=%s file=%s: %s\n", batch->uuid, batch->filename, strerror(errno));
+        set_error_param(MMAP_NOT_FOUND);
+        return FAILURE;
+    }
+    struct stat st;
+    if (fstat(fd, &st) == -1 || st.st_size < batch->batch_size)
+    {
+        printf("HYBRID_LOAD_FAIL uuid=%s file=%s is %lld bytes, expected %d\n",
+               batch->uuid, batch->filename, (long long)(st.st_size), batch->batch_size);
+        close(fd);
+        set_error_param(MMAP_NOT_FOUND);
+        return FAILURE;
+    }
+    int id = new_segment(batch->batch_size);
+    if (id == -1)
+    {
+        close(fd);
+        set_error_param(SHM_NOT_FOUND);
+        return FAILURE;
+    }
+    unsigned char *seg = shmat(id, NULL, 0);
+    if (seg == (void *)-1)
+    {
+        close(fd);
+        shmctl(id, IPC_RMID, NULL);
+        set_error_param(SHM_ATTACH);
+        return FAILURE;
+    }
+    size_t got = 0;
+    while (got < (size_t)batch->batch_size)
+    {
+        ssize_t r = read(fd, seg + got, batch->batch_size - got);
+        if (r <= 0)
+            break;
+        got += (size_t)r;
+    }
+    close(fd);
+    shmdt(seg);
+    if (got != (size_t)batch->batch_size)
+    {
+        shmctl(id, IPC_RMID, NULL);
+        set_error_param(MMAP_NOT_FOUND);
+        return FAILURE;
+    }
+    batch->shmid = id;
+    return SUCCESS;
+}
+
+int image_batch_checkpoint(ImageBatch *batch)
+{
+    /* Write the segment's contents to a NEW file, msync, and point the batch
+       at it. The caller commits the queue entry and only then removes the
+       previous file -- write, sync, commit, unlink, the Stage 3 ordering. */
+    if (batch->batch_size <= 0 || !image_batch_shm_exists(batch))
+    {
+        set_error_param(SHM_NOT_FOUND);
+        return FAILURE;
+    }
+    char file_uuid[37];
+    uuid_t u;
+    uuid_generate_random(u);
+    uuid_unparse_lower(u, file_uuid);
+    char path[sizeof(batch->filename)];
+    snprintf(path, sizeof(path), "/usr/share/dipp/data/batch_%s_%s.bin", batch->uuid, file_uuid);
+
+    unsigned char *seg = shmat(batch->shmid, NULL, SHM_RDONLY);
+    if (seg == (void *)-1)
+    {
+        set_error_param(SHM_ATTACH);
+        return FAILURE;
+    }
+    int fd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0644);
+    if (fd == -1)
+    {
+        shmdt(seg);
+        set_error_param(MMAP_OPEN);
+        return FAILURE;
+    }
+    size_t put = 0;
+    while (put < (size_t)batch->batch_size)
+    {
+        ssize_t w = write(fd, seg + put, batch->batch_size - put);
+        if (w <= 0)
+            break;
+        put += (size_t)w;
+    }
+    shmdt(seg);
+    int ok = put == (size_t)batch->batch_size && fsync(fd) == 0;
+    close(fd);
+    if (!ok)
+    {
+        remove(path);
+        set_error_param(MMAP_UNMAP);
+        return FAILURE;
+    }
+    strncpy(batch->filename, path, sizeof(batch->filename) - 1);
+    batch->filename[sizeof(batch->filename) - 1] = '\0';
+    return SUCCESS;
 }

@@ -29,4 +29,10 @@ int image_batch_setup_storage(ImageBatch *batch, StorageMode storage_mode);
    or quarantine -- never while the batch is still queued. */
 int image_batch_release(ImageBatch *batch);
 
+/* STORAGE_HYBRID: the file is the batch's durable form, the shared-memory
+   segment a cache of it. */
+int image_batch_shm_exists(const ImageBatch *batch);      /* segment present and large enough */
+int image_batch_load_to_shm(ImageBatch *batch);           /* file -> new segment, sets shmid */
+int image_batch_checkpoint(ImageBatch *batch);            /* segment -> new file (fsync'd), sets filename */
+
 #endif // DIPP_IMAGE_STORE_H

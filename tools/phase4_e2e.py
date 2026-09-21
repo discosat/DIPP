@@ -37,7 +37,7 @@ def push(local, remote):
     return False
 
 
-def run(pipeline, n, image, drain, energy, label, idle=0):
+def run(pipeline, n, image, drain, energy, label, idle=0, storage="MEM", env=""):
     out = board(f"cd {BOARD_DIR} && ./shmclean", 60)
     m = re.search(r"SHMCLEAN removed=(\d+) failed=(\d+)", out)
     if m is None or int(m.group(2)):
@@ -54,8 +54,8 @@ def run(pipeline, n, image, drain, energy, label, idle=0):
         if floor:
             print(f"  idle floor {floor['avg_power_w']:.4f} W over {floor['measured_s']:.1f} s", flush=True)
     energy.start()
-    board(f"cd {BOARD_DIR} && (setsid ./run.sh --label {label} --pipeline {pipeline} "
-          f"--storage MEM --heuristic BEST_EFFORT --load populate --n {n} --images 1 "
+    board(f"cd {BOARD_DIR} && ({env}setsid ./run.sh --label {label} --pipeline {pipeline} "
+          f"--storage {storage} --heuristic BEST_EFFORT --load populate --n {n} --images 1 "
           f"--no-trace --min-drain {drain} --image {image} > run_{label}.log 2>&1 &); "
           f"printf 'ST%s\\n' ARTED", 60)
     deadline = time.time() + 180 + n * 200 + drain * 3
@@ -145,6 +145,8 @@ def main():
     ap.add_argument("--images", nargs="+", default=["cs12_validation_00.bayerRG"])
     ap.add_argument("--drain", type=int, default=160)
     ap.add_argument("--no-push", action="store_true", help="flight vmem already on the board")
+    ap.add_argument("--storage", default="MEM", choices=["MEM", "MMAP", "HYBRID"])
+    ap.add_argument("--env", default="", help="env assignments prefixed to the run, e.g. 'DIPP_HALT_AFTER_MODULE=2 '")
     ap.add_argument("--tag", default="", help="label suffix, so a second run of the same "
                     "pipeline and frame does not overwrite the first")
     ap.add_argument("--idle", type=int, default=0, metavar="SECONDS",
@@ -166,7 +168,7 @@ def main():
             stem = image.replace(".bayerRG", "")
             label = f"e2e-p{p}-{stem}" + (f"-{a.tag}" if a.tag else "")
             board(f"rm -f /home/root/logs/tflite_*", 60)
-            r = run(p, a.n, image, a.drain, energy, label, a.idle)
+            r = run(p, a.n, image, a.drain, energy, label, a.idle, a.storage, a.env)
             results[f"p{p}/{stem}" + (f"/{a.tag}" if a.tag else "")] = r
             summarise(r)
             json.dump(results, open(a.out, "w"), indent=1)

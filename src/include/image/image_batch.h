@@ -6,9 +6,14 @@
 
 typedef enum StorageMode
 {
-    STORAGE_MMAP,
-    STORAGE_MEM,
-    STORAGE_NOT_SET
+    STORAGE_MMAP,    /* every module output persisted (per-module checkpoint) */
+    STORAGE_MEM,     /* nothing persisted; shared memory throughout */
+    STORAGE_NOT_SET,
+    STORAGE_HYBRID   /* durable at entry, exit and scheduler halts; shared
+                        memory between modules. Modules never see this value:
+                        the daemon presents a HYBRID batch to them as
+                        STORAGE_MEM, so the modules' copy of this enum (which
+                        stops at STORAGE_NOT_SET) is unaffected. */
 } StorageMode;
 
 typedef struct ImageBatch

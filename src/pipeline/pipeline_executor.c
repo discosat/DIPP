@@ -82,6 +82,20 @@ static void sample_resources(ResourceSample *out)
     }
 }
 
+/* Test hook bookkeeping: each uuid is halted at most once, so the batch
+   proceeds when it is next selected (from its checkpoint after a reset). */
+static int halted_once_for(const char *uuid)
+{
+    static char seen[64][37];
+    static int n = 0;
+    for (int k = 0; k < n; k++)
+        if (strcmp(seen[k], uuid) == 0)
+            return 1;
+    if (n < 64)
+        strncpy(seen[n++], uuid, 36);
+    return 0;
+}
+
 /* Sanity-check a module's result against the batch it was given.
  *
  * A module may change: num_images, batch_size, progress (to exactly its own
@@ -151,6 +165,27 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
            effort, whatever the heuristic would pick (quarantine.h). */
         Heuristic *h = retry_lowest_effort ? &lowest_effort_heuristic : current_heuristic;
         COST_MODEL_LOOKUP_RESULT lookup_result = h->heuristic_function(&pipeline->modules[i], data, pipeline->num_modules, &module_param_id, &picked_hash);
+
+        /* TEST HOOK. DIPP_HALT_AFTER_MODULE=k makes the scheduler refuse
+           module k the first time each batch reaches it, exactly as a
+           refused energy or latency gate does (NOT_FOUND -> the batch is
+           halted and requeued). It is how the checkpoint-on-halt path is
+           exercised deterministically; a real halt depends on the battery
+           and the deadline. Unset in flight; the run scripts never set it. */
+        {
+            static int halt_at = -2;
+            if (halt_at == -2)
+            {
+                const char *e = getenv("DIPP_HALT_AFTER_MODULE");
+                halt_at = e ? atoi(e) : -1;
+            }
+            if (halt_at >= 0 && (int)i == halt_at && !retry_lowest_effort &&
+                data->progress == halt_at - 1 && !halted_once_for(data->uuid))
+            {
+                printf("TEST_HALT uuid=%s at module %zu\n", data->uuid, i);
+                lookup_result = NOT_FOUND;
+            }
+        }
         // printf("Got back a param_id=%d\r\n", module_param_id);
 
         // No new progress can be made, as no module fulfills the requirements

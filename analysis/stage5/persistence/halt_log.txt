@@ -1,0 +1,38 @@
+
+root@fsimx8mp:/tmp/stage_hybrid# grep -aE '^TEST_HALT|^CHECKPOINT|^HYBRID_LOAD|^EENQUEUE_PARTIAL|^COMMIT_HEAD|fully executed|^QUEUE_REMOVE' /home/root/tmp-experimments/runs/e2e-p2-cs12_test_matched_00-halt/console.log | head -n 40
+HYBRID_LOAD uuid=1f7e65d4-fc73-4437-8414-963b758962bc progress=-1 file=/usr/share/dipp/data/batch_1f7e65d4-fc73-4437-8414-963b758962bc_374d0e54-3cca-4d0a-b1cc-dfd2a3123809.bin
+TEST_HALT uuid=1f7e65d4-fc73-4437-8414-963b758962bc at module 3
+CHECKPOINT uuid=1f7e65d4-fc73-4437-8414-963b758962bc progress=2 file=/usr/share/dipp/data/batch_1f7e65d4-fc73-4437-8414-963b758962bc_5a107ef6-e848-428a-9000-3335df1078ca.bin
+ENQUEUE_PARTIAL uuid=1f7e65d4-fc73-4437-8414-963b758962bc progress=2 partial_depth_before=0
+QUEUE_REMOVE queue=ingest reason=moved_to_partial expect_uuid=1f7e65d4-fc73-4437-8414-963b758962bc removed_uuid=1f7e65d4-fc73-4437-8414-963b758962bc
+HYBRID_LOAD uuid=64e90b67-60f6-447b-a5fb-bc14392140e7 progress=-1 file=/usr/share/dipp/data/batch_64e90b67-60f6-447b-a5fb-bc14392140e7_5ef78462-eaf3-4622-8f00-8f4ace2ddca9.bin
+TEST_HALT uuid=64e90b67-60f6-447b-a5fb-bc14392140e7 at module 3
+CHECKPOINT uuid=64e90b67-60f6-447b-a5fb-bc14392140e7 progress=2 file=/usr/share/dipp/data/batch_64e90b67-60f6-447b-a5fb-bc14392140e7_22346491-5c9c-4725-a916-c67de5cb17c6.bin
+ENQUEUE_PARTIAL uuid=64e90b67-60f6-447b-a5fb-bc14392140e7 progress=2 partial_depth_before=1
+QUEUE_REMOVE queue=ingest reason=moved_to_partial expect_uuid=64e90b67-60f6-447b-a5fb-bc14392140e7 removed_uuid=64e90b67-60f6-447b-a5fb-bc14392140e7
+Pipeline fully executed successfully uuid=1f7e65d4-fc73-4437-8414-963b758962bc
+QUEUE_REMOVE queue=partial reason=complete expect_uuid=1f7e65d4-fc73-4437-8414-963b758962bc removed_uuid=1f7e65d4-fc73-4437-8414-963b758962bc
+HYBRID_LOAD uuid=2adc76eb-5898-46e4-8795-0675a0b96842 progress=-1 file=/usr/share/dipp/data/batch_2adc76eb-5898-46e4-8795-0675a0b96842_b74199c6-3f5b-445c-974f-6d8b7b159918.bin
+TEST_HALT uuid=2adc76eb-5898-46e4-8795-0675a0b96842 at module 3
+CHECKPOINT uuid=2adc76eb-5898-46e4-8795-0675a0b96842 progress=2 file=/usr/share/dipp/data/batch_2adc76eb-5898-46e4-8795-0675a0b96842_fb4973bd-1934-4146-b824-f11d40b4f24a.bin
+ENQUEUE_PARTIAL uuid=2adc76eb-5898-46e4-8795-0675a0b96842 progress=2 partial_depth_before=1
+QUEUE_REMOVE queue=ingest reason=moved_to_partial expect_uuid=2adc76eb-5898-46e4-8795-0675a0b96842 removed_uuid=2adc76eb-5898-46e4-8795-0675a0b96842
+Pipeline fully executed successfully uuid=64e90b67-60f6-447b-a5fb-bc14392140e7
+QUEUE_REMOVE queue=partial reason=complete expect_uuid=64e90b67-60f6-447b-a5fb-bc14392140e7 removed_uuid=64e90b67-60f6-447b-a5fb-bc14392140e7
+HYBRID_LOAD uuid=5180d826-8b9e-49e3-a557-85a1dcff797a progress=-1 file=/usr/share/dipp/data/batch_5180d826-8b9e-49e3-a557-85a1dcff797a_a5b7787c-110f-454f-b2af-602e6fce2b55.bin
+TEST_HALT uuid=5180d826-8b9e-49e3-a557-85a1dcff797a at module 3
+CHECKPOINT uuid=5180d826-8b9e-49e3-a557-85a1dcff797a progress=2 file=/usr/share/dipp/data/batch_5180d826-8b9e-49e3-a557-85a1dcff797a_6c9a7c53-ce76-49ae-a32d-60ac74a6e112.bin
+ENQUEUE_PARTIAL uuid=5180d826-8b9e-49e3-a557-85a1dcff797a progress=2 partial_depth_before=1
+QUEUE_REMOVE queue=ingest reason=moved_to_partial expect_uuid=5180d826-8b9e-49e3-a557-85a1dcff797a removed_uuid=5180d826-8b9e-49e3-a557-85a1dcff797a
+Pipeline fully executed successfully uuid=2adc76eb-5898-46e4-8795-0675a0b96842
+QUEUE_REMOVE queue=partial reason=complete expect_uuid=2adc76eb-5898-46e4-8795-0675a0b96842 removed_uuid=2adc76eb-5898-46e4-8795-0675a0b96842
+HYBRID_LOAD uuid=ab456687-b222-47d9-b27d-5071ad64f056 progress=-1 file=/usr/share/dipp/data/batch_ab456687-b222-47d9-b27d-5071ad64f056_61cc1481-49fd-44fc-ac5c-7dd84227c16e.bin
+TEST_HALT uuid=ab456687-b222-47d9-b27d-5071ad64f056 at module 3
+CHECKPOINT uuid=ab456687-b222-47d9-b27d-5071ad64f056 progress=2 file=/usr/share/dipp/data/batch_ab456687-b222-47d9-b27d-5071ad64f056_0c5910cd-a389-47e0-a557-ec4d5730ed36.bin
+ENQUEUE_PARTIAL uuid=ab456687-b222-47d9-b27d-5071ad64f056 progress=2 partial_depth_before=1
+QUEUE_REMOVE queue=ingest reason=moved_to_partial expect_uuid=ab456687-b222-47d9-b27d-5071ad64f056 removed_uuid=ab456687-b222-47d9-b27d-5071ad64f056
+Pipeline fully executed successfully uuid=5180d826-8b9e-49e3-a557-85a1dcff797a
+QUEUE_REMOVE queue=partial reason=complete expect_uuid=5180d826-8b9e-49e3-a557-85a1dcff797a removed_uuid=5180d826-8b9e-49e3-a557-85a1dcff797a
+Pipeline fully executed successfully uuid=ab456687-b222-47d9-b27d-5071ad64f056
+QUEUE_REMOVE queue=partial reason=complete expect_uuid=ab456687-b222-47d9-b27d-5071ad64f056 removed_uuid=ab456687-b222-47d9-b27d-5071ad64f056
+root@fsimx8mp:/tmp/stage_hybrid# 

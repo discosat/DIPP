@@ -22,8 +22,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import board_tty
 DEV = board_tty.resolve()
 DIR = "/home/root/tmp-experiments"
-IMG = "/mnt/flash/2025-11-10/sentinel2-dataset/amager-no-clouds.bayerRG"
+IMG = "/mnt/flash/cs12-frames/cs12_test_matched_00.bayerRG"   # the device frames are retired
 LOG = "pc.log"
+DAEMON_ENV = "STORAGE_MODE=MMAP "
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -97,6 +98,13 @@ def power(action, seconds=None):
 
 
 def boot_and_prepare(con, start_daemon=True):
+    ok = _boot_and_prepare(con, start_daemon)
+    if ok:
+        install_snapshot(con)
+    return ok
+
+
+def _boot_and_prepare(con, start_daemon=True):
     if not con.wait_for_login():
         return False
     con.cmd(f"cd {DIR}", 2)
@@ -107,7 +115,7 @@ def boot_and_prepare(con, start_daemon=True):
         # -- which silently weakens a negative result, because a cut that hits
         # nothing cannot corrupt anything.
         for attempt in range(2):
-            con.cmd(f"cd {DIR} && (setsid ./dipp -i CAN -p can0 -a 5423 >> {LOG} 2>&1 &)", 4)
+            con.cmd(f"cd {DIR} && ({DAEMON_ENV}setsid ./dipp -i CAN -p can0 -a 5423 >> {LOG} 2>&1 &)", 4)
             if "DAEMON_UP" in con.cmd("pidof dipp > /dev/null && echo DAEMON_UP || echo DAEMON_DOWN", 4):
                 return True
         print("  WARNING: daemon did not start this cycle", flush=True)
@@ -115,14 +123,74 @@ def boot_and_prepare(con, start_daemon=True):
     return True
 
 
+SNAP_SH = r"""#!/bin/sh
+# Evidence snapshot, read over the console BEFORE every cut (the log on the
+# board is not durable under a power cut). One tag per line.
+cd /home/root/tmp-experiments
+grep -h 'Image sent' pc_fed.txt 2>/dev/null | sed 's/.*uuid=\([0-9a-f-]*\).*/F \1/'
+sed 's/ .*//; s/^/C /' /usr/share/dipp/completed.log 2>/dev/null
+grep -a '^STARTUP_QUEUES' pc.log | sed 's/^/S /'
+grep -a '^CHECKPOINT ' pc.log | sed 's/^CHECKPOINT uuid=\([0-9a-f-]*\) progress=\([0-9]*\).*/K \1 \2/'
+grep -a '^HYBRID_LOAD' pc.log | sed 's/^HYBRID_LOAD uuid=\([0-9a-f-]*\) progress=\(-*[0-9]*\).*/L \1 \2/'
+echo "Q $(grep -ac '^QUARANTINED' pc.log)"
+echo "B $(grep -ac 'SIPP build' pc.log)"
+echo SNAPEND
+"""
+
+
+def install_snapshot(con):
+    """Write the snapshot script to the board line by line: the console
+    cannot take a 600-character command in one write."""
+    con.cmd("rm -f /tmp/snap.sh", 1)
+    for ln in SNAP_SH.strip("\n").splitlines():
+        con.cmd("echo '" + ln.replace("'", "'\\''") + "' >> /tmp/snap.sh", 0.4)
+    con.cmd("chmod +x /tmp/snap.sh; wc -l /tmp/snap.sh", 2)
+
+
+def snapshot(con, acc):
+    """Fold the board's current evidence into the host-side accumulators."""
+    out = ""
+    for _ in range(3):
+        out = con.cmd("sh /tmp/snap.sh", 15).replace("\r", "")
+        if "SNAPEND" in out:
+            break
+    for ln in out.splitlines():
+        parts = ln.strip().split()
+        if not parts:
+            continue
+        tag = parts[0]
+        if tag == "F" and len(parts) == 2 and len(parts[1]) == 36:
+            acc["fed"].add(parts[1])
+        elif tag == "C" and len(parts) == 2 and len(parts[1]) == 36:
+            acc["completed"].setdefault(parts[1], 0)
+        elif tag == "S" and len(parts) >= 3:
+            acc["startups"].add(" ".join(parts[1:]) + f" @{acc['boot_tag']}")
+        elif tag == "K" and len(parts) == 3 and len(parts[1]) == 36:
+            acc["checkpoints"].add((parts[1], parts[2]))
+        elif tag == "L" and len(parts) == 3 and len(parts[1]) == 36:
+            acc["loads"].add((parts[1], parts[2], acc["boot_tag"]))
+    comp = [ln.split()[1] for ln in out.splitlines() if ln.startswith("C ") and len(ln.split()) == 2]
+    for u in set(comp):
+        acc["completed"][u] = max(acc["completed"].get(u, 0), comp.count(u))
+
+
 def main():
+    global IMG, DAEMON_ENV
     ap = argparse.ArgumentParser()
     ap.add_argument("--trials", type=int, default=20)
     ap.add_argument("--batches", type=int, default=20)
     ap.add_argument("--pipeline", type=int, default=2)
     ap.add_argument("--settle", type=float, default=12.0,
                     help="seconds of processing between cuts")
+    ap.add_argument("--storage", default="MMAP", choices=["MMAP", "MEM", "HYBRID"])
+    ap.add_argument("--env", default="", help="extra daemon environment, e.g. 'DIPP_HALT_AFTER_MODULE=3'")
+    ap.add_argument("--image", default=IMG)
+    ap.add_argument("--cut", type=float, default=10.0, help="seconds of power cut")
+    ap.add_argument("--feed-wait", type=float, default=8.0,
+                    help="seconds between starting the feed and the first cut")
     a = ap.parse_args()
+    IMG = a.image
+    DAEMON_ENV = f"STORAGE_MODE={a.storage} {a.env} ".rstrip() + " "
 
     con = Console()
     try:
@@ -136,26 +204,42 @@ def main():
         con.cmd("rm -f /usr/share/dipp/queue_file /usr/share/dipp/partially_processed_queue_file "
                 "/usr/share/dipp/cost.cache", 3)
         con.cmd("find /usr/share/dipp/data -type f -exec rm -f {} +", 5)
-        con.cmd(f"cd {DIR} && rm -f {LOG} pc_fed.txt", 2)
+        con.cmd(f"cd {DIR} && rm -f {LOG} pc_fed.txt /usr/share/dipp/completed.log", 2)
 
-        con.cmd(f"cd {DIR} && (setsid ./dipp -i CAN -p can0 -a 5423 >> {LOG} 2>&1 &)", 4)
+        con.cmd(f"cd {DIR} && ({DAEMON_ENV}setsid ./dipp -i CAN -p can0 -a 5423 >> {LOG} 2>&1 &)", 4)
         time.sleep(6)
 
         print(f"=== feeding {a.batches} batches ===", flush=True)
-        con.cmd(f"cd {DIR} && for i in $(seq 1 {a.batches}); do "
+        # Feed in the background and come back after a few seconds: waiting
+        # 90 s here let every batch complete before the first cut, so every
+        # boot found empty queues and the trial tested nothing (2026-09-21).
+        con.cmd(f"cd {DIR} && (for i in $(seq 1 {a.batches}); do "
                 f"./emulate_camera 1 {a.pipeline} 123 {IMG} 2>/dev/null "
-                f"| grep '^Image sent' >> pc_fed.txt; done; echo FED", 90)
+                f"| grep '^Image sent' >> pc_fed.txt; done; echo FED >> pc_fed.txt) &", 2)
+        for _ in range(60):
+            if "FEDOK" in con.cmd("grep -q FED " + f"{DIR}/pc_fed.txt && echo FED%s | sed s/%s/OK/", 2):
+                break
+            time.sleep(1)
+        time.sleep(a.feed_wait)
 
+        acc = dict(fed=set(), completed={}, startups=set(), checkpoints=set(), loads=set(), boot_tag=0)
         daemon_failures = 0
         for t in range(1, a.trials + 1):
             time.sleep(a.settle)
-            print(f"--- cycle {t}/{a.trials}: cutting power ---", flush=True)
-            r = power("cut", 4)
+            acc["boot_tag"] = t - 1
+            snapshot(con, acc)
+            print(f"--- cycle {t}/{a.trials}: cutting power (fed {len(acc['fed'])}, completed {len(acc['completed'])}) ---", flush=True)
+            r = power("cut", a.cut)
             if r.returncode != 0:
                 print("  otii error:", r.stderr[:200])
             if not boot_and_prepare(con):
-                daemon_failures += 1
-                print(f"  cycle {t}: board back but daemon not confirmed", flush=True)
+                # A board that does not come back needs the long cut
+                # (2026-09-14: 5 and 10 s left it drawing 3.1 W with no U-Boot).
+                print(f"  cycle {t}: no shell after the cut; 60 s cut and retry", flush=True)
+                power("cut", 60)
+                if not boot_and_prepare(con):
+                    daemon_failures += 1
+                    print(f"  cycle {t}: board back but daemon not confirmed", flush=True)
 
         print("=== draining ===", flush=True)
         last, stable = -1, 0
@@ -168,10 +252,27 @@ def main():
             last = now
             print(f"  completions={now}", flush=True)
 
-        print(f"=== RESULT (daemon-start failures: {daemon_failures}) ===", flush=True)
+        acc["boot_tag"] = a.trials
+        snapshot(con, acc)
+        fed, comp = acc["fed"], acc["completed"]
+        lost = sorted(u for u in fed if u not in comp)
+        dups = sorted(u for u, n in comp.items() if n > 1)
+        resumed = sorted(l for l in acc["loads"] if l[1] != "-1")
+        print(f"=== RESULT, host-side tally (daemon-start failures: {daemon_failures}) ===", flush=True)
+        print(f"fed={len(fed)} completed={len([u for u in comp if u in fed])} lost={len(lost)} "
+              f"duplicates={len(dups)} checkpoints={len(acc['checkpoints'])} "
+              f"loads_from_ingest={len([l for l in acc['loads'] if l[1] == '-1'])} "
+              f"resumed_from_checkpoint={len(resumed)} boots_seen={len(acc['startups'])}")
+        for st in sorted(acc["startups"], key=lambda x: int(x.split('@')[1])):
+            print("  startup:", st)
+        if lost:
+            print("  LOST:", lost)
+        if dups:
+            print("  DUPLICATES:", dups)
+        print("=== board-side tally (the log is NOT durable under cuts; for reference only) ===", flush=True)
         script = (
             f"cd {DIR}; "
-            f"sed 's/.*uuid=//; s/ .*//' pc_fed.txt | sort -u > /tmp/f; "
+            f"grep uuid= pc_fed.txt | sed 's/.*uuid=//; s/ .*//' | sort -u > /tmp/f; "
             f"grep 'Pipeline fully executed' {LOG} | sed 's/.*uuid=//; s/ .*//' | sort -u > /tmp/d; "
             f"grep -E '^QUEUE_SELECT|^EXEC ' {LOG} > /tmp/q; "
             f"echo fed=$(grep -c . /tmp/f); echo completed=$(grep -c . /tmp/d); "
@@ -181,7 +282,13 @@ def main():
             f"echo never_reached_queue=$nq; echo IN_SCOPE_LOST=$il; "
             f"echo duplicates=$(( $(grep -c 'Pipeline fully executed' {LOG}) - $(grep -c . /tmp/d) )); "
             f"echo QUEUE_CORRUPT=$(grep -c QUEUE_CORRUPT {LOG}); "
-            f"echo boots=$(grep -c 'SIPP build' {LOG})"
+            f"echo boots=$(grep -c 'SIPP build' {LOG}); "
+            f"echo startup_queues=$(grep '^STARTUP_QUEUES' {LOG} | sed 's/STARTUP_QUEUES //' | tr '\\n' ' '); "
+            f"echo resumed_from_checkpoint=$(grep -c '^HYBRID_LOAD.*progress=[0-9]' {LOG}); "
+            f"echo checkpoints=$(grep -c '^CHECKPOINT ' {LOG}); echo hybrid_loads=$(grep -c '^HYBRID_LOAD ' {LOG}); "
+            f"echo test_halts=$(grep -c '^TEST_HALT' {LOG}); echo quarantined=$(grep -c '^QUARANTINED' {LOG}); "
+            f"echo orphans_removed=$(grep -c '^ORPHAN_REMOVE' {LOG}); "
+            f"echo segments_now=$(( $(wc -l < /proc/sysvipc/shm) - 1 )); echo files_now=$(ls /usr/share/dipp/data 2>/dev/null | wc -l)"
         )
         print(con.cmd(script, 30))
         return 0

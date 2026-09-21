@@ -157,21 +157,25 @@ kernel may reuse an id — and the orphan scan reclaims unreferenced files.
 `DIPP_HALT_AFTER_MODULE=k` is a test hook that halts each batch once at
 module k exactly as a refused gate does.
 
-**Cost on one frame** (`persistence/e2e_{MEM,HYBRID,MMAP}.json`,
-`cs12_test_matched_00` proportional, n=20, bracketed floors; MEM below is
-on the same frame):
+**Cost on one frame** (`persistence/e2e_*.json`, `table6.json`;
+`cs12_test_matched_00`, n=20, floors bracketed before and after each run,
+every bracket within 0.013 W). The board's idle state differs between
+sessions, so each difference is taken between runs made in the *same*
+state: MEM vs HYBRID in the 3.04 W state, HYBRID vs MMAP in the 2.70 W
+state (HYBRID measured in both).
 
-| mode | low | high |
-|---|---:|---:|
-| MEM (nothing durable) | see MEM row when landed | |
-| **HYBRID** (entry, exit, halts) | **758 µWh · 2.26 s** | **2,990 µWh · 6.67 s** |
-| MMAP (every module) | 1,072 µWh · 3.07 s | 3,451 µWh · 7.55 s |
+| mode | low | high | difference |
+|---|---:|---:|---|
+| MEM — nothing durable | 520 µWh · 2.16 s | 2,750 µWh · 6.63 s | — |
+| **HYBRID** — entry, exit, halts | **700 µWh · 2.17 s** | **2,945 µWh · 6.63 s** | **+181 / +195 µWh, 0 ms** over MEM |
+| MMAP — every module output | 1,072 µWh · 3.07 s | 3,451 µWh · 7.55 s | +314 / +461 µWh, +0.81 / +0.88 s over HYBRID |
 
-HYBRID's overhead over MEM is a constant ~240 µWh per frame — the 10 MB
-ingest write and fsync plus the load into shared memory — and almost nothing
-in latency: the modules run exactly as in MEM (demosaic 259 vs 242 ms, tile
-105 vs 103; MMAP: 531 and 410). MMAP costs ~550–700 µWh and 0.9–1.1 s per
-frame, on the two full-frame stages. Table VI is re-cut on these three rows.
+HYBRID's price is a constant ~190 µWh per frame — the 10 MB ingest write and
+fsync, and the load into shared memory — and no module latency at all: the
+modules run exactly as in MEM (demosaic 259 vs 242 ms, tile 105 vs 103).
+Per-module persistence adds a further 300–460 µWh and ~0.85 s per frame,
+almost all of it on the two full-frame stages (demosaic 531 ms, tile 410 ms
+in MMAP). **Table VI is these three rows.**
 
 **Halt path on hardware** (`persistence/halt_log.txt`): five batches through
 low with the hook at module 3 — load from ingest at −1, halt, checkpoint at

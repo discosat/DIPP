@@ -1,0 +1,15 @@
+
+root@fsimx8mp:~/tmp-experiments# cat /proc/loadavg; for c in dram_core_clk noc nooc_io main_axi arm_a53_core; do echo $c $(cat /sys/kernel/debug/clk/$c/clk_rate);; done; cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq; grep ' 76:' /pproc/interrupts | cut -c1-40; cat /sys/kernel/debug/gc/idle | head -n 4
+0.00 0.00 0.00 1/129 4740
+dram_core_clk 650000000
+noc 1000000000
+noc_io 800000000
+main_axi 400000000
+arm_a53_core 1600000000
+1600000
+ 76:      62177          0          0   
+On:                       51,531,625 ns
+Off:              10,051,415,084,500 ns
+Idle:                              0 ns
+Suspend:                 318,929,000 ns
+root@fsimx8mp:~/tmp-experiments# 

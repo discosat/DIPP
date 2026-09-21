@@ -67,6 +67,11 @@ sleep 1
 # a detail: clearing it makes every run measure first-execution cost, keeping it
 # lets a run inherit calibration from its predecessor. C4 wants a warm cache with
 # a discarded warm-up batch; the energy characterisation wants known-cold.
+# The empty SD slot (uSDHC1, 30b40000.mmc) has a bouncing card-detect line:
+# ~40 GPIO interrupts per second that keep the MMC core rescanning (load 0.5
+# on an idle board, 2026-09-21). The eMMC is on uSDHC3 and /mnt/flash is USB,
+# so the host can go; unbinding it before a run removes that noise.
+echo 30b40000.mmc > /sys/bus/platform/drivers/sdhci-esdhc-imx/unbind 2>/dev/null
 rm -f /usr/share/dipp/queue_file /usr/share/dipp/partially_processed_queue_file
 [ "$KEEP_CACHE" -eq 1 ] || rm -f /usr/share/dipp/cost.cache
 rm -f /home/root/logs/* 2>/dev/null

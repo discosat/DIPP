@@ -1,0 +1,118 @@
+{
+ "same_state_3p04": {
+  "MEM": {
+   "2": {
+    "uwh": 519.6353687509813,
+    "ms": 2163.283,
+    "med": {
+     "demosaic": 239.573,
+     "tile": 98.974,
+     "tflite_classification": 540.316,
+     "tflite_binary_segmentation": 432.531,
+     "jpeg2000_module": 851.889
+    },
+    "floor": 3.038259435850855,
+    "drift": 0.0037718742466927857
+   },
+   "3": {
+    "uwh": 2750.3988316442615,
+    "ms": 6632.957,
+    "med": {
+     "demosaic": 243.119,
+     "tile": 99.85,
+     "tflite_classification": 1829.239,
+     "tflite_binary_segmentation": 2931.871,
+     "jpeg2000_module": 1528.878
+    },
+    "floor": 3.0478250658822383,
+    "drift": 0.013169716343456983
+   }
+  },
+  "HYBRID": {
+   "2": {
+    "uwh": 700.4658711207437,
+    "ms": 2171.094,
+    "med": {
+     "demosaic": 240.017,
+     "tile": 98.851,
+     "tflite_classification": 544.413,
+     "tflite_binary_segmentation": 433.696,
+     "jpeg2000_module": 854.117
+    },
+    "floor": 3.044446476735243,
+    "drift": 0.00166825217290123
+   },
+   "3": {
+    "uwh": 2945.4116919060716,
+    "ms": 6629.482,
+    "med": {
+     "demosaic": 242.341,
+     "tile": 99.125,
+     "tflite_classification": 1828.448,
+     "tflite_binary_segmentation": 2929.723,
+     "jpeg2000_module": 1529.845
+    },
+    "floor": 3.0405353016441388,
+    "drift": 0.0
+   }
+  }
+ },
+ "settled_2p70": {
+  "HYBRID": {
+   "2": {
+    "uwh": 758.2912299678751,
+    "ms": 2257.984,
+    "med": {
+     "demosaic": 324.152,
+     "tile": 108.176,
+     "tflite_classification": 536.423,
+     "tflite_binary_segmentation": 434.756,
+     "jpeg2000_module": 854.477
+    },
+    "floor": 2.695193243463743,
+    "drift": 0.005202792375958776
+   },
+   "3": {
+    "uwh": 2990.204579345604,
+    "ms": 6668.562,
+    "med": {
+     "demosaic": 259.207,
+     "tile": 104.696,
+     "tflite_classification": 1835.12,
+     "tflite_binary_segmentation": 2938.688,
+     "jpeg2000_module": 1530.851
+    },
+    "floor": 2.7088766655989946,
+    "drift": 0.0026763985112170374
+   }
+  },
+  "MMAP": {
+   "2": {
+    "uwh": 1072.287964683069,
+    "ms": 3069.439,
+    "med": {
+     "demosaic": 525.277,
+     "tile": 395.508,
+     "tflite_classification": 756.765,
+     "tflite_binary_segmentation": 522.2,
+     "jpeg2000_module": 869.689
+    },
+    "floor": 2.702142004182241,
+    "drift": 0.0023200025475054176
+   },
+   "3": {
+    "uwh": 3451.4929270024527,
+    "ms": 7547.1630000000005,
+    "med": {
+     "demosaic": 530.672,
+     "tile": 409.536,
+     "tflite_classification": 2043.972,
+     "tflite_binary_segmentation": 3017.949,
+     "jpeg2000_module": 1545.034
+    },
+    "floor": 2.706819283391252,
+    "drift": 0.01758894804162736
+   }
+  }
+ }
+}

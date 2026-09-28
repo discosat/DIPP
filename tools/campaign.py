@@ -203,10 +203,17 @@ def run_one(spec, outdir, energy):
         print(f"  {label}: FAILED (board did not come back)")
         return "failed"
 
+    # The battery simulator has no defaults: every run names its platform and
+    # initial conditions (tests/board/run.sh, experiments/platforms/).
+    missing = [k for k in ("platform", "soc0", "phase0") if k not in spec]
+    if missing:
+        raise SystemExit(f"{label}: spec lacks {', '.join(missing)} -- the power model "
+                         f"has no defaults (experiments/platforms/README.md)")
     args = (f"--label {label} --pipeline {spec['pipeline']} --storage {spec['storage']} "
             f"--heuristic {spec['heuristic']} --load {spec.get('load','populate')} "
             f"--n {spec.get('n',20)} --images {spec.get('images',1)} "
             f"--seed {spec.get('seed',43)}")
+    args += f" --platform {spec['platform']} --soc0 {spec['soc0']} --phase0 {spec['phase0']}"
     if spec.get("image"):
         args += f" --image {spec['image']}"
     if spec.get("keep_cost_cache"):

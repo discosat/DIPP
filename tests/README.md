@@ -64,3 +64,73 @@ size ever fails to divide it.
 **Always confirm on the board** after changing anything about the on-disk
 layout: check `QUEUE_SYNC_FAIL` is 0 in the daemon log. A host-side pass proves
 the logic, not the alignment.
+
+## `test_cost_model.c`
+
+Cost store v2 and the lookup the scheduler decides on.
+
+```sh
+gcc -o /tmp/test_cost_model tests/test_cost_model.c \
+    src/cost_store/cost_model.c src/cost_store/cost_store.c \
+    src/cost_store/cost_store_mem.c src/cost_store/cost_store_mmap.c \
+    -Isrc/include -Isrc/include/cost_store -Isrc/include/image
+/tmp/test_cost_model
+```
+
+Covers the lookup order (measured point -> fitted model -> YAML hint; a
+zero hint is rejected at config load in `dipp_config.c`, so nothing below it), the clamp that stops an extrapolated line going negative
+and resurfacing as 4.29e9 through `%u`, the EMA (alpha 0.3) that keeps the
+first post-boot execution's VX graph compile from owning an input size,
+`DIPP_LATENCY_CORRECTION=0` freezing the store, the seed-file round trip in
+both backends (a format-1 file must reset, not be believed), and that LRU
+eviction spends on-board points before seeded ones.
+
+Energy is asserted to be *never* written from an on-board measurement: a point
+created on-board carries the prediction that was debited for it. The board
+measures latency; energy comes from the offline sweep.
+
+`cost_model.c` deliberately does not include `heuristics.h`, so the store
+and the model build on the host without the generated protobuf headers,
+which exist only in the SDK sysroot.
+
+## `test_battery_simulator.c`
+
+```sh
+gcc -DDIPP_HOST_TEST -o /tmp/test_batt tests/test_battery_simulator.c \
+    src/battery_simulator.c -Isrc/include -Isrc/include/param -lm -pthread
+/tmp/test_batt        # from the repository root
+```
+
+`-DDIPP_HOST_TEST` swaps libparam's `battery_level` for a plain float, so the
+simulator builds with no CSP, no param and no board.
+
+**The simulator has no defaults**, so half of this file is about refusing:
+nothing set (every missing input named at once), each required input dropped
+in turn, out-of-range and non-numeric values, an unreadable profile, and six
+kinds of malformed profile including a line the 128-byte reader would split.
+Each must fail configuration; none may fall back to a value. Use of the
+process-wide simulator before `battery_simulator_init` aborts. Verified to
+have teeth: reintroducing a silent `SOC0` default, or a flat-profile fallback
+for a bad file, fails the corresponding cases.
+
+The load-bearing physics case is **`advance(3000)` against a host-side
+integration of the same 3,000 s written out separately in the test**: trace
+replay compresses the gaps between imaging bursts by fast-forwarding the
+battery, which is only legitimate if a jump charges it exactly as living
+through the gap would. Also: ten 60 s chunks land where one 600 s jump does;
+one orbit nets delivered generation minus bus load (+5.35 Wh for DISCO-II);
+time runs 1:1; the battery clamps at empty and full (the physical limits, no
+chosen floor) and logs `BATTERY_EMPTY` once; profile interpolation with wrap;
+`phase0`; the processing board per burst (nothing before the first activity,
+exactly the 60 s hold after an ingest, held on through an execution longer
+than the hold, `always`, `off`); the margin derived from one orbit's surplus plus
+`RESERVE_FRAC` (and flagged when a platform has no surplus) or given
+explicitly; and the digitised DISCO-II profiles delivering 16.435 W (BOL) and
+15.257 W (EOL).
+
+**Found a defect on the way:** `battery_simulator_step` reported
+`current_state` and `p_gen_now_W` for the *start* of the step it had just
+integrated while `log_state` printed the phase it had reached, so a
+`BATTERY_FF` line ending just after sunrise printed a sunlit phase beside
+`state=ECLIPSE`. The reported state is now sampled at the new time; the
+integration still uses the start-of-step power.

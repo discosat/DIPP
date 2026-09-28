@@ -46,6 +46,7 @@ sources = files(
 	'src/cost_store/cost_store.c',
 	'src/cost_store/cost_store_mmap.c',
 	'src/cost_store/cost_store_mem.c',
+	'src/cost_store/cost_model.c',
 	'src/priority_queue/priority_queue.c',
 	'src/priority_queue/priority_queue_mmap.c',
 	'src/priority_queue/priority_queue_mem.c',
@@ -106,4 +107,18 @@ dipp = executable(
 	#c_args: ['-g2', '-O0', '-Wall', '-Wextra'] + c_args,
 	c_args: c_args,
 	link_args: ['-ldl'],
+)
+
+# Harness control tool: sends mtype-2 messages on the daemon's own SysV queue
+# (see src/include/dipp_control.h). Board-side, staged and deployed alongside
+# the daemon; no CSP or libparam, so it links against nothing.
+dipp_ctl = executable(
+	'dipp_ctl',
+	files('tools/dipp_ctl.c'),
+	include_directories: dirs,
+	# dipp_process.h (for MSG_QUEUE_KEY) pulls in the generated protobuf
+	# headers, so the dependency is for the include path, not for code.
+	dependencies: [proto_c_dep],
+	install: true,
+	c_args: c_args,
 )

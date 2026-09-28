@@ -11,6 +11,7 @@
 #include "module_config.pb-c.h"
 #include "pipeline_config.pb-c.h"
 #include "murmur_hash.h"
+#include "cost_store.h"
 #include "utils/minitrace.h"
 
 Pipeline pipelines[MAX_PIPELINES];
@@ -189,6 +190,19 @@ void setup_module_config(param_t *param, int index)
            mcon->energy_cost,
            hash);
 
+    /* The hint is the cost model's answer for a config the store has no entry
+       for, so it must be a measured value. A zero used to fall through to
+       compile-time DEFAULT_EFFORT_* numbers that nothing measured; now the
+       slot is rejected, like a config that does not unpack. */
+    if (mcon->latency_cost <= 0 || mcon->energy_cost <= 0)
+    {
+        printf("MODULE_CONFIG_REJECTED slot=%d hash=%u reason=cost_hint_not_positive "
+               "latency_cost=%d energy_cost=%d\n",
+               param->id - MODULE_PARAMID_OFFSET + 1, hash, mcon->latency_cost, mcon->energy_cost);
+        module_config__free_unpacked(mcon, NULL);
+        return;
+    }
+
     for (size_t i = 0; i < mcon->n_parameters; i++)
     {
         ConfigParameter *cparam = mcon->parameters[i];
@@ -217,6 +231,27 @@ void setup_module_config(param_t *param, int index)
     module_parameter_lists[module_id].latency_cost = mcon->latency_cost;
     module_parameter_lists[module_id].energy_cost = mcon->energy_cost;
     module_parameter_lists[module_id].hash = hash;
+
+    /* What the scheduler will decide on for this slot: how many measured
+       points the store holds for its config hash and whether a fitted model
+       exists. A slot showing points=0 model=0 under a seeded store means the
+       seed was built from a different YAML (the hash changed) -- the stale-seed
+       check the campaign tooling greps for. */
+    if (cost_store != NULL)
+    {
+        int points, midx;
+        cost_store_count(cost_store, hash, &points, &midx);
+        if (midx != -1)
+        {
+            const CostEntry *m = &cost_store->items[midx];
+            printf("COST_MODEL slot=%d hash=%u points=%d model=1 n_ref=%d lat_ref_us=%u lat_slope_us=%.3f en_ref_uwh=%.3f en_slope_uwh=%.4f hint_lat_us=%d hint_en_uwh=%d\n",
+                   module_id + 1, hash, points, m->n, m->lat_us, m->lat_slope_us, m->en_uwh, m->en_slope_uwh,
+                   mcon->latency_cost, mcon->energy_cost);
+        }
+        else
+            printf("COST_MODEL slot=%d hash=%u points=%d model=0 hint_lat_us=%d hint_en_uwh=%d\n",
+                   module_id + 1, hash, points, mcon->latency_cost, mcon->energy_cost);
+    }
     module_parameter_lists[module_id].parameters = malloc(mcon->n_parameters * sizeof(ModuleParameter *));
     if (!module_parameter_lists[module_id].parameters) // Check if malloc failed
     {

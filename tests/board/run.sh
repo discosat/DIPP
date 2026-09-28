@@ -2,7 +2,8 @@
 # Execute ONE run and leave a self-describing directory. Board side.
 #
 #   run.sh --label adaptive-mmap-01 --pipeline 1 --storage MMAP \
-#          --heuristic BEST_EFFORT --load populate --n 20 --images 1 [--seed 43]
+#          --heuristic BEST_EFFORT --load populate --n 20 --images 1 [--seed 43] \
+#          --platform disco2-bol.env --soc0 0.9 --phase0 0.25
 #          [--image cs12_validation_00.bayerRG]
 #          [--keep-cost-cache] [--no-trace]
 #
@@ -17,6 +18,7 @@ IMAGE=cs12_validation_00.bayerRG
 
 LABEL=""; PIPELINE=2; STORAGE=MMAP; HEURISTIC=BEST_EFFORT
 LOAD=populate; N=20; IMAGES=1; SEED=43; KEEP_CACHE=0; TRACE=1; MIN_DRAIN=20
+PLATFORM=""; SOC0=""; PHASE0=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --label) LABEL="$2"; shift 2;;
@@ -31,10 +33,19 @@ while [ $# -gt 0 ]; do
         --keep-cost-cache) KEEP_CACHE=1; shift;;
         --no-trace) TRACE=0; shift;;
         --min-drain) MIN_DRAIN="$2"; shift 2;;
+        --platform) PLATFORM="$2"; shift 2;;
+        --soc0) SOC0="$2"; shift 2;;
+        --phase0) PHASE0="$2"; shift 2;;
         *) echo "unknown option: $1" >&2; exit 2;;
     esac
 done
 [ -n "$LABEL" ] || { echo "--label is required" >&2; exit 2; }
+# The battery simulator has no defaults (battery_simulator.h): the platform
+# and the initial conditions are stated for every run or the run does not
+# happen.
+[ -n "$PLATFORM" ] || { echo "--platform is required (experiments/platforms/*.env)" >&2; exit 2; }
+[ -n "$SOC0" ] || { echo "--soc0 is required" >&2; exit 2; }
+[ -n "$PHASE0" ] || { echo "--phase0 is required" >&2; exit 2; }
 IMG="$IMG_DIR/$IMAGE"
 
 # grep -c prints "0" and exits 1 on no-match, and prints nothing when the file
@@ -45,6 +56,15 @@ cnt() {
 }
 
 cd "$DIR" || exit 1
+[ -f "$PLATFORM" ] || { echo "platform file not found: $PLATFORM" >&2; exit 2; }
+# Only the preset and the flags define the power model: anything DIPP_BATT_*
+# left in this shell would be a hidden input, so clear it first.
+for v in $(env | sed -n 's/^\(DIPP_BATT_[A-Z0-9_]*\)=.*/\1/p'); do unset "$v"; done
+case "$PLATFORM" in /*) PLATFORM_PATH="$PLATFORM";; *) PLATFORM_PATH="./$PLATFORM";; esac
+set -a; . "$PLATFORM_PATH"; set +a
+export DIPP_BATT_SOC0="$SOC0" DIPP_BATT_PHASE0="$PHASE0"
+PLATFORM_MD5=$(md5sum "$PLATFORM" | cut -d' ' -f1)
+PROFILE_MD5=$(md5sum "$DIPP_BATT_PROFILE" 2>/dev/null | cut -d' ' -f1)
 OUT="$DIR/runs/$LABEL"
 rm -rf "$OUT"; mkdir -p "$OUT"
 
@@ -97,7 +117,12 @@ if ! pidof dipp > /dev/null 2>&1; then
     sleep 3
     if ! pidof dipp > /dev/null 2>&1; then
         echo "ABORT: daemon did not start" >&2
-        echo '{"error":"daemon_did_not_start"}' > "$OUT/board.json"
+        grep 'BATTERY_CONFIG_ERROR\|FATAL' "$OUT/console.log" >&2
+        if grep -q BATTERY_CONFIG_ERROR "$OUT/console.log"; then
+            echo '{"error":"battery_config_error"}' > "$OUT/board.json"
+        else
+            echo '{"error":"daemon_did_not_start"}' > "$OUT/board.json"
+        fi
         exit 1
     fi
 fi
@@ -186,6 +211,12 @@ cat > "$OUT/board.json" <<JSON
   "seed": $SEED,
   "image": "$IMAGE",
   "cost_cache_kept": $KEEP_CACHE,
+  "platform": "$PLATFORM",
+  "platform_md5": "$PLATFORM_MD5",
+  "profile": "$DIPP_BATT_PROFILE",
+  "profile_md5": "${PROFILE_MD5:-missing}",
+  "soc0": $SOC0,
+  "phase0": $PHASE0,
   "traced": $TRACE,
   "started_utc": $START,
   "ended_utc": $END,

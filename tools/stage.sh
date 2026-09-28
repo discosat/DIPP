@@ -51,14 +51,19 @@ PKG_CONFIG_PATH="$MODULES/tools/pkgconfig-overlay:${PKG_CONFIG_PATH:-}" \
 
 # --- collect ---------------------------------------------------------------
 cp "$HERE/builddir/dipp" "$OUT/"
+cp "$HERE/builddir/dipp_ctl" "$OUT/"
 cp "$MODULES/builddir/emulate_camera" "$OUT/"
 cp "$MODULES/builddir"/*.so "$OUT/"
 cp "$HERE/tests/board/run.sh" "$OUT/" 2>/dev/null || true
+# Battery generation profiles and platform presets (run.sh --platform); the
+# daemon refuses to start without them, so a set without them is not staged.
+cp "$HERE"/analysis/power-profile/*.profile "$OUT/"
+cp "$HERE"/experiments/platforms/*.env "$OUT/"
 
 # Keep symbols before stripping: the stripped copy is what ships, but a
 # disassembly-level question later needs the unstripped one, and rebuilding it
 # from a different toolchain state is exactly the provenance hole Stage 0 closed.
-for f in "$OUT"/dipp "$OUT"/emulate_camera "$OUT"/*.so; do
+for f in "$OUT"/dipp "$OUT"/dipp_ctl "$OUT"/emulate_camera "$OUT"/*.so; do
     cp "$f" "$OUT/symbols/$(basename "$f").debug"
     $STRIP --strip-all "$f"
 done

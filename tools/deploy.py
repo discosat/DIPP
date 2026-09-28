@@ -79,19 +79,22 @@ def main():
     # Remove before copying: BusyBox cp prompts on overwrite and the prompt
     # silently eats the rest of the command line.
     board(f"rm -f /usr/share/pipeline/*.so {a.board_dir}/dipp "
-          f"{a.board_dir}/emulate_camera {a.board_dir}/run.sh "
-          f"{a.board_dir}/storage.vmem; echo CLEARED", 300)
+          f"{a.board_dir}/dipp_ctl {a.board_dir}/emulate_camera {a.board_dir}/run.sh "
+          f"{a.board_dir}/storage.vmem {a.board_dir}/*.profile {a.board_dir}/*.env; echo CLEARED", 300)
     board(f"cd {stage_dir} && cp *.so /usr/share/pipeline/ && "
-          f"cp dipp emulate_camera storage.vmem {a.board_dir}/ && "
+          f"cp dipp dipp_ctl emulate_camera storage.vmem {a.board_dir}/ && "
           f"(cp run.sh {a.board_dir}/ 2>/dev/null || true) && "
+          f"cp *.profile *.env {a.board_dir}/ && "
           f"chmod +x /usr/share/pipeline/*.so {a.board_dir}/dipp "
-          f"{a.board_dir}/emulate_camera {a.board_dir}/run.sh 2>/dev/null; echo INSTALLED", 600)
+          f"{a.board_dir}/dipp_ctl {a.board_dir}/emulate_camera "
+          f"{a.board_dir}/run.sh 2>/dev/null; echo INSTALLED", 600)
 
     dest = {}
     for name in manifest["artifacts"]:
         if name.endswith(".so"):
             dest[name] = f"/usr/share/pipeline/{name}"
-        elif name in ("dipp", "emulate_camera", "storage.vmem", "run.sh"):
+        elif name in ("dipp", "dipp_ctl", "emulate_camera", "storage.vmem", "run.sh") \
+                or name.endswith((".profile", ".env")):
             dest[name] = f"{a.board_dir}/{name}"
     out = board("md5sum " + " ".join(dest.values()), 600)
     board_md5 = {}

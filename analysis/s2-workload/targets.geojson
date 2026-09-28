@@ -1,0 +1,252 @@
+{
+ "type": "FeatureCollection",
+ "description": "Science targets that make a scene 'urgent' (15 s SLO) in the S2 trace. No DISCO-2 target list exists; SI-DISCOII-DR-001 \u00a71 names the objectives only: temporal imagery of specific areas in Eastern Greenland (ARC, Aarhus University) and Arctic glaciers (iClimate, Aarhus University). These sites instantiate that: East Greenland outlet glaciers and the two Aarhus-run NE Greenland stations. Centres are approximate public coordinates, not survey positions; at 20 km boxes a few km of error does not change which ~110 km scenes intersect.",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Helheim Glacier",
+    "kind": "outlet glacier",
+    "slo_class": "urgent",
+    "why": "SE Greenland outlet glacier front",
+    "centre": [
+     66.35,
+     -38.2
+    ],
+    "box_km": 20.0
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -38.4239,
+       66.2602
+      ],
+      [
+       -37.9761,
+       66.2602
+      ],
+      [
+       -37.9761,
+       66.4398
+      ],
+      [
+       -38.4239,
+       66.4398
+      ],
+      [
+       -38.4239,
+       66.2602
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Kangerlussuaq Glacier",
+    "kind": "outlet glacier",
+    "slo_class": "urgent",
+    "why": "E Greenland outlet glacier front",
+    "centre": [
+     68.63,
+     -32.95
+    ],
+    "box_km": 20.0
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -33.1965,
+       68.5402
+      ],
+      [
+       -32.7035,
+       68.5402
+      ],
+      [
+       -32.7035,
+       68.7198
+      ],
+      [
+       -33.1965,
+       68.7198
+      ],
+      [
+       -33.1965,
+       68.5402
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Zachariae Isstrom",
+    "kind": "outlet glacier",
+    "slo_class": "urgent",
+    "why": "NE Greenland Ice Stream outlet",
+    "centre": [
+     78.9,
+     -20.8
+    ],
+    "box_km": 20.0
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -21.2666,
+       78.8102
+      ],
+      [
+       -20.3334,
+       78.8102
+      ],
+      [
+       -20.3334,
+       78.9898
+      ],
+      [
+       -21.2666,
+       78.9898
+      ],
+      [
+       -21.2666,
+       78.8102
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Nioghalvfjerdsbrae (79N)",
+    "kind": "outlet glacier",
+    "slo_class": "urgent",
+    "why": "NE Greenland Ice Stream floating tongue",
+    "centre": [
+     79.5,
+     -21.0
+    ],
+    "box_km": 20.0
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -21.4929,
+       79.4102
+      ],
+      [
+       -20.5071,
+       79.4102
+      ],
+      [
+       -20.5071,
+       79.5898
+      ],
+      [
+       -21.4929,
+       79.5898
+      ],
+      [
+       -21.4929,
+       79.4102
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Zackenberg Research Station",
+    "kind": "research station",
+    "slo_class": "urgent",
+    "why": "Aarhus University-run NE Greenland station",
+    "centre": [
+     74.47,
+     -20.57
+    ],
+    "box_km": 20.0
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -20.9055,
+       74.3802
+      ],
+      [
+       -20.2345,
+       74.3802
+      ],
+      [
+       -20.2345,
+       74.5598
+      ],
+      [
+       -20.9055,
+       74.5598
+      ],
+      [
+       -20.9055,
+       74.3802
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Villum Research Station",
+    "kind": "research station",
+    "slo_class": "urgent",
+    "why": "Aarhus University-run station at Station Nord",
+    "centre": [
+     81.6,
+     -16.67
+    ],
+    "box_km": 20.0
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -17.2849,
+       81.5102
+      ],
+      [
+       -16.0551,
+       81.5102
+      ],
+      [
+       -16.0551,
+       81.6898
+      ],
+      [
+       -17.2849,
+       81.6898
+      ],
+      [
+       -17.2849,
+       81.5102
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

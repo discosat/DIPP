@@ -212,6 +212,17 @@ int main(int argc, char *argv[])
 	// float energy = get_energy_reading();
 	// printf("Initial energy reading: %.2f J\r\n", energy);
 
+	/* Before any thread that reads the battery exists. Every input is
+	   required; a daemon with an unconfigured power model would run a
+	   different experiment than the one asked for, so it does not run. */
+	if (battery_simulator_init() != 0)
+	{
+		printf("FATAL: battery simulator not configured (BATTERY_CONFIG_ERROR above); "
+		       "run.sh --platform supplies it\n");
+		fflush(stdout);
+		exit(EXIT_FAILURE);
+	}
+
 	static pthread_t router_handle;
 	pthread_create(&router_handle, NULL, &router_task, NULL);
 

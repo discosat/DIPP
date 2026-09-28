@@ -4,19 +4,28 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
-// Initialize in-memory CostStore: allocate outer CostStore if *store is NULL and zero items
+static void adopt_lru_clock(CostStore *store)
+{
+    for (int i = 0; i < MAX_ENTRIES; i++)
+        if (store->items[i].valid && store->items[i].timestamp > global_time)
+            global_time = store->items[i].timestamp;
+}
+
+/* In-memory store. Nothing it learns survives the process, but it still
+   STARTS from the seed file when one is present: a MEM-mode run must decide
+   on the same offline characterisation as a HYBRID one, or the storage modes
+   are not comparable. */
 int cost_store_init_mem(CostStore **store, char *filename)
 {
-    // filename unused for mem backend
-    (void)filename;
+    const char *file = filename ? filename : CACHE_FILE;
 
     if (store == NULL)
     {
         printf("Error: provided CostStore** is NULL\n");
         return -1;
     }
-
     if (*store == NULL)
     {
         *store = (CostStore *)calloc(1, sizeof(CostStore));
@@ -26,76 +35,44 @@ int cost_store_init_mem(CostStore **store, char *filename)
             return -1;
         }
     }
-    else
-    {
-        // zero items if caller provided an existing allocation
-        memset((*store)->items, 0, MAX_ENTRIES * sizeof(CostEntry));
-    }
 
-    // Recalculate max timestamp to continue LRU order (should be 0 after memset but keep logic)
+    int loaded = 0;
+    FILE *f = fopen(file, "rb");
+    if (f)
+    {
+        size_t got = fread(*store, 1, sizeof(CostStore), f);
+        fclose(f);
+        if (got == sizeof(CostStore) && cost_store_header_ok(*store))
+            loaded = 1;
+        else
+            printf("COST_STORE_RESET file=%s reason=%s\n", file,
+                   got != sizeof(CostStore) ? "short_file" : "bad_header");
+    }
+    if (!loaded)
+        cost_store_reset(*store);
+
+    int n = 0;
     for (int i = 0; i < MAX_ENTRIES; i++)
-    {
-        if ((*store)->items[i].valid && (*store)->items[i].timestamp > global_time)
-        {
-            global_time = (*store)->items[i].timestamp;
-        }
-    }
+        n += (*store)->items[i].valid ? 1 : 0;
+    printf("COST_STORE_INIT backend=mem file=%s loaded=%d entries=%d\n", file, loaded, n);
 
+    adopt_lru_clock(*store);
     return 0;
 }
 
-// mem-specific insert (same behavior as previous cache_insert)
-void insert_mem(CostStore *store, uint32_t hash, uint32_t latency, float energy)
+int put_mem(CostStore *store, const CostEntry *entry)
 {
-    global_time++;
-    int idx = find_entry(store, hash);
-    if (idx != -1)
-    {
-        store->items[idx].latency = latency;
-        store->items[idx].energy = energy;
-        store->items[idx].timestamp = global_time;
-        // printf("Updated existing entry.\n");
-        return;
-    }
-
-    for (int i = 0; i < MAX_ENTRIES; i++)
-    {
-        if (!store->items[i].valid)
-        {
-            store->items[i].hash = hash;
-            store->items[i].latency = latency;
-            store->items[i].energy = energy;
-            store->items[i].valid = 1;
-            store->items[i].timestamp = global_time;
-            // printf("Inserted into free slot.\n");
-            return;
-        }
-    }
-
-    int evict = find_lru_index(store);
-    if (evict != -1)
-    {
-        store->items[evict].hash = hash;
-        store->items[evict].latency = latency;
-        store->items[evict].energy = energy;
-        store->items[evict].valid = 1;
-        store->items[evict].timestamp = global_time;
-        // printf("Evicted LRU and inserted.\n");
-    }
+    return cost_store_upsert(store, entry);
 }
 
-// mem clean up: free allocated outer CostStore
 int clean_up_mem(CostStore *store)
 {
     if (store)
-    {
         free(store);
-    }
     return 0;
 }
 
 CostStoreImpl cost_store_mem = {
     .init = cost_store_init_mem,
-    .insert = insert_mem,
-    .lookup = cache_lookup,
+    .put = put_mem,
     .clean_up = clean_up_mem};

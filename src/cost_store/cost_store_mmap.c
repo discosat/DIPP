@@ -7,8 +7,9 @@
 #include <string.h>
 #include <errno.h>
 
-// mmap the file into memory and point the caller's pointer to the mapped region.
-// If file doesn't exist, create it, ftruncate to size and zero the contents before using.
+/* Persistent store: the file is the store. A file with a valid format-2
+   header (a seed, or what a previous run left) is used as-is; anything else
+   -- absent, short, format 1 -- is reset to an empty format-2 image. */
 int cost_store_init_mmap(CostStore **store, char *filename)
 {
     const char *file = filename ? filename : CACHE_FILE;
@@ -21,8 +22,8 @@ int cost_store_init_mmap(CostStore **store, char *filename)
         return -1;
     }
 
-    // Check if file exists
     int exists = (stat(file, &st) == 0);
+    off_t old_size = exists ? st.st_size : 0;
 
     int fd = open(file, O_RDWR | O_CREAT, 0644);
     if (fd < 0)
@@ -30,8 +31,6 @@ int cost_store_init_mmap(CostStore **store, char *filename)
         printf("Error opening/creating cache file: %s (%s)\n", file, strerror(errno));
         return -1;
     }
-
-    // Ensure file is large enough
     if (ftruncate(fd, (off_t)cache_size) == -1)
     {
         printf("Error resizing cache file: %s (%s)\n", file, strerror(errno));
@@ -39,7 +38,6 @@ int cost_store_init_mmap(CostStore **store, char *filename)
         return -1;
     }
 
-    // Memory map the file (map whole CostStore). Keep the mapping live — we will work on it directly.
     void *mapped = mmap(NULL, cache_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (mapped == MAP_FAILED)
     {
@@ -47,88 +45,50 @@ int cost_store_init_mmap(CostStore **store, char *filename)
         close(fd);
         return -1;
     }
-
-    // If the file was newly created (didn't exist), zero the contents so the file holds zeros
-    if (!exists)
-    {
-        memset(mapped, 0, cache_size);
-        // persist zeros
-        msync(mapped, cache_size, MS_SYNC);
-    }
-
-    // Set the caller's pointer to the mapped (persisted) memory; operate on it directly thereafter.
+    close(fd);
     *store = (CostStore *)mapped;
 
-    // Recalculate max timestamp to continue LRU order
-    for (int i = 0; i < MAX_ENTRIES; i++)
+    int loaded = 0;
+    if (exists && old_size == (off_t)cache_size && cost_store_header_ok(*store))
+        loaded = 1;
+    else
     {
-        if ((*store)->items[i].valid && (*store)->items[i].timestamp > global_time)
-        {
-            global_time = (*store)->items[i].timestamp;
-        }
+        printf("COST_STORE_RESET file=%s reason=%s\n", file,
+               !exists ? "absent" : old_size != (off_t)cache_size ? "wrong_size" : "bad_header");
+        cost_store_reset(*store);
+        msync(*store, cache_size, MS_SYNC);
     }
 
-    // Keep mapping alive; close FD (mapping remains valid)
-    close(fd);
+    int n = 0;
+    for (int i = 0; i < MAX_ENTRIES; i++)
+    {
+        if ((*store)->items[i].valid)
+        {
+            n++;
+            if ((*store)->items[i].timestamp > global_time)
+                global_time = (*store)->items[i].timestamp;
+        }
+    }
+    printf("COST_STORE_INIT backend=mmap file=%s loaded=%d entries=%d\n", file, loaded, n);
     return 0;
 }
 
-// mmap-specific insert: same as mem but persist to disk
-void insert_mmap(CostStore *store, uint32_t hash, uint32_t latency, float energy)
+int put_mmap(CostStore *store, const CostEntry *entry)
 {
-    global_time++;
-    int idx = find_entry(store, hash);
+    int idx = cost_store_upsert(store, entry);
     if (idx != -1)
-    {
-        store->items[idx].latency = latency;
-        store->items[idx].energy = energy;
-        store->items[idx].timestamp = global_time;
-        // persist change
         msync(store, sizeof(CostStore), MS_SYNC);
-        // printf("Updated existing entry (mmap, synced).\n");
-        return;
-    }
-
-    for (int i = 0; i < MAX_ENTRIES; i++)
-    {
-        if (!store->items[i].valid)
-        {
-            store->items[i].hash = hash;
-            store->items[i].latency = latency;
-            store->items[i].energy = energy;
-            store->items[i].valid = 1;
-            store->items[i].timestamp = global_time;
-            msync(store, sizeof(CostStore), MS_SYNC);
-            // printf("Inserted into free slot (mmap, synced).\n");
-            return;
-        }
-    }
-
-    int evict = find_lru_index(store);
-    if (evict != -1)
-    {
-        store->items[evict].hash = hash;
-        store->items[evict].latency = latency;
-        store->items[evict].energy = energy;
-        store->items[evict].valid = 1;
-        store->items[evict].timestamp = global_time;
-        msync(store, sizeof(CostStore), MS_SYNC);
-        // printf("Evicted LRU and inserted (mmap, synced).\n");
-    }
+    return idx;
 }
 
-// mmap clean up: unmap the mapped CostStore
 int clean_up_mmap(CostStore *store)
 {
     if (store)
-    {
         munmap(store, sizeof(CostStore));
-    }
     return 0;
 }
 
 CostStoreImpl cost_store_mmap = {
     .init = cost_store_init_mmap,
-    .insert = insert_mmap,
-    .lookup = cache_lookup,
+    .put = put_mmap,
     .clean_up = clean_up_mmap};

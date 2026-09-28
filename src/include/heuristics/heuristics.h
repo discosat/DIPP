@@ -7,15 +7,7 @@
 #include "image_batch.h"
 #include "pipeline_config.pb-c.h"
 #include "cost_store.h"
-
-#define DEFAULT_EFFORT_LATENCY 3000
-#define DEFAULT_EFFORT_ENERGY 3.0f
-#define LOW_EFFORT_LATENCY 2000
-#define LOW_EFFORT_ENERGY 2.0f
-#define MEDIUM_EFFORT_LATENCY 3000
-#define MEDIUM_EFFORT_ENERGY 3.0f
-#define HIGH_EFFORT_LATENCY 4000
-#define HIGH_EFFORT_ENERGY 4.0f
+#include "cost_model.h"
 
 #define BEST_EFFORT_MAX_LATENCY_MEDIUM_EFFORT 5000000 // 5 seconds maximum per module latency to be considered for medium effort
 #define BEST_EFFORT_MAX_LATENCY_LOW_EFFORT 3000000    // 3 seconds maximum per module latency to be considered for low effort

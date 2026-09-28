@@ -30,6 +30,8 @@
 #include "image_batch.h"
 #include "vmem_upload_local.h"
 #include "utils/minitrace.h"
+#include "dipp_control.h"
+#include "battery_simulator.h"
 #include <limits.h>
 
 PriorityQueue *ingest_pq = NULL;
@@ -104,7 +106,14 @@ BatchOutcome process(ImageBatch *input_batch)
         }
         if (input_batch->progress == pipeline_length - 1)
         {
-            printf("Pipeline fully executed successfully uuid=%s\n", input_batch->uuid);
+            {
+                struct timespec ts;
+                clock_gettime(CLOCK_MONOTONIC, &ts);
+                printf("Pipeline fully executed successfully uuid=%s ts_us=%lld deadline_us=%lld\n",
+                       input_batch->uuid,
+                       (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000,
+                       (long long)input_batch->priority);
+            }
 
             if (image_batch_read_data(input_batch) != SUCCESS || input_batch->data == NULL)
             {
@@ -234,6 +243,44 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
     }
 
     return SUCCESS;
+}
+
+/* Drain harness control messages (mtype DIPP_CTL_MTYPE) -- see dipp_control.h.
+   Returns the number handled. */
+static int drain_control_messages(void)
+{
+    int msg_queue_id = msgget(MSG_QUEUE_KEY, 0);
+    if (msg_queue_id == -1)
+        return 0;
+    int handled = 0;
+    for (;;)
+    {
+        DippControlMsg m;
+        ssize_t r = msgrcv(msg_queue_id, &m, sizeof(m) - sizeof(long), DIPP_CTL_MTYPE, IPC_NOWAIT);
+        if (r == -1)
+            break;
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        long long ts_us = (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+        switch (m.op)
+        {
+        case CTL_BATTERY_ADVANCE:
+            battery_simulator_advance(m.arg_f);
+            break;
+        case CTL_BATTERY_SET_WH:
+            battery_simulator_set_wh((float)m.arg_f);
+            break;
+        case CTL_MARK:
+            printf("MARK ts_us=%lld scene=%d sim_t_s=%.2f phase=%.4f\n",
+                   ts_us, m.arg_i, battery_simulator_time_s(), battery_simulator_phase());
+            break;
+        default:
+            printf("CTL_UNKNOWN ts_us=%lld op=%d\n", ts_us, m.op);
+            break;
+        }
+        handled++;
+    }
+    return handled;
 }
 
 // Retrieve the storage mode and heuristic from environment variables
@@ -662,10 +709,36 @@ void process_images_loop()
         ImageBatch datarcv;
         while (get_message_from_queue(&datarcv, 0) == SUCCESS)
         {
+            /* A frame arriving means the board is powered to take it. */
+            battery_simulator_board_activity();
+            struct timespec ts;
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+            long long ts_us = (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
             // push data onto the ingest priority queue
-            pq_impl->enqueue(ingest_pq, datarcv);
+            if (pq_impl->enqueue(ingest_pq, datarcv) != SUCCESS)
+            {
+                /* Queue full. The failure used to be ignored, so the batch
+                   vanished and its segment or file leaked. Under a burst
+                   denser than the service rate this is the expected outcome
+                   and a reported metric, so record it and release the data. */
+                printf("INGEST_DROP ts_us=%lld uuid=%s pipeline=%d num_images=%d deadline_us=%lld "
+                       "reason=queue_full ingest_depth=%ld\n",
+                       ts_us, datarcv.uuid, datarcv.pipeline_id, datarcv.num_images,
+                       (long long)datarcv.priority, (long)pq_impl->get_queue_size(ingest_pq));
+                image_batch_release(&datarcv);
+            }
+            else
+            {
+                printf("INGEST ts_us=%lld uuid=%s pipeline=%d num_images=%d deadline_us=%lld slo_us=%lld "
+                       "ingest_depth=%ld partial_depth=%ld\n",
+                       ts_us, datarcv.uuid, datarcv.pipeline_id, datarcv.num_images,
+                       (long long)datarcv.priority, (long long)(datarcv.priority - ts_us),
+                       (long)pq_impl->get_queue_size(ingest_pq),
+                       (long)pq_impl->get_queue_size(partially_processed_pq));
+            }
             MTR_END(__FILE__, "enqueue_onto_ingest");
         }
+        drain_control_messages();
 
         /* Flush the trace at most every 100 ms. Re-enabled: with this commented
            out the trace was written only by the signal handler, so any run that

@@ -31,7 +31,7 @@ from collections import Counter, defaultdict
 EXEC_INT = {
     "ts_us",
     "pipeline", "module_index", "param_id", "num_images", "batch_bytes",
-    "cached", "latency_pred_us", "latency_meas_us", "energy_pred_uwh",
+    "cached", "n_input", "latency_pred_us", "latency_meas_us", "energy_pred_uwh",
     "deadline_us", "slack_us", "ingest_depth", "partial_depth",
     "rss_kb", "peak_rss_kb", "child_peak_rss_kb",
     "io_read_bytes", "io_write_bytes",

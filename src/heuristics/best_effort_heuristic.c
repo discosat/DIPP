@@ -29,7 +29,7 @@ COST_MODEL_LOOKUP_RESULT get_best_effort_implementation_config(Module *module, I
     int64_t now_us = (int64_t)time.tv_sec * 1000000 + (int64_t)time.tv_nsec / 1000;
     int64_t latency_requirement = (data->priority - now_us) / (int64_t)num_modules_left;
     float battery_level_wh = get_battery_level_wh();
-    float energy_requirement = (battery_level_wh - BATTERY_SAFETY_MARGIN_WH) * 1000000.0f; // current battery level minus safety margin (microwatt-hours)
+    float energy_requirement = (battery_level_wh - battery_safety_margin_wh) * 1000000.0f; // current battery level minus safety margin (microwatt-hours)
 
     MTR_COUNTER("main", "battery_level_uwh", (int)(battery_level_wh * 1000000.0f));
 

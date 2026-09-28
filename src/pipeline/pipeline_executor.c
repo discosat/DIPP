@@ -8,6 +8,7 @@
 #include "pipeline_executor.h"
 #include "process_module.h"
 #include "cost_store.h"
+#include "cost_model.h"
 #include "heuristics.h"
 #include "vmem_upload_local.h"
 #include "telemetry.h"
@@ -231,10 +232,22 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         //     }
         // }
 
+        /* The prediction this execution is scheduled and charged on: a
+           measured point at this input size, else the fitted model, else the
+           YAML hint (cost_model.c). Taken once, before the run, on the input
+           size the module actually sees. Energy is never measured on-board,
+           so this is also what the battery is debited (the store's energy is
+           the offline Otii characterisation, seeded, or the hint). */
+        int n_input = data->num_images;
+        uint32_t pred_latency_us;
+        float energy_cost;
+        CostSource cost_src = cost_model_predict(module_config, n_input, &pred_latency_us, &energy_cost);
+
         /* Always time the module. Previously this ran only on a cache miss, so
            499 of every 500 executions produced no latency sample at all. */
         struct timespec start, end;
         long elapsed_us = 0;
+        battery_simulator_board_busy(1); /* the board is powered while a module runs */
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         // printf("Starting execution in process\r\n");
@@ -243,27 +256,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         // printf("Finished execution\r\n");
 
         clock_gettime(CLOCK_MONOTONIC, &end);
+        battery_simulator_board_busy(0); /* ...and for the hold after it */
         elapsed_us = (end.tv_sec - start.tv_sec) * 1000000L + (end.tv_nsec - start.tv_nsec) / 1000L;
-
-        /* Energy debited to the battery for THIS execution.
-           Sources, in order of preference:
-             - the cost store, once an entry exists for this (module, config,
-               input size) -- seeded from the offline Otii characterisation;
-             - otherwise the YAML hint, which is all that is available on the
-               first execution of a given key.
-           This is deliberately a separate path from the value the heuristic
-           uses to predict: the store's estimate drives selection, this drives
-           the battery, and C7e needs to perturb one without the other. */
-        float energy_cost;
-        {
-            uint32_t cached_latency_us;
-            float cached_energy_uwh;
-            if (cost_store_impl->lookup(cost_store, picked_hash,
-                                        &cached_latency_us, &cached_energy_uwh) != -1)
-                energy_cost = cached_energy_uwh;
-            else
-                energy_cost = (float)module_config->energy_cost;
-        }
 
         // error encountered: the launcher has recorded it
         if (module_status == -1)
@@ -273,14 +267,9 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             return -1;
         }
 
-        if (lookup_result == FOUND_NOT_CACHED)
-        {
-            // First execution of this key: record what it actually cost.
-            printf("Inserting into cache. Latency=%ld us, Energy=%.2f uWh\n", elapsed_us, energy_cost);
-            cost_store_impl->insert(cost_store, picked_hash, elapsed_us, energy_cost);
-            MTR_INSTANT_I(__FILE__, "latency cache update", "latency_us", (int)elapsed_us);
-            MTR_INSTANT_I(__FILE__, "energy cache update", "energy_uwh", (int)energy_cost);
-        }
+        /* What it actually took, folded into the point for (config, n). */
+        cost_model_observe_latency(module_config, n_input, elapsed_us, energy_cost);
+        MTR_INSTANT_I(__FILE__, "latency observed", "latency_us", (int)elapsed_us);
 
         /* Charge the battery for EVERY execution. This used to sit inside the
            cache-miss branch above, so a 100-batch run drew energy 19 times
@@ -301,7 +290,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
             ResourceSample res;
             sample_resources(&res);
             printf("EXEC ts_us=%lld uuid=%s pipeline=%d module_index=%zu module=%s param_id=%d "
-                   "num_images=%d batch_bytes=%d cached=%d "
+                   "num_images=%d batch_bytes=%d cached=%d n_input=%d cost_src=%s "
                    "latency_pred_us=%u latency_meas_us=%ld "
                    "energy_pred_uwh=%u energy_debited_uwh=%.3f "
                    "battery_wh=%.6f deadline_us=%lld slack_us=%lld "
@@ -312,9 +301,9 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
                    pipeline->modules[i].module_name ? pipeline->modules[i].module_name : "?",
                    module_param_id,
                    data->num_images, data->batch_size,
-                   (lookup_result == FOUND_CACHED) ? 1 : 0,
-                   module_config->latency_cost, elapsed_us,
-                   module_config->energy_cost, energy_cost,
+                   (cost_src != COST_SRC_HINT) ? 1 : 0, n_input, cost_source_name(cost_src),
+                   pred_latency_us, elapsed_us,
+                   (unsigned)(energy_cost + 0.5f), energy_cost,
                    get_battery_level_wh(),
                    (long long)data->priority, (long long)(data->priority - now_us),
                    pq_impl ? (long)pq_impl->get_queue_size(ingest_pq) : -1L,

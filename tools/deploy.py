@@ -78,16 +78,23 @@ def main():
 
     # Remove before copying: BusyBox cp prompts on overwrite and the prompt
     # silently eats the rest of the command line.
-    board(f"rm -f /usr/share/pipeline/*.so {a.board_dir}/dipp "
-          f"{a.board_dir}/dipp_ctl {a.board_dir}/emulate_camera {a.board_dir}/run.sh "
-          f"{a.board_dir}/storage.vmem {a.board_dir}/*.profile {a.board_dir}/*.env; echo CLEARED", 300)
-    board(f"cd {stage_dir} && cp *.so /usr/share/pipeline/ && "
-          f"cp dipp dipp_ctl emulate_camera storage.vmem {a.board_dir}/ && "
-          f"(cp run.sh {a.board_dir}/ 2>/dev/null || true) && "
-          f"cp *.profile *.env {a.board_dir}/ && "
-          f"chmod +x /usr/share/pipeline/*.so {a.board_dir}/dipp "
-          f"{a.board_dir}/dipp_ctl {a.board_dir}/emulate_camera "
-          f"{a.board_dir}/run.sh 2>/dev/null; echo INSTALLED", 600)
+    #
+    # One short command per step. The single ~400-character clear and install
+    # lines this used to send hung the console driver past their timeouts
+    # twice (2026-09-29) although the first had run; the same steps sent short
+    # went through at once. The md5 check below is what says it worked.
+    steps = [
+        "rm -f /usr/share/pipeline/*.so",
+        f"cd {a.board_dir} && rm -f dipp dipp_ctl emulate_camera run.sh storage.vmem *.profile *.env",
+        f"cd {stage_dir} && cp *.so /usr/share/pipeline/",
+        f"cd {stage_dir} && cp dipp dipp_ctl emulate_camera storage.vmem {a.board_dir}/",
+        f"cd {stage_dir} && (cp run.sh {a.board_dir}/ 2>/dev/null || true)",
+        f"cd {stage_dir} && cp *.profile *.env {a.board_dir}/",
+        "chmod +x /usr/share/pipeline/*.so",
+        f"cd {a.board_dir} && chmod +x dipp dipp_ctl emulate_camera run.sh 2>/dev/null",
+    ]
+    for step in steps:
+        board(step + "; echo STEP_DONE", 120)
 
     dest = {}
     for name in manifest["artifacts"]:

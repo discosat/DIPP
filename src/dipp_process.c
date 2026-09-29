@@ -245,6 +245,22 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
     return SUCCESS;
 }
 
+/* Control messages already waiting when the daemon starts were sent to a
+   previous daemon: the SysV queue outlives the process that created it. A
+   stale CTL_BATTERY_ADVANCE would fast-forward THIS run's battery, so they
+   are discarded, not acted on, and counted in the log. */
+static void discard_stale_control_messages(void)
+{
+    int msg_queue_id = msgget(MSG_QUEUE_KEY, 0);
+    if (msg_queue_id == -1)
+        return;
+    int n = 0;
+    DippControlMsg m;
+    while (msgrcv(msg_queue_id, &m, sizeof(m) - sizeof(long), DIPP_CTL_MTYPE, IPC_NOWAIT) != -1)
+        n++;
+    printf("CTL_STALE_DISCARDED n=%d\n", n);
+}
+
 /* Drain harness control messages (mtype DIPP_CTL_MTYPE) -- see dipp_control.h.
    Returns the number handled. */
 static int drain_control_messages(void)
@@ -699,6 +715,8 @@ void process_images_loop()
                 qs[q]->items[k].shmid = -1;
         }
     }
+
+    discard_stale_control_messages();
 
     // Track last flush time to ensure mtr_flush is called at most once per 100ms
     struct timespec last_mtr_flush = {0, 0};

@@ -169,8 +169,28 @@ void setup_pipeline(param_t *param, int index)
 
 void setup_module_config(param_t *param, int index)
 {
+    /* An unconfigured slot is all zero bytes. get_param_buffer returns 0 for
+       it AND for a slot whose Brotli stream fails to decode, and a zero-length
+       protobuf "unpacks" to an all-zero config -- so tell the two apart here,
+       from the raw bytes, before either can masquerade as the other. */
+    {
+        uint8_t raw[DATA_PARAM_SIZE];
+        param_get_data(param, raw, DATA_PARAM_SIZE);
+        if (is_buffer_empty(raw, DATA_PARAM_SIZE))
+        {
+            printf("MODULE_SLOT_EMPTY slot=%d\n", param->id - MODULE_PARAMID_OFFSET + 1);
+            return;
+        }
+    }
+
     uint8_t *buffer = NULL;
     size_t buf_size = get_param_buffer(&buffer, param);
+    if (buf_size == 0)
+    {
+        printf("MODULE_CONFIG_REJECTED slot=%d reason=decode_failed\n",
+               param->id - MODULE_PARAMID_OFFSET + 1);
+        return;
+    }
     uint32_t hash = murmur3_32(buffer, buf_size, 42);
 
     ModuleConfig *mcon = module_config__unpack(NULL, buf_size, buffer);

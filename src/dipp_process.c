@@ -51,6 +51,7 @@ PriorityQueue *current_batch_source = NULL;
 /* Set while a batch that failed once is being re-run: the executor then picks
    the lowest effort of every remaining stage regardless of the heuristic. */
 int retry_lowest_effort = 0;
+int sched_quiet = 0;
 
 /* Durable record of every batch handed to the uplink, written after the
    upload and before the batch leaves its queue. The daemon's stdout is not
@@ -85,8 +86,11 @@ BatchOutcome process(ImageBatch *input_batch)
     MTR_BEGIN_FUNC_S("batch_uuid", input_batch->uuid);
     printf("Processing batch with pipeline ID %d, progress %d\n", input_batch->pipeline_id, input_batch->progress);
     int pipeline_result = load_pipeline_and_execute(input_batch);
-    printf("Pipeline execution returned %d\n", pipeline_result);
-    printf("Current progress after execution: %d\n", input_batch->progress);
+    if (!sched_quiet)
+    {
+        printf("Pipeline execution returned %d\n", pipeline_result);
+        printf("Current progress after execution: %d\n", input_batch->progress);
+    }
 
     if (pipeline_result == FAILURE)
     {
@@ -162,7 +166,8 @@ BatchOutcome process(ImageBatch *input_batch)
         }
         else
         {
-            printf("Pipeline partially executed successfully uuid=%s progress=%d\n", input_batch->uuid, input_batch->progress);
+            if (!sched_quiet)
+                printf("Pipeline partially executed successfully uuid=%s progress=%d\n", input_batch->uuid, input_batch->progress);
             err_current_pipeline = 0;
             err_current_module = 0;
             MTR_END_FUNC();
@@ -516,9 +521,23 @@ static int run_one_batch(PriorityQueue *src)
         return 1;
     }
 
-    printf("QUEUE_SELECT queue=%s uuid=%s progress=%d depth=%ld\n",
-           (src == ingest_pq) ? "ingest" : "partial", batch.uuid, batch.progress,
-           (long)pq_impl->get_queue_size(src));
+    /* An energy-halted batch is retried every pass of the main loop until the
+       battery allows its next module. Such a retry that makes no progress
+       changes nothing, so it is neither logged nor committed: before this,
+       one halted frame produced ~340 log lines AND ~340 queue msyncs per
+       second (67,616 lines / 8,408 commits in 25 s on the board, 2026-09-30)
+       -- eMMC writes for nothing, and a campaign-sized log. The halt is logged
+       once (SCHED_HALT) and its end once (SCHED_RESUME). */
+    static char halted_uuid[sizeof(batch.uuid)] = "";
+    static int halted_progress = -2;
+    static long long halted_since_us = 0;
+    int was_quiet = (src == partially_processed_pq && halted_uuid[0] &&
+                     strcmp(batch.uuid, halted_uuid) == 0 && batch.progress == halted_progress);
+    sched_quiet = was_quiet;
+    if (!was_quiet)
+        printf("QUEUE_SELECT queue=%s uuid=%s progress=%d depth=%ld\n",
+               (src == ingest_pq) ? "ingest" : "partial", batch.uuid, batch.progress,
+               (long)pq_impl->get_queue_size(src));
 
     current_batch_source = src;
 
@@ -561,6 +580,19 @@ static int run_one_batch(PriorityQueue *src)
 dispose:
     retry_lowest_effort = 0;
     current_batch_source = NULL;
+    if (was_quiet && !(outcome == BATCH_PARTIAL && batch.progress == progress_before))
+    {
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        long long now_us = (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+        printf("SCHED_RESUME ts_us=%lld uuid=%s progress_from=%d progress_now=%d halted_s=%.3f "
+               "battery_wh=%.4f\n",
+               now_us, batch.uuid, progress_before, batch.progress,
+               (now_us - halted_since_us) / 1e6, get_battery_level_wh());
+        halted_uuid[0] = '\0';
+        halted_progress = -2;
+        sched_quiet = 0;
+    }
 
     switch (outcome)
     {
@@ -608,6 +640,26 @@ dispose:
                 hybrid_drop_segment(&batch);
                 batch.progress = progress_before;
             }
+        }
+        if (src == partially_processed_pq && batch.progress == progress_before)
+        {
+            /* Halted again with nothing done: the entry is already exactly
+               this, so there is nothing to commit. */
+            if (!was_quiet)
+            {
+                struct timespec ts;
+                clock_gettime(CLOCK_MONOTONIC, &ts);
+                halted_since_us = (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+                strncpy(halted_uuid, batch.uuid, sizeof(halted_uuid) - 1);
+                halted_progress = batch.progress;
+                printf("SCHED_HALT ts_us=%lld uuid=%s progress=%d battery_wh=%.4f margin_wh=%.2f "
+                       "ingest_depth=%ld partial_depth=%ld\n",
+                       halted_since_us, batch.uuid, batch.progress, get_battery_level_wh(),
+                       battery_safety_margin_wh, (long)pq_impl->get_queue_size(ingest_pq),
+                       (long)pq_impl->get_queue_size(partially_processed_pq));
+            }
+            sched_quiet = 0;
+            return 2;
         }
         if (src == partially_processed_pq)
         {
@@ -668,6 +720,33 @@ dispose:
     }
     }
     return 1;
+}
+
+/* Scheduler state, logged on every transition (SCHED_STATE): what the trace
+   harness waits on before it fast-forwards a gap -- the daemon is idle (both
+   queues empty) or halted (queued work, none of it runnable on this battery).
+   A retry of a halted batch is polled every HALT_POLL_US, not spun on. */
+#define HALT_POLL_US 200000
+enum
+{
+    SCHED_UNKNOWN = 0,
+    SCHED_BUSY,
+    SCHED_IDLE,
+    SCHED_HALTED,
+};
+static void sched_set_state(int state)
+{
+    static int current = SCHED_UNKNOWN;
+    if (state == current)
+        return;
+    current = state;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    printf("SCHED_STATE ts_us=%lld state=%s ingest_depth=%ld partial_depth=%ld battery_wh=%.4f\n",
+           (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000,
+           state == SCHED_BUSY ? "busy" : state == SCHED_IDLE ? "idle" : "halted",
+           (long)pq_impl->get_queue_size(ingest_pq),
+           (long)pq_impl->get_queue_size(partially_processed_pq), get_battery_level_wh());
 }
 
 void process_images_loop()
@@ -776,18 +855,25 @@ void process_images_loop()
         }
 
         // Prefer the partially processed queue, then fall back to ingest.
-        int did_work = run_one_batch(partially_processed_pq);
-        if (!did_work)
-            did_work = run_one_batch(ingest_pq);
-        if (!did_work)
+        // run_one_batch: 1 = work done, 0 = queue empty, 2 = head is halted
+        // (energy) and made no progress.
+        int rp = run_one_batch(partially_processed_pq);
+        int ri = (rp == 1) ? 0 : run_one_batch(ingest_pq);
+        if (rp != 1 && ri != 1)
         {
-            usleep(1000); // nothing queued; wait for new data
+            int halted = (rp == 2);
+            sched_set_state(halted ? SCHED_HALTED : SCHED_IDLE);
+            /* Nothing can run. Idle: poll for new data every 1 ms, as before.
+               Halted: the battery changes on a scale of seconds, so re-check
+               every HALT_POLL_US instead of spinning on the same refusal. */
+            usleep(halted ? HALT_POLL_US : 1000);
             continue;
         }
+        sched_set_state(SCHED_BUSY);
 
         // Keep ingest draining even while the partial queue has work, so a
         // steady stream of partially processed batches cannot starve arrivals.
-        if (pq_impl->get_queue_size(partially_processed_pq) < MAX_PARTIAL_QUEUE_SIZE)
+        if (rp == 1 && pq_impl->get_queue_size(partially_processed_pq) < MAX_PARTIAL_QUEUE_SIZE)
             run_one_batch(ingest_pq);
     }
 

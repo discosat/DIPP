@@ -150,7 +150,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
 {
     MTR_BEGIN_FUNC();
 
-    printf("Starting pipeline execution from module %d out of %zu modules\n", data->progress + 1, pipeline->num_modules);
+    if (!sched_quiet)
+        printf("Starting pipeline execution from module %d out of %zu modules\n", data->progress + 1, pipeline->num_modules);
 
     for (size_t i = data->progress + 1; i < pipeline->num_modules; ++i)
     {
@@ -158,7 +159,8 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         int module_param_id = -1;
         uint32_t picked_hash;
 
-        printf("Starting the execution of %ldth module\n", i);
+        if (!sched_quiet)
+            printf("Starting the execution of %ldth module\n", i);
 
         // printf("Looking up the best param_id using heuristic\r\n");
         // pick the module effort level using the currently set heuristic

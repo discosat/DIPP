@@ -28,6 +28,9 @@ extern PriorityQueue *partially_processed_pq;
 extern CostStore *cost_store;
 extern StorageMode global_storage_mode;
 extern int retry_lowest_effort;
+/* Set while re-trying a batch that was halted and has made no progress since:
+   such a retry changes nothing, so it is not logged (dipp_process.c). */
+extern int sched_quiet;
 
 // Main processing loop running in a thread
 // This loop first initialiazes queues, which possibly already hold elements,

@@ -1,0 +1,36 @@
+# Size-sweep configuration (Stage 5a step 4). The flight config with ONE change:
+# pipelines 4 and 5 pin the monolith to its high (slot 10) and low (slot 9)
+# configuration, so each is measured on its own. Every module slot points at
+# the flight module_<k>.yaml unchanged, so every config hash -- and with it every
+# measured cost -- is exactly the flight config's (tools/seed_cost_store.py
+# --verify-console confirms it on the sweep's own console). Pipeline 5's flight
+# role (adaptive JPEG XL, slots 11/12) is not measured here.
+pipelines:
+  1: ../../board/flight-config/pipeline_1.yaml
+  2: ../../board/flight-config/pipeline_2.yaml
+  3: ../../board/flight-config/pipeline_3.yaml
+  4: pipeline_4.yaml
+  5: pipeline_5.yaml
+  6: ../../board/flight-config/pipeline_6.yaml
+modules:
+  1: ../../board/flight-config/module_1.yaml
+  2: ../../board/flight-config/module_2.yaml
+  3: ../../board/flight-config/module_3.yaml
+  4: ../../board/flight-config/module_4.yaml
+  5: ../../board/flight-config/module_5.yaml
+  6: ../../board/flight-config/module_6.yaml
+  7: ../../board/flight-config/module_7.yaml
+  8: ../../board/flight-config/module_8.yaml
+  9: ../../board/flight-config/module_9.yaml
+  10: ../../board/flight-config/module_10.yaml
+  11: ../../board/flight-config/module_11.yaml
+  12: ../../board/flight-config/module_12.yaml
+  13: ../../board/flight-config/module_13.yaml
+  14: ../../board/flight-config/module_14.yaml
+  15: ../../board/flight-config/module_15.yaml
+  16: ../../board/flight-config/module_16.yaml
+  17: ../../board/flight-config/module_17.yaml
+  18: ../../board/flight-config/module_18.yaml
+  19: ../../board/flight-config/module_19.yaml
+radio_node_id: 0
+module_timeout: 120  # as the flight config (see its comment)

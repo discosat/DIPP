@@ -38,6 +38,7 @@ ROOT = os.path.dirname(HERE)
 FLIGHT = os.environ.get("FLIGHT_CONFIG", os.path.join(ROOT, "experiments", "board", "flight-config"))
 BOARD_DIR = "/home/root/tmp-experiments"
 sys.path.insert(0, HERE)
+import campaign  # noqa: E402  (BENCH_RUN_ARGS, Energy)
 
 PIPE_CLASSIFY = """pipeline:
 - name: libdemosaic
@@ -333,7 +334,7 @@ def run_once(label, n, energy, kind="classification", min_drain=20, env="",
     # daemon the run script starts.
     board(f"cd {BOARD_DIR} && ({env}setsid ./run.sh --label {label} --pipeline 2 "
           f"--storage MEM --heuristic BEST_EFFORT --load populate "
-          f"--n {n} --images 1 --no-trace --min-drain {min_drain} "
+          f"--n {n} --images 1 --no-trace --min-drain {min_drain} {campaign.BENCH_RUN_ARGS} "
           + (f"--image {image} " if image else "") +
           f"> run_{label}.log 2>&1 &) ; "
           f"printf 'ST%s\\n' ARTED", 60)

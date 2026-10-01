@@ -18,6 +18,8 @@ quarantine record exists.
 import argparse, json, os, re, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import campaign  # noqa: E402  (BENCH_RUN_ARGS)
 REPO = os.path.dirname(HERE)
 FLIGHT = os.path.join(REPO, "experiments", "board", "flight-config")
 BOARD_DIR = "/home/root/tmp-experiments"
@@ -78,7 +80,7 @@ def run_case(case, image, drain):
     board(f"cd {BOARD_DIR} && ./shmclean; rm -rf /usr/share/dipp/quarantine; rm -f /usr/share/dipp/data/batch_*", 60)
     board(f"cd {BOARD_DIR} && (setsid ./run.sh --label {label} --pipeline 2 --storage MEM "
           f"--heuristic BEST_EFFORT --load populate --n 1 --images 1 --no-trace "
-          f"--min-drain {drain} --image {image} > run_{label}.log 2>&1 &); printf 'ST%s\\n' ARTED", 60)
+          f"--min-drain {drain} --image {image} {campaign.BENCH_RUN_ARGS} > run_{label}.log 2>&1 &); printf 'ST%s\\n' ARTED", 60)
     deadline = time.time() + 240 + drain * 3 + (120 if case == 12 else 0)
     alive_during = None
     while time.time() < deadline:

@@ -1,0 +1,91 @@
+# Stage 5a step 4: the input-size sweep. tools/size_sweep.py runs it against a
+# set staged from experiments/sweeps/size-sweep/ (monolith pinned per pipeline;
+# module hashes identical to the flight config).
+#
+# A downstream stage's input is set by frame CONTENT, not only by frames per
+# batch, so sizes come from three sources:
+#   - one frame per batch across content: six natural validation frames (4, 8,
+#     10, 12, 15, 16 water tiles; ~2-15 tiles reach segmentation), a matched
+#     test frame (~70 to segmentation, ~23 to the encoder: the campaign
+#     operating point) and a keep-all frame (99/99);
+#   - natural frames at 2 and 4 frames per batch: emulate_camera repeats the
+#     frame, so k x (tiles kept per frame) fills the ~15-55 gap between natural
+#     and matched content;
+#   - matched and keep-all at 2, 3, 5 frames per batch: the large end, and the
+#     frame-level stages (demosaic, tile, monolith) at 1-5 frames.
+# Static pipelines 2/6/3 hold every stage at one effort; the monolith is
+# pinned low (pipeline 5) and high (pipeline 4) by the sweep config.
+# Every cell fits the 120 s module timeout (slowest: J2K high on keep-all at
+# k=5, ~37.5 s); the pilot hit the old 30 s limit (monolith high, k=5).
+run_set: size-sweep
+outdir: analysis/size-sweep
+settings: {storage: HYBRID, idle_s: 60, min_drain: 30}
+runs:
+- {label: p2-low-val04-k1, pipeline: 2, image: cs12_validation_04.bayerRG, images: 1, n: 6}
+- {label: p2-low-val11-k1, pipeline: 2, image: cs12_validation_11.bayerRG, images: 1, n: 6}
+- {label: p2-low-val06-k1, pipeline: 2, image: cs12_validation_06.bayerRG, images: 1, n: 6}
+- {label: p2-low-val00-k1, pipeline: 2, image: cs12_validation_00.bayerRG, images: 1, n: 6}
+- {label: p2-low-val07-k1, pipeline: 2, image: cs12_validation_07.bayerRG, images: 1, n: 6}
+- {label: p2-low-val01-k1, pipeline: 2, image: cs12_validation_01.bayerRG, images: 1, n: 6}
+- {label: p2-low-test_matched_00-k1, pipeline: 2, image: cs12_test_matched_00.bayerRG, images: 1, n: 6}
+- {label: p2-low-test_matchedkeep_00-k1, pipeline: 2, image: cs12_test_matchedkeep_00.bayerRG, images: 1, n: 6}
+- {label: p2-low-val11-k2, pipeline: 2, image: cs12_validation_11.bayerRG, images: 2, n: 5}
+- {label: p2-low-val11-k4, pipeline: 2, image: cs12_validation_11.bayerRG, images: 4, n: 3}
+- {label: p2-low-val00-k2, pipeline: 2, image: cs12_validation_00.bayerRG, images: 2, n: 5}
+- {label: p2-low-val00-k4, pipeline: 2, image: cs12_validation_00.bayerRG, images: 4, n: 3}
+- {label: p2-low-val01-k2, pipeline: 2, image: cs12_validation_01.bayerRG, images: 2, n: 5}
+- {label: p2-low-val01-k4, pipeline: 2, image: cs12_validation_01.bayerRG, images: 4, n: 3}
+- {label: p2-low-test_matched_00-k2, pipeline: 2, image: cs12_test_matched_00.bayerRG, images: 2, n: 5}
+- {label: p2-low-test_matched_00-k3, pipeline: 2, image: cs12_test_matched_00.bayerRG, images: 3, n: 4}
+- {label: p2-low-test_matched_00-k5, pipeline: 2, image: cs12_test_matched_00.bayerRG, images: 5, n: 3}
+- {label: p2-low-test_matchedkeep_00-k2, pipeline: 2, image: cs12_test_matchedkeep_00.bayerRG, images: 2, n: 5}
+- {label: p2-low-test_matchedkeep_00-k3, pipeline: 2, image: cs12_test_matchedkeep_00.bayerRG, images: 3, n: 4}
+- {label: p2-low-test_matchedkeep_00-k5, pipeline: 2, image: cs12_test_matchedkeep_00.bayerRG, images: 5, n: 3}
+- {label: p6-medium-val04-k1, pipeline: 6, image: cs12_validation_04.bayerRG, images: 1, n: 6}
+- {label: p6-medium-val11-k1, pipeline: 6, image: cs12_validation_11.bayerRG, images: 1, n: 6}
+- {label: p6-medium-val06-k1, pipeline: 6, image: cs12_validation_06.bayerRG, images: 1, n: 6}
+- {label: p6-medium-val00-k1, pipeline: 6, image: cs12_validation_00.bayerRG, images: 1, n: 6}
+- {label: p6-medium-val07-k1, pipeline: 6, image: cs12_validation_07.bayerRG, images: 1, n: 6}
+- {label: p6-medium-val01-k1, pipeline: 6, image: cs12_validation_01.bayerRG, images: 1, n: 6}
+- {label: p6-medium-test_matched_00-k1, pipeline: 6, image: cs12_test_matched_00.bayerRG, images: 1, n: 6}
+- {label: p6-medium-test_matchedkeep_00-k1, pipeline: 6, image: cs12_test_matchedkeep_00.bayerRG, images: 1, n: 6}
+- {label: p6-medium-val11-k2, pipeline: 6, image: cs12_validation_11.bayerRG, images: 2, n: 5}
+- {label: p6-medium-val11-k4, pipeline: 6, image: cs12_validation_11.bayerRG, images: 4, n: 3}
+- {label: p6-medium-val00-k2, pipeline: 6, image: cs12_validation_00.bayerRG, images: 2, n: 5}
+- {label: p6-medium-val00-k4, pipeline: 6, image: cs12_validation_00.bayerRG, images: 4, n: 3}
+- {label: p6-medium-val01-k2, pipeline: 6, image: cs12_validation_01.bayerRG, images: 2, n: 5}
+- {label: p6-medium-val01-k4, pipeline: 6, image: cs12_validation_01.bayerRG, images: 4, n: 3}
+- {label: p6-medium-test_matched_00-k2, pipeline: 6, image: cs12_test_matched_00.bayerRG, images: 2, n: 5}
+- {label: p6-medium-test_matched_00-k3, pipeline: 6, image: cs12_test_matched_00.bayerRG, images: 3, n: 4}
+- {label: p6-medium-test_matched_00-k5, pipeline: 6, image: cs12_test_matched_00.bayerRG, images: 5, n: 3}
+- {label: p6-medium-test_matchedkeep_00-k2, pipeline: 6, image: cs12_test_matchedkeep_00.bayerRG, images: 2, n: 5}
+- {label: p6-medium-test_matchedkeep_00-k3, pipeline: 6, image: cs12_test_matchedkeep_00.bayerRG, images: 3, n: 4}
+- {label: p6-medium-test_matchedkeep_00-k5, pipeline: 6, image: cs12_test_matchedkeep_00.bayerRG, images: 5, n: 3}
+- {label: p3-high-val04-k1, pipeline: 3, image: cs12_validation_04.bayerRG, images: 1, n: 6}
+- {label: p3-high-val11-k1, pipeline: 3, image: cs12_validation_11.bayerRG, images: 1, n: 6}
+- {label: p3-high-val06-k1, pipeline: 3, image: cs12_validation_06.bayerRG, images: 1, n: 6}
+- {label: p3-high-val00-k1, pipeline: 3, image: cs12_validation_00.bayerRG, images: 1, n: 6}
+- {label: p3-high-val07-k1, pipeline: 3, image: cs12_validation_07.bayerRG, images: 1, n: 6}
+- {label: p3-high-val01-k1, pipeline: 3, image: cs12_validation_01.bayerRG, images: 1, n: 6}
+- {label: p3-high-test_matched_00-k1, pipeline: 3, image: cs12_test_matched_00.bayerRG, images: 1, n: 6}
+- {label: p3-high-test_matchedkeep_00-k1, pipeline: 3, image: cs12_test_matchedkeep_00.bayerRG, images: 1, n: 6}
+- {label: p3-high-val11-k2, pipeline: 3, image: cs12_validation_11.bayerRG, images: 2, n: 5}
+- {label: p3-high-val11-k4, pipeline: 3, image: cs12_validation_11.bayerRG, images: 4, n: 3}
+- {label: p3-high-val00-k2, pipeline: 3, image: cs12_validation_00.bayerRG, images: 2, n: 5}
+- {label: p3-high-val00-k4, pipeline: 3, image: cs12_validation_00.bayerRG, images: 4, n: 3}
+- {label: p3-high-val01-k2, pipeline: 3, image: cs12_validation_01.bayerRG, images: 2, n: 5}
+- {label: p3-high-val01-k4, pipeline: 3, image: cs12_validation_01.bayerRG, images: 4, n: 3}
+- {label: p3-high-test_matched_00-k2, pipeline: 3, image: cs12_test_matched_00.bayerRG, images: 2, n: 5}
+- {label: p3-high-test_matched_00-k3, pipeline: 3, image: cs12_test_matched_00.bayerRG, images: 3, n: 4}
+- {label: p3-high-test_matched_00-k5, pipeline: 3, image: cs12_test_matched_00.bayerRG, images: 5, n: 3}
+- {label: p3-high-test_matchedkeep_00-k2, pipeline: 3, image: cs12_test_matchedkeep_00.bayerRG, images: 2, n: 5}
+- {label: p3-high-test_matchedkeep_00-k3, pipeline: 3, image: cs12_test_matchedkeep_00.bayerRG, images: 3, n: 4}
+- {label: p3-high-test_matchedkeep_00-k5, pipeline: 3, image: cs12_test_matchedkeep_00.bayerRG, images: 5, n: 3}
+- {label: p5-mono-low-test_matched_00-k1, pipeline: 5, image: cs12_test_matched_00.bayerRG, images: 1, n: 6}
+- {label: p5-mono-low-test_matched_00-k2, pipeline: 5, image: cs12_test_matched_00.bayerRG, images: 2, n: 5}
+- {label: p5-mono-low-test_matched_00-k3, pipeline: 5, image: cs12_test_matched_00.bayerRG, images: 3, n: 4}
+- {label: p5-mono-low-test_matched_00-k5, pipeline: 5, image: cs12_test_matched_00.bayerRG, images: 5, n: 3}
+- {label: p4-mono-high-test_matched_00-k1, pipeline: 4, image: cs12_test_matched_00.bayerRG, images: 1, n: 6}
+- {label: p4-mono-high-test_matched_00-k2, pipeline: 4, image: cs12_test_matched_00.bayerRG, images: 2, n: 5}
+- {label: p4-mono-high-test_matched_00-k3, pipeline: 4, image: cs12_test_matched_00.bayerRG, images: 3, n: 4}
+- {label: p4-mono-high-test_matched_00-k5, pipeline: 4, image: cs12_test_matched_00.bayerRG, images: 5, n: 3}

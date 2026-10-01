@@ -48,7 +48,7 @@ def build(manifest_path: Path, out: Path) -> int:
         img[vc.OFF_RADIO] = int(man["radio_node_id"]) & 0xFF
     if "module_timeout" in man:
         struct.pack_into("<I", img, vc.OFF_TIMEOUT, int(man["module_timeout"]))
-        print(f"  module_timeout = {man['module_timeout']} us @ 0x{vc.OFF_TIMEOUT:04X}")
+        print(f"  module_timeout = {man['module_timeout']} s @ 0x{vc.OFF_TIMEOUT:04X}")
 
     out.write_bytes(bytes(img))
     print(f"\nwrote {out} ({len(img)} bytes, {used} slots populated)")

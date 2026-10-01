@@ -38,6 +38,15 @@ import yaml
 HERE = os.path.dirname(os.path.abspath(__file__))
 BOARD_DIR = "/home/root/tmp-experiments"
 
+# The setting every COST benchmark runs under (bench_models.py, size_sweep.py,
+# phase4_e2e.py, fault_inject.py): those measure what a module costs, so the
+# power model must never gate them. A full battery from orbit phase 0.3 is
+# 31 min of sunlight before the eclipse could pull it under the margin; the
+# 60 s SLO is the old emulate_camera default; the store starts empty. Stated
+# once, here, so no bench inherits a value silently.
+BENCH_RUN_ARGS = ("--platform disco2-bol.env --soc0 1.0 --phase0 0.3 "
+                  "--slo 60 --cost-seed none")
+
 # A campaign runs for hours; block-buffered stdout means no visible progress
 # until it ends, and no partial record if it is killed.
 sys.stdout.reconfigure(line_buffering=True)

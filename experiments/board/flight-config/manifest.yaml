@@ -26,4 +26,12 @@ modules:
   18: module_18.yaml
   19: module_19.yaml
 radio_node_id: 0
-module_timeout: 30   # SECONDS: the daemon passes this straight to alarm(). 0 = alarm(0) = no timeout, which is why MODULE_EXIT_TIMEOUT never fired; the daemon now floors 0 to 30 s. Must exceed the slowest stage, JPEG XL e5 at 20.3 s per frame.
+# SECONDS: the daemon passes this straight to alarm(). 0 = alarm(0) = no
+# timeout, which is why MODULE_EXIT_TIMEOUT never fired; the daemon now floors
+# 0 to 30 s. Its job is to catch a HUNG module, not to cap legitimate work: a
+# batch of k frames puts k x (per-frame time) into one execution, and 30 s
+# killed the high-effort monolith at k=5 (6.1 s x 5 = 30.7 s), retried it and
+# quarantined it (size sweep pilot, 2026-10-01). 120 s covers the slowest
+# configuration, JPEG XL e5 at 20.3 s per frame, up to k=5 (~101 s), and still
+# catches a real hang within two minutes.
+module_timeout: 120

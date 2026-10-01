@@ -17,6 +17,7 @@ import argparse, json, os, re, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import campaign  # noqa: E402  (BENCH_RUN_ARGS)
 REPO = os.path.dirname(HERE)
 FLIGHT = os.path.join(REPO, "experiments", "board", "flight-config")
 BOARD_DIR = "/home/root/tmp-experiments"
@@ -56,7 +57,7 @@ def run(pipeline, n, image, drain, energy, label, idle=0, storage="MEM", env="")
     energy.start()
     board(f"cd {BOARD_DIR} && ({env}setsid ./run.sh --label {label} --pipeline {pipeline} "
           f"--storage {storage} --heuristic BEST_EFFORT --load populate --n {n} --images 1 "
-          f"--no-trace --min-drain {drain} --image {image} > run_{label}.log 2>&1 &); "
+          f"--no-trace --min-drain {drain} --image {image} {campaign.BENCH_RUN_ARGS} > run_{label}.log 2>&1 &); "
           f"printf 'ST%s\\n' ARTED", 60)
     deadline = time.time() + 180 + n * 200 + drain * 3
     silent = 0

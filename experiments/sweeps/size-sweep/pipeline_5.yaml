@@ -1,0 +1,6 @@
+# Size sweep: the monolith pinned to its LOW configuration (slot 9).
+pipeline:
+- name: libsingle_module
+  implementations:
+  - param_id: 9
+    effort_level: default

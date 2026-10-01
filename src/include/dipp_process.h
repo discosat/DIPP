@@ -31,6 +31,8 @@ extern int retry_lowest_effort;
 /* Set while re-trying a batch that was halted and has made no progress since:
    such a retry changes nothing, so it is not logged (dipp_process.c). */
 extern int sched_quiet;
+/* Called before each module execution: logs SCHED_STATE busy on transition. */
+void sched_note_module_start(void);
 
 // Main processing loop running in a thread
 // This loop first initialiazes queues, which possibly already hold elements,

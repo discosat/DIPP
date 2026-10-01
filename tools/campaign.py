@@ -18,10 +18,19 @@ unattended. Two properties matter more than speed:
 Matrix:
 
     run_set: c4-table6
-    defaults: {n: 20, images: 1, seed: 43, load: populate}
+    defaults: {n: 20, images: 1, seed: 43, load: populate, slo: 15,
+               platform: disco2-bol.env, soc0: 0.95, phase0: 0.3}
     runs:
       - {label: decomposed-mmap-low, pipeline: 2, storage: MMAP,
          heuristic: BEST_EFFORT, reps: 5}
+
+Every spec names its platform and initial conditions (the power model has no
+defaults), and its load: `populate` needs `slo`; `poisson` needs `slo` and
+`mean`; every spec needs `cost_seed` (`cost.seed`, staged by stage.sh, or
+`none`); `trace` needs `arrivals` (a host path to a trace file, pushed to the
+board once per md5), `idle_window`, `ff_chunk`, `ff_tick` and `tail_ff`. The
+whole matrix is checked before the first run, so a missing key fails at once
+rather than at run 37. (`trace: false` is unrelated: it turns off minitrace.)
 """
 import argparse, hashlib, json, os, subprocess, sys, time
 import yaml
@@ -183,6 +192,70 @@ def reboot_and_wait(timeout=240):
     return board_is_up(timeout, settle=45)
 
 
+LOAD_KEYS = {
+    "populate": ("slo",),
+    "poisson": ("slo", "mean"),
+    "trace": ("arrivals", "idle_window", "ff_chunk", "ff_tick", "tail_ff"),
+}
+
+
+def spec_problems(spec):
+    """Everything a spec lacks, so the whole matrix can be refused up front."""
+    out = [f"lacks {k}" for k in ("label", "pipeline", "storage", "heuristic",
+                                   "platform", "soc0", "phase0", "load", "cost_seed")
+           if k not in spec]
+    load = spec.get("load")
+    if load is not None and load not in LOAD_KEYS:
+        out.append(f"unknown load {load!r}")
+    for k in LOAD_KEYS.get(load, ()):
+        if k not in spec:
+            out.append(f"load {load} lacks {k}")
+    if load == "trace" and "arrivals" in spec and not os.path.isfile(spec["arrivals"]):
+        out.append(f"arrivals file not found: {spec['arrivals']}")
+    return out
+
+
+def md5_file(path):
+    h = hashlib.md5()
+    with open(path, "rb") as fh:
+        for blk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(blk)
+    return h.hexdigest()
+
+
+def push_arrivals(path):
+    """The trace lives on the board as arrivals/<md5>.trace, pushed once."""
+    m = md5_file(path)
+    remote = f"{BOARD_DIR}/arrivals/{m}.trace"
+    if remote_md5(remote) == m:
+        return remote
+    board(f"mkdir -p {BOARD_DIR}/arrivals; echo MK", 60)
+    r = subprocess.run([os.path.join(HERE, "board_push.py"), path, remote],
+                       capture_output=True, text=True, timeout=1800)
+    if "MATCH" not in r.stdout or remote_md5(remote) != m:
+        raise RuntimeError(f"push of {path} to {remote} did not verify")
+    return remote
+
+
+def trace_budget(path, spec):
+    """Seconds to allow a trace run: its compressed clock, the backlog after
+    every burst, the quiescence wait and fast-forward chunks at every gap."""
+    t_last, frames, gaps, ff_total = 0.0, 0, 0, 0.0
+    for line in open(path):
+        f = line.split()
+        if not f or f[0].startswith("#"):
+            continue
+        frames += 1
+        t_last = float(f[0])
+        ff = float(f[1])
+        if ff > 0:
+            gaps += 1
+            ff_total += ff
+    chunks = (ff_total + float(spec["tail_ff"])) / float(spec["ff_chunk"])
+    return int(300 + t_last + frames * 15 + gaps * (float(spec["idle_window"]) + 60)
+               + chunks * (float(spec["ff_tick"]) + 1))
+
+
 def run_one(spec, outdir, energy):
     label = spec["label"]
     dest = os.path.join(outdir, label)
@@ -203,30 +276,36 @@ def run_one(spec, outdir, energy):
         print(f"  {label}: FAILED (board did not come back)")
         return "failed"
 
-    # The battery simulator has no defaults: every run names its platform and
-    # initial conditions (tests/board/run.sh, experiments/platforms/).
-    missing = [k for k in ("platform", "soc0", "phase0") if k not in spec]
-    if missing:
-        raise SystemExit(f"{label}: spec lacks {', '.join(missing)} -- the power model "
-                         f"has no defaults (experiments/platforms/README.md)")
+    load = spec["load"]
     args = (f"--label {label} --pipeline {spec['pipeline']} --storage {spec['storage']} "
-            f"--heuristic {spec['heuristic']} --load {spec.get('load','populate')} "
+            f"--heuristic {spec['heuristic']} --load {load} "
             f"--n {spec.get('n',20)} --images {spec.get('images',1)} "
             f"--seed {spec.get('seed',43)}")
     args += f" --platform {spec['platform']} --soc0 {spec['soc0']} --phase0 {spec['phase0']}"
+    args += f" --cost-seed {spec['cost_seed']}"
     if spec.get("image"):
         args += f" --image {spec['image']}"
     if spec.get("keep_cost_cache"):
         args += " --keep-cost-cache"
     if spec.get("trace") is False:
         args += " --no-trace"
+    if load in ("populate", "poisson"):
+        args += f" --slo {spec['slo']}"
+    if load == "poisson":
+        args += f" --mean {spec['mean']}"
+    if load == "trace":
+        remote = push_arrivals(spec["arrivals"])
+        args += (f" --trace {remote} --idle-window {spec['idle_window']} "
+                 f"--ff-chunk {spec['ff_chunk']} --ff-tick {spec['ff_tick']} "
+                 f"--tail-ff {spec['tail_ff']}")
 
     energy.start()
     t0 = time.time()
     board(f"cd {BOARD_DIR} && (setsid ./run.sh {args} > run_{label}.log 2>&1 &) ; echo STARTED", 60)
 
     remote_board_json = f"{BOARD_DIR}/runs/{label}/board.json"
-    budget = 120 + int(spec.get("n", 20)) * 30
+    budget = (trace_budget(spec["arrivals"], spec) if load == "trace"
+              else 120 + int(spec.get("n", 20)) * 30)
     deadline = time.time() + budget
     while time.time() < deadline:
         time.sleep(15)
@@ -251,7 +330,8 @@ def run_one(spec, outdir, energy):
     board(f"cd {BOARD_DIR}/runs/{label} && gzip -9 -f console.log trace.json 2>/dev/null; echo GZ", 120)
     got = {}
     for name in ("board.json", "pre.txt", "post.txt", "console.log.gz",
-                 "trace.json.gz", "storage.vmem", "predictions.txt", "kept_pixels.txt"):
+                 "trace.json.gz", "storage.vmem", "predictions.txt", "kept_pixels.txt",
+                 "feed.log"):
         remote = f"{BOARD_DIR}/runs/{label}/{name}"
         m = remote_md5(remote)
         if not m:
@@ -298,6 +378,13 @@ def main():
             s = dict(base)
             s["label"] = f"{base['label']}-{i:02d}" if reps > 1 else base["label"]
             specs.append(s)
+
+    bad = [f"{s.get('label', '?')}: {p}" for s in specs for p in spec_problems(s)]
+    if bad:
+        print("REFUSING the matrix -- nothing has run:", file=sys.stderr)
+        for b in bad:
+            print("  " + b, file=sys.stderr)
+        return 2
 
     outdir = os.path.join(a.outdir, m.get("run_set", "campaign"))
     os.makedirs(outdir, exist_ok=True)

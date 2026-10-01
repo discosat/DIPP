@@ -134,3 +134,33 @@ integrated while `log_state` printed the phase it had reached, so a
 `BATTERY_FF` line ending just after sunrise printed a sunlit phase beside
 `state=ECLIPSE`. The reported state is now sampled at the new time; the
 integration still uses the start-of-step power.
+
+## `test_feed_trace.sh`
+
+```sh
+sh tests/test_feed_trace.sh        # from the repository root, ~40 s
+```
+
+Host test for `tests/board/feed_trace.sh`, the trace-replay feeder `run.sh
+--load trace` calls, against a stub daemon: `dipp_ctl` appends the
+`BATTERY_FF`/`MARK` lines the daemon would log, the camera records its
+arguments, and `SCHED_STATE` lines are written into a fake console. Checks
+that frames land within 0.5 s of their simulated times; a compressed gap is
+fast-forwarded only once the daemon is idle or halted, never past the next
+frame, and less the wall time already spent in it; every advance is confirmed
+by a `BATTERY_FF` line; the tail fast-forwards while halted and stops once the
+daemon is idle; each frame's SLO reaches the camera; and seven kinds of
+malformed trace plus a missing argument are refused before anything is fed.
+
+It caught nothing on the host that the board did not also show, but the board
+showed one thing the first version missed: the quiescence wait reused the
+loop's `t` and logged a wall-clock value as the trace time of every frame after
+a gap. The check `feed.log records each frame's own trace time` pins it.
+
+On the board (2026-09-30): a 6-frame trace with one 3,000 s compressed gap
+landed every frame within 0.6 s of its simulated time, the second burst halted
+in eclipse below the margin, the tail recharged it and all 6 completed;
+`BATTERY_FF` summed to the feeder's 5,188.1 s; all 31 eclipse chunks cost
+0.21780-0.21790 Wh against 13.07 W x 60 s = 0.21783 Wh. An urgent frame (SLO
+15 s) fed behind five routine ones (SLO 300 s) on static high completed
+second.

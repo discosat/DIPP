@@ -18,8 +18,21 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODULES="$(cd "$HERE/../tf-dipp-module" && pwd)"
 STRIP=aarch64-linux-gnu-strip
 
-SET_NAME="${1:?usage: stage.sh <run-set-name> [config-manifest]}"
-CONFIG_MANIFEST="${2:-$HERE/experiments/board/flight-config/manifest.yaml}"
+# stage.sh <run-set-name> [config-manifest] --cost-model hints|<cost_model.json>
+# The cost seed's source is required: "hints" (one constant line per slot at
+# its YAML hint) or a fitted cost_model.json (tools/seed_cost_store.py).
+COST_MODEL=""
+POS=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --cost-model) COST_MODEL="${2:?--cost-model needs hints or a cost_model.json}"; shift 2;;
+        *) POS+=("$1"); shift;;
+    esac
+done
+SET_NAME="${POS[0]:?usage: stage.sh <run-set-name> [config-manifest] --cost-model hints|<cost_model.json>}"
+CONFIG_MANIFEST="${POS[1]:-$HERE/experiments/board/flight-config/manifest.yaml}"
+[ -n "$COST_MODEL" ] || { echo "stage.sh: --cost-model hints|<cost_model.json> is required" >&2; exit 2; }
+[ "$COST_MODEL" = hints ] || [ -f "$COST_MODEL" ] || { echo "stage.sh: cost model not found: $COST_MODEL" >&2; exit 2; }
 OUT="$HERE/staging/$SET_NAME"
 
 [ -f "$SDK" ] || { echo "SDK not found: $SDK" >&2; exit 1; }
@@ -55,6 +68,7 @@ cp "$HERE/builddir/dipp_ctl" "$OUT/"
 cp "$MODULES/builddir/emulate_camera" "$OUT/"
 cp "$MODULES/builddir"/*.so "$OUT/"
 cp "$HERE/tests/board/run.sh" "$OUT/" 2>/dev/null || true
+cp "$HERE/tests/board/feed_trace.sh" "$OUT/"
 # Battery generation profiles and platform presets (run.sh --platform); the
 # daemon refuses to start without them, so a set without them is not staged.
 cp "$HERE"/analysis/power-profile/*.profile "$OUT/"
@@ -70,6 +84,14 @@ done
 
 echo "--- generating storage.vmem ---"
 "$HOST_PYTHON" "$HERE/tools/make_storage_vmem.py" build "$CONFIG_MANIFEST" -o "$OUT/storage.vmem" >/dev/null
+
+# The cost store is keyed by each slot's config hash, so the seed is rebuilt
+# from the same manifest every time: a stale seed would silently miss.
+echo "--- generating cost.seed ($COST_MODEL) ---"
+if [ "$COST_MODEL" = hints ]; then SEED_SRC=(--hints); else SEED_SRC=(--model "$COST_MODEL"); fi
+"$HOST_PYTHON" "$HERE/tools/seed_cost_store.py" --manifest "$CONFIG_MANIFEST" "${SEED_SRC[@]}" \
+    -o "$OUT/cost.seed" >/dev/null
+mv "$OUT/cost.seed.json" "$OUT/symbols/cost.seed.json"   # provenance, not deployed
 
 # --- manifest --------------------------------------------------------------
 BUILD_ID="$("$HERE/tools/build_id.sh")"

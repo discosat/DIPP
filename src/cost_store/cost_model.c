@@ -51,11 +51,14 @@ CostSource cost_model_predict(const ModuleParameterList *cfg, int n, uint32_t *l
         if (idx != -1)
         {
             const CostEntry *m = &cost_store->items[idx];
-            float dn = (float)(n - m->n);
-            float lat = (float)m->lat_us + m->lat_slope_us * dn;
-            float en = m->en_uwh + m->en_slope_uwh * dn;
-            *lat_us = lat > 0.0f ? (uint32_t)lat : 0u;
-            *en_uwh = en > 0.0f ? en : 0.0f;
+            /* double, not float: float holds integers exactly only up to
+               2^24, and latencies are microseconds -- a 92.47 s hint came
+               back 4 us short (tests/test_seed_cost_store.py). */
+            double dn = (double)(n - m->n);
+            double lat = (double)m->lat_us + (double)m->lat_slope_us * dn;
+            double en = (double)m->en_uwh + (double)m->en_slope_uwh * dn;
+            *lat_us = lat > 0.0 ? (uint32_t)(lat + 0.5) : 0u;
+            *en_uwh = en > 0.0 ? (float)en : 0.0f;
             return COST_SRC_MODEL;
         }
     }
@@ -76,8 +79,8 @@ void cost_model_observe_latency(const ModuleParameterList *cfg, int n, long meas
     if (idx != -1)
     {
         e = cost_store->items[idx];
-        float ema = (1.0f - LATENCY_EMA_ALPHA) * (float)e.lat_us + LATENCY_EMA_ALPHA * (float)measured_us;
-        e.lat_us = (uint32_t)(ema + 0.5f);
+        double ema = (1.0 - LATENCY_EMA_ALPHA) * (double)e.lat_us + LATENCY_EMA_ALPHA * (double)measured_us;
+        e.lat_us = (uint32_t)(ema + 0.5);
         e.n_obs += 1;
         /* A seeded point that has taken an on-board observation is no longer
            the offline value; mark it so the analysis can tell them apart. */

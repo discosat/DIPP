@@ -391,10 +391,19 @@ void simulate_battery(void)
     double next_log = BATTERY_LOG_PERIOD_S;
     pthread_mutex_unlock(&g_lock);
 
+    /* Step by the wall time that actually elapsed, not a nominal 10 ms: the
+       usleep plus the step itself make every pass slightly longer than the
+       period, so a fixed step let simulated time fall ~1 % behind the wall
+       clock -- and the trace harness places frames at "wall elapsed + time
+       fast-forwarded", which is only right if the two stay equal. */
+    int64_t last_us = now_us();
     while (1)
     {
         pthread_mutex_lock(&g_lock);
-        battery_simulator_step(&g_sim, SIMULATION_STEP_S);
+        int64_t t_us = now_us();
+        double dt = (t_us - last_us) / 1e6;
+        last_us = t_us;
+        battery_simulator_step(&g_sim, dt);
         if (g_sim.current_time_s >= next_log)
         {
             log_state("BATTERY");

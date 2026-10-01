@@ -3,7 +3,12 @@
 #
 #   run.sh --label adaptive-mmap-01 --pipeline 1 --storage MMAP \
 #          --heuristic BEST_EFFORT --load populate --n 20 --images 1 [--seed 43] \
-#          --platform disco2-bol.env --soc0 0.9 --phase0 0.25
+#          --platform disco2-bol.env --soc0 0.9 --phase0 0.25 --slo 15
+#   run.sh ... --load poisson --n 100 --mean 3 --slo 15 ...
+#   run.sh ... --load trace --trace traces/<md5>.trace --idle-window 10 \
+#          --ff-chunk 60 --ff-tick 0.5 --tail-ff 5726 ...
+# --load trace replays an arrival trace with per-frame SLOs, fast-forwarding
+# the battery across the gaps between bursts (feed_trace.sh documents it).
 #          [--image cs12_validation_00.bayerRG]
 #          [--keep-cost-cache] [--no-trace]
 #
@@ -19,6 +24,7 @@ IMAGE=cs12_validation_00.bayerRG
 LABEL=""; PIPELINE=2; STORAGE=MMAP; HEURISTIC=BEST_EFFORT
 LOAD=populate; N=20; IMAGES=1; SEED=43; KEEP_CACHE=0; TRACE=1; MIN_DRAIN=20
 PLATFORM=""; SOC0=""; PHASE0=""
+SLO=""; MEAN=""; TRACEF=""; IDLE_WIN=""; FF_CHUNK=""; FF_TICK=""; TAIL_FF=""; COST_SEED=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --label) LABEL="$2"; shift 2;;
@@ -36,6 +42,14 @@ while [ $# -gt 0 ]; do
         --platform) PLATFORM="$2"; shift 2;;
         --soc0) SOC0="$2"; shift 2;;
         --phase0) PHASE0="$2"; shift 2;;
+        --slo) SLO="$2"; shift 2;;
+        --mean) MEAN="$2"; shift 2;;
+        --trace) TRACEF="$2"; shift 2;;
+        --idle-window) IDLE_WIN="$2"; shift 2;;
+        --ff-chunk) FF_CHUNK="$2"; shift 2;;
+        --ff-tick) FF_TICK="$2"; shift 2;;
+        --tail-ff) TAIL_FF="$2"; shift 2;;
+        --cost-seed) COST_SEED="$2"; shift 2;;
         *) echo "unknown option: $1" >&2; exit 2;;
     esac
 done
@@ -46,6 +60,25 @@ done
 [ -n "$PLATFORM" ] || { echo "--platform is required (experiments/platforms/*.env)" >&2; exit 2; }
 [ -n "$SOC0" ] || { echo "--soc0 is required" >&2; exit 2; }
 [ -n "$PHASE0" ] || { echo "--phase0 is required" >&2; exit 2; }
+# The cost store starts from a seed file (tools/seed_cost_store.py, staged as
+# cost.seed) or, stated explicitly, from nothing.
+[ -n "$COST_SEED" ] || { echo "--cost-seed <file>|none is required" >&2; exit 2; }
+if [ "$COST_SEED" != none ] && [ "$KEEP_CACHE" -eq 1 ]; then
+    echo "--cost-seed and --keep-cost-cache contradict each other" >&2; exit 2
+fi
+# The load, and what each kind needs -- no defaults. A trace carries its own
+# per-frame SLOs; the synthetic loads take one SLO for every frame (the paper
+# used 15 s), and Poisson its mean inter-arrival time.
+case "$LOAD" in
+    populate) [ -n "$SLO" ] || { echo "--load populate needs --slo" >&2; exit 2; } ;;
+    poisson)  [ -n "$SLO" ] && [ -n "$MEAN" ] || { echo "--load poisson needs --slo and --mean" >&2; exit 2; } ;;
+    trace)
+        for pair in trace:TRACEF idle-window:IDLE_WIN ff-chunk:FF_CHUNK ff-tick:FF_TICK tail-ff:TAIL_FF; do
+            eval "val=\${${pair#*:}}"
+            [ -n "$val" ] || { echo "--load trace needs --${pair%%:*}" >&2; exit 2; }
+        done ;;
+    *) echo "unknown --load: $LOAD (populate | poisson | trace)" >&2; exit 2 ;;
+esac
 IMG="$IMG_DIR/$IMAGE"
 
 # grep -c prints "0" and exits 1 on no-match, and prints nothing when the file
@@ -57,6 +90,10 @@ cnt() {
 
 cd "$DIR" || exit 1
 [ -f "$PLATFORM" ] || { echo "platform file not found: $PLATFORM" >&2; exit 2; }
+if [ "$LOAD" = "trace" ]; then
+    ./feed_trace.sh --check --trace "$TRACEF" || exit 2
+    TRACE_MD5=$(md5sum "$TRACEF" | cut -d' ' -f1)
+fi
 # Only the preset and the flags define the power model: anything DIPP_BATT_*
 # left in this shell would be a hidden input, so clear it first.
 for v in $(env | sed -n 's/^\(DIPP_BATT_[A-Z0-9_]*\)=.*/\1/p'); do unset "$v"; done
@@ -94,6 +131,11 @@ sleep 1
 echo 30b40000.mmc > /sys/bus/platform/drivers/sdhci-esdhc-imx/unbind 2>/dev/null
 rm -f /usr/share/dipp/queue_file /usr/share/dipp/partially_processed_queue_file
 [ "$KEEP_CACHE" -eq 1 ] || rm -f /usr/share/dipp/cost.cache
+if [ "$COST_SEED" != none ]; then
+    [ -f "$COST_SEED" ] || { echo "cost seed not found: $COST_SEED" >&2; exit 2; }
+    cp "$COST_SEED" /usr/share/dipp/cost.cache || { echo "cannot install $COST_SEED" >&2; exit 1; }
+    COST_SEED_MD5=$(md5sum "$COST_SEED" | cut -d' ' -f1)
+fi
 rm -f /home/root/logs/* 2>/dev/null
 find /usr/share/dipp/data -type f -exec rm -f {} + 2>/dev/null
 
@@ -132,17 +174,23 @@ echo "--- feeding $N batches (load=$LOAD pipeline=$PIPELINE images=$IMAGES) ---"
 if [ "$LOAD" = "poisson" ]; then
     # Seeded, so the offered stream is identical across runs -- srand(43) is what
     # the recovered board script used.
-    awk -v n="$N" -v mu=3 -v seed="$SEED" 'BEGIN{
+    awk -v n="$N" -v mu="$MEAN" -v seed="$SEED" 'BEGIN{
         srand(seed); print 0
         for (i = 1; i < n; i++) { u = rand(); if (u == 0) u = 0.000001; print -mu * log(u) }
     }' | while read -r d; do
         sleep "$d"
-        ./emulate_camera "$IMAGES" "$PIPELINE" 123 "$IMG" >/dev/null 2>&1
+        ./emulate_camera "$IMAGES" "$PIPELINE" 123 "$IMG" "$SLO" >/dev/null 2>&1
     done
+elif [ "$LOAD" = "trace" ]; then
+    ./feed_trace.sh --trace "$TRACEF" --pipeline "$PIPELINE" --images "$IMAGES" \
+        --image "$IMG" --console "$OUT/console.log" --feed-log "$OUT/feed.log" \
+        --dipp-ctl ./dipp_ctl --camera ./emulate_camera --idle-window "$IDLE_WIN" \
+        --ff-chunk "$FF_CHUNK" --ff-tick "$FF_TICK" --tail-ff "$TAIL_FF" \
+        || echo "FEED_FAILED" >> "$OUT/feed.log"
 else
     i=1
     while [ "$i" -le "$N" ]; do
-        ./emulate_camera "$IMAGES" "$PIPELINE" 123 "$IMG" >/dev/null 2>&1
+        ./emulate_camera "$IMAGES" "$PIPELINE" 123 "$IMG" "$SLO" >/dev/null 2>&1
         i=$((i + 1))
     done
 fi
@@ -211,12 +259,23 @@ cat > "$OUT/board.json" <<JSON
   "seed": $SEED,
   "image": "$IMAGE",
   "cost_cache_kept": $KEEP_CACHE,
+  "cost_seed": "$COST_SEED",
+  "cost_seed_md5": "${COST_SEED_MD5:-}",
   "platform": "$PLATFORM",
   "platform_md5": "$PLATFORM_MD5",
   "profile": "$DIPP_BATT_PROFILE",
   "profile_md5": "${PROFILE_MD5:-missing}",
   "soc0": $SOC0,
   "phase0": $PHASE0,
+  "slo_s": ${SLO:-null},
+  "mean_s": ${MEAN:-null},
+  "trace": "${TRACEF}",
+  "trace_md5": "${TRACE_MD5:-}",
+  "ff_chunk_s": ${FF_CHUNK:-null},
+  "ff_tick_s": ${FF_TICK:-null},
+  "idle_window_s": ${IDLE_WIN:-null},
+  "tail_ff_s": ${TAIL_FF:-null},
+  "trace_end": "$(grep '^TRACE_END\|^FEED_FAILED' "$OUT/feed.log" 2>/dev/null | tail -n 1 | tr -d '\000-\037\"')",
   "traced": $TRACE,
   "started_utc": $START,
   "ended_utc": $END,

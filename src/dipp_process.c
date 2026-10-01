@@ -734,6 +734,16 @@ enum
     SCHED_IDLE,
     SCHED_HALTED,
 };
+static void sched_set_state(int state);
+
+/* A module is about to execute (pipeline_executor.c): the daemon is busy
+   NOW, not only once the batch ends -- otherwise a halted batch that resumes
+   and runs for seconds would still read "halted" to the harness. */
+void sched_note_module_start(void)
+{
+    sched_set_state(SCHED_BUSY);
+}
+
 static void sched_set_state(int state)
 {
     static int current = SCHED_UNKNOWN;

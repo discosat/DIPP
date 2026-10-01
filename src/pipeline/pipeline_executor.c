@@ -249,6 +249,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
            499 of every 500 executions produced no latency sample at all. */
         struct timespec start, end;
         long elapsed_us = 0;
+        sched_note_module_start();
         battery_simulator_board_busy(1); /* the board is powered while a module runs */
         clock_gettime(CLOCK_MONOTONIC, &start);
 

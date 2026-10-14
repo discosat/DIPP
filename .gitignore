@@ -71,3 +71,7 @@ __pycache__/
 # Staged run-sets and campaign output (large, regenerable)
 /staging/
 /runs/
+
+# Training outputs (checkpoints, weights, logs): not versioned; the flight
+# models the board runs are copied to experiments/board/models/.
+/training/out/

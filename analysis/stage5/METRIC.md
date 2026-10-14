@@ -142,3 +142,17 @@ unchanged. Held-out (quoted once): p99 / max regret 0.071 / 0.184 against
 eval2.yaml re-runs every default-policy run and ablation with v2, the
 feeder-affected runs, a guard ablation (C5 x 3) and v1 with the fixed feeder
 (C3, C5); analysis/eval_merge.py assembles the final set.
+
+## Addendum 2026-10-14: board grid for the final policy (predictions before any run)
+
+Policy: the final policy (paper-rev/policy_final.md; daemon build g055264e+).
+Grid: experiments/matrices/board-grid.yaml (gen_board_grid.py), 107 runs:
+deadline pairs P1 (20 s, 30 s), P2 (20 s, 300 s), P3 (60 s, 1800 s),
+P4 (300 s, 21600 s); static low/med/high, deadline-only, final; blocks A-D
+(A: final at P2 x C1-C5 x 3 seeds; B: P1/P3/P4 x C2-C5 x 5 policies; C: final
+seeds 2-3 at P1/P3/P4 x C3/C5; D: energy deficit dawndusk-3w7 x P2/P4 x
+C2/C3 x 5 policies). Metric unchanged (U, regret vs best static, tie 0.02).
+Simulated predictions for every run, fixed before the first board run:
+analysis/board_grid_predictions.csv (analysis/predict_board_grid.py). The
+simulator is known to be up to 0.08 pessimistic for static high and
+deadline-only on 1x clear sky; no tuning to the board results.

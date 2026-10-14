@@ -61,3 +61,23 @@ python3 $GEN poisson --mean-s 3 --n 100 --urgent-fraction 0.1 --phase0 "$PH" --s
 python3 $GEN poisson --mean-s 76 --n 222 --urgent-fraction 0.1 --phase0 "$PH" --seed 1 \
   $COMMON -o $OUT/poi76.trace
 for f in $OUT/*.trace; do sh tests/board/feed_trace.sh --check --trace "$f"; done
+
+# Deadline pairs (2026-10-14, board grid): the same bursts and target scatters
+# as main/main2x, only the (urgent, routine) deadlines change. P2 (20 s, 300 s)
+# is main/main2x itself. P1 keep-up (Kodan), P3 decision + alert (Dynamic
+# Targeting / CleanSeaNet), P4 store-and-forward with alerts (DISCO-2 contact).
+COMMON_NOSLO="--platform experiments/platforms/disco2-bol.env --profile-dir analysis/power-profile \
+  --realtime-max-gap-s 60 --cost-model analysis/cost_model.json \
+  --manifest experiments/board/flight-config/manifest.yaml --pipelines 1,2,3,4,6"
+for pair in "P1 20 30" "P3 60 1800" "P4 300 21600"; do
+  set -- $pair
+  for s in 1 2 3; do
+    python3 $GEN s2 --windows $GL --satellite S2A --merge-gap-s 600 --day 2026-10-04 --days 1 \
+      --first-burst 5 --n-bursts 2 --synthetic-targets 40 --target-aoi $GLAOI --seed $s \
+      $FRAME $COMMON_NOSLO --slo-urgent $2 --slo-routine $3 -o $OUT/main-$1-s$s.trace
+    python3 $GEN s2 --windows $GL --satellite S2A --merge-gap-s 600 --day 2026-10-04 --days 1 \
+      --first-burst 5 --n-bursts 2 --synthetic-targets 40 --target-aoi $GLAOI --seed $s \
+      --frame-period-s 3.34 --frame-along-km 46.73 --frame-across-km 56 $COMMON_NOSLO \
+      --slo-urgent $2 --slo-routine $3 -o $OUT/main2x-$1-s$s.trace
+  done
+done

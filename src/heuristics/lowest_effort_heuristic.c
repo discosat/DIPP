@@ -86,5 +86,6 @@ COST_MODEL_LOOKUP_RESULT get_lowest_effort_implementation_config(Module *module,
 }
 
 Heuristic lowest_effort_heuristic = {
+    .name = "LOWEST_EFFORT",
     .heuristic_function = get_lowest_effort_implementation_config,
 };

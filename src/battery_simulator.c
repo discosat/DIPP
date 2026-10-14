@@ -24,6 +24,7 @@ float battery_safety_margin_wh = 0.0f;
 
 static CubeSatBatterySimulator g_sim;
 static int g_sim_ready = 0;
+static double g_debited_wh = 0.0; /* cumulative module energy debited (put_load_on_battery) */
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int64_t now_us(void)
@@ -225,22 +226,31 @@ int battery_simulator_configure(CubeSatBatterySimulator *sim)
             err |= bad("DIPP_BATT_BOARD_HOLD_S", "negative", sim->board_hold_s);
     }
 
-    /* Margin: explicit, or derived from RESERVE_FRAC -- one of the two. */
+    /* Margin: explicit, or derived from SURVIVAL_ORBITS -- exactly one. */
     const char *margin_env = getenv("DIPP_BATT_MARGIN_WH");
+    const char *orbits_env = getenv("DIPP_BATT_SURVIVAL_ORBITS");
     int margin_explicit = margin_env && *margin_env;
-    double margin = 0, reserve = 0;
-    if (margin_explicit)
+    int orbits_set = orbits_env && *orbits_env;
+    double margin = 0, survival_orbits = 0;
+    if (margin_explicit && orbits_set)
+    {
+        printf("BATTERY_CONFIG_ERROR var=DIPP_BATT_MARGIN_WH reason=both_margin_and_survival_orbits_set\n");
+        err = -1;
+    }
+    else if (margin_explicit)
     {
         if (req_d("DIPP_BATT_MARGIN_WH", &margin) != 0)
             err = -1;
     }
-    else if (req_d("DIPP_BATT_RESERVE_FRAC", &reserve) != 0)
+    else if (!orbits_set)
     {
-        printf("BATTERY_CONFIG_ERROR var=DIPP_BATT_MARGIN_WH reason=neither_margin_nor_reserve_frac_set\n");
+        printf("BATTERY_CONFIG_ERROR var=DIPP_BATT_MARGIN_WH reason=neither_margin_nor_survival_orbits_set\n");
         err = -1;
     }
-    else if (reserve < 0.0 || reserve >= 1.0)
-        err |= bad("DIPP_BATT_RESERVE_FRAC", "outside_[0,1)", reserve);
+    else if (req_d("DIPP_BATT_SURVIVAL_ORBITS", &survival_orbits) != 0)
+        err = -1;
+    else if (survival_orbits <= 0.0)
+        err |= bad("DIPP_BATT_SURVIVAL_ORBITS", "not_positive", survival_orbits);
 
     if (err)
     {
@@ -270,12 +280,11 @@ int battery_simulator_configure(CubeSatBatterySimulator *sim)
     avg /= 3600.0;
     sim->eclipse_s = sim->orbit_period_s * dark / 3600.0;
 
-    /* What one orbit of generation leaves after the platform's own load: the
-       most the payload may spend per orbit and still have the battery full
-       again one orbit later (header). */
+    /* What one orbit of generation leaves after the platform's own load --
+       logged for the analysis; the margin no longer depends on it. */
     double orbit_surplus_wh = (avg - bus) * sim->orbit_period_s / 3600.0;
     battery_safety_margin_wh =
-        (float)(margin_explicit ? margin : capacity * (1.0 + reserve) - orbit_surplus_wh);
+        (float)(margin_explicit ? margin : survival_orbits * bus * sim->orbit_period_s / 3600.0);
     if (battery_safety_margin_wh >= capacity)
         printf("BATTERY_MARGIN_ABOVE_CAPACITY margin_wh=%.2f capacity_wh=%.2f orbit_surplus_wh=%.3f "
                "-- the payload can never run on this platform\n",
@@ -289,10 +298,10 @@ int battery_simulator_configure(CubeSatBatterySimulator *sim)
 
     printf("BATTERY_CONFIG capacity_wh=%.2f soc0=%.3f wh0=%.3f bus_w=%.2f gen_avg_w=%.3f "
            "orbit_min=%.3f eclipse_min=%.2f phase0=%.3f orbit_surplus_wh=%.3f margin_wh=%.2f "
-           "margin_src=%s reserve_frac=%.3f "
+           "margin_src=%s survival_orbits=%.2f "
            "profile=%s profile_samples=%d board_mode=%s board_idle_w=%.2f board_hold_s=%.1f\n",
            capacity, soc0, initial, bus, avg, orbit_min, sim->eclipse_s / 60.0, sim->phase0,
-           orbit_surplus_wh, battery_safety_margin_wh, margin_explicit ? "env" : "derived", reserve,
+           orbit_surplus_wh, battery_safety_margin_wh, margin_explicit ? "env" : "derived", survival_orbits,
            profile,
            sim->n_profile,
            sim->board_mode == BOARD_BURST ? "burst" : sim->board_mode == BOARD_ALWAYS ? "always" : "off",
@@ -507,5 +516,27 @@ void put_load_on_battery(float load_uWh)
     }
     level_set(new_capacity);
     g_sim.soc = new_capacity / g_sim.total_capacity_Wh;
+    g_debited_wh += load_uWh / 1000000.0;
     pthread_mutex_unlock(&g_lock);
+}
+
+int battery_simulator_energy_state(double *w_wh, double *floor_wh, double *idle_w, double *hold_s,
+                                   int *always, double *t_s, double *payload_wh, double *orbit_s)
+{
+    pthread_mutex_lock(&g_lock);
+    if (!g_sim_ready)
+    {
+        pthread_mutex_unlock(&g_lock);
+        return -1;
+    }
+    *w_wh = level_get();
+    *floor_wh = battery_safety_margin_wh;
+    *idle_w = g_sim.board_mode == BOARD_OFF ? 0.0 : g_sim.board_idle_W;
+    *hold_s = g_sim.board_hold_s;
+    *always = g_sim.board_mode == BOARD_ALWAYS;
+    *t_s = g_sim.current_time_s;
+    *payload_wh = g_sim.board_wh + g_debited_wh;
+    *orbit_s = g_sim.orbit_period_s;
+    pthread_mutex_unlock(&g_lock);
+    return 0;
 }

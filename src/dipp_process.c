@@ -32,6 +32,7 @@
 #include "utils/minitrace.h"
 #include "dipp_control.h"
 #include "battery_simulator.h"
+#include "sched_policy.h"
 #include <limits.h>
 
 PriorityQueue *ingest_pq = NULL;
@@ -256,9 +257,17 @@ int get_message_from_queue(ImageBatch *datarcv, int do_wait)
    are discarded, not acted on, and counted in the log. */
 static void discard_stale_control_messages(void)
 {
-    int msg_queue_id = msgget(MSG_QUEUE_KEY, 0);
+    /* The daemon creates the queue it serves. It used to be created only by
+       the first producer (emulate_camera, IPC_CREAT), so after a reboot the
+       harness's first `dipp_ctl mark` -- sent before the first frame -- found
+       no queue and the trace feeder stopped: 15 campaign runs, 2026-10-03.
+       dipp_ctl's rule "no queue, no daemon" holds only if the daemon makes it. */
+    int msg_queue_id = msgget(MSG_QUEUE_KEY, 0666 | IPC_CREAT);
     if (msg_queue_id == -1)
+    {
+        printf("MSGQ_CREATE_FAILED key=%d errno=%d\n", MSG_QUEUE_KEY, errno);
         return;
+    }
     int n = 0;
     DippControlMsg m;
     while (msgrcv(msg_queue_id, &m, sizeof(m) - sizeof(long), DIPP_CTL_MTYPE, IPC_NOWAIT) != -1)
@@ -330,57 +339,150 @@ void get_env_vars()
         }
     }
 
+    /* HEURISTIC used to pick the starting heuristic, but update_heuristic
+       overwrote it before every batch, so it never had a lasting effect. The
+       policy is now configured by the DIPP_SCHED_* parameters
+       (sched_policy.h); say so rather than silently ignore it. */
     const char *heuristic_str = getenv("HEURISTIC");
     if (heuristic_str != NULL)
-    {
-        if (strcmp(heuristic_str, "LOWEST_EFFORT") == 0)
-        {
-            current_heuristic = &lowest_effort_heuristic;
-        }
-        else if (strcmp(heuristic_str, "BEST_EFFORT") == 0)
-        {
-            current_heuristic = &best_effort_heuristic;
-        }
-        else
-        {
-            printf("Unknown HEURISTIC '%s', defaulting to BEST_EFFORT\n", heuristic_str);
-            current_heuristic = &best_effort_heuristic;
-        }
-    }
+        printf("HEURISTIC_ENV_IGNORED value=%s -- the tier is chosen per batch from the queue depth "
+               "(DIPP_SCHED_Q_MED / DIPP_SCHED_Q_LOW)\n", heuristic_str);
 }
 
-void update_heuristic(int ingest_queue_depth, int partial_queue_depth)
+void update_heuristic(int ingest_queue_depth, int partial_queue_depth, int pipeline_len)
 {
-    Heuristic *previous_heuristic = current_heuristic;
-
     MTR_COUNTER(__FILE__, "ingest_queue_depth", ingest_queue_depth);
     MTR_COUNTER(__FILE__, "partial_queue_depth", partial_queue_depth);
 
-    int total_queue_depth = ingest_queue_depth + partial_queue_depth;
-    if (total_queue_depth < LOW_QUEUE_DEPTH_THRESHOLD
-        // && partial_queue_depth < PARTIAL_QUEUE_SIZE_THRESHOLD
-        )
+    /* Three tiers on the total depth (sched_policy.h), thresholds from the
+       budget (auto) or explicit; then the overload guard. All parameters are
+       runtime parameters, read here before every batch. */
+    uint32_t depth = (uint32_t)(ingest_queue_depth + partial_queue_depth);
+    SchedTier previous = sched_current_tier;
+    uint32_t q_med, q_low;
+    uint32_t n_mod = pipeline_len > 0 ? (uint32_t)pipeline_len : 0;
     {
-        current_heuristic = &best_effort_heuristic;
+        /* battery telemetry for the learned available power (energy-timed check) */
+        double w, fl, idle, hold, t_s, pay, orb;
+        int always;
+        if (battery_simulator_energy_state(&w, &fl, &idle, &hold, &always, &t_s, &pay, &orb) == 0)
+            sched_obs_note_battery(t_s, w, pay, orb);
     }
-    else
+    sched_thresholds(n_mod, MAX_QUEUE_SIZE, &q_med, &q_low);
+    sched_current_tier = sched_tier_for_depth(depth, q_med, q_low);
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    int64_t now_us = (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+    SchedGuard g = sched_guard_eval(now_us, depth, n_mod, MAX_QUEUE_SIZE);
+    if (g.fires)
+        sched_current_tier = SCHED_TIER_LOWEST;
+    current_heuristic = (sched_current_tier == SCHED_TIER_LOWEST) ? &lowest_effort_heuristic
+                                                                 : &best_effort_heuristic;
+    static int previous_guard = -1;
+    if (previous != sched_current_tier || previous_guard != g.fires)
     {
-        // either the partially processed queue is almost full, or the total queue depth is high
-        current_heuristic = &lowest_effort_heuristic;
+        printf("SCHED_TIER ts_us=%lld tier=%s depth=%u ingest_depth=%d partial_depth=%d q_med=%u q_low=%u "
+               "guard=%d rho_low=%.3f t_v_s=%.1f t_rem_s=%.1f budget_s=%.1f\n",
+               (long long)now_us, sched_tier_name(sched_current_tier), depth, ingest_queue_depth,
+               partial_queue_depth, q_med, q_low, g.fires, g.rho, g.t_v_s, g.t_rem_s > 1e29 ? -1.0 : g.t_rem_s,
+               g.budget_s);
+        MTR_INSTANT_C(__FILE__, "update_heuristc", "tier", sched_tier_name(sched_current_tier));
+        previous_guard = g.fires;
     }
+}
 
-    // log in case of change
-    if (previous_heuristic != current_heuristic)
+/* Every queued frame except exclude_uuid, as the feasibility test sees it:
+   deadline, capture time and the time it still needs at lowest effort
+   (sched_policy.h). A frame whose remaining time cannot be estimated yet
+   (no module has run since boot) is left out. */
+size_t sched_collect_queued(const char *exclude_uuid, SchedFrame *out, size_t max)
+{
+    size_t n = 0;
+    PriorityQueue *qs[2] = {ingest_pq, partially_processed_pq};
+    for (int q = 0; q < 2; q++)
     {
-        if (current_heuristic == &best_effort_heuristic)
+        size_t sz = pq_impl->get_queue_size(qs[q]);
+        for (size_t k = 0; k < sz && n < max; k++)
         {
-            MTR_INSTANT_C(__FILE__, "update_heuristc", "heuristic", "BEST_EFFORT");
-        }
-        else
-        {
-            MTR_INSTANT_C(__FILE__, "update_heuristc", "heuristic", "LOWEST_EFFORT");
+            ImageBatch *b = &qs[q]->items[k];
+            if (exclude_uuid && strcmp(b->uuid, exclude_uuid) == 0)
+                continue;
+            int len = get_pipeline_length(b->pipeline_id);
+            int64_t rest = len > 0 ? sched_rest_low_us((uint32_t)(b->progress + 1), (uint32_t)len, b->progress >= 0) : -1;
+            if (rest < 0)
+                continue;
+            out[n].deadline_us = b->priority;
+            out[n].capture_us = b->capture_us;
+            out[n].rest_us = rest;
+            out[n].energy_uwh = sched_rest_low_uwh((uint32_t)(b->progress + 1), (uint32_t)len);
+            n++;
         }
     }
+    return n;
+}
+
+/* ------------------------------------------------- stage-boundary yielding */
+
+/* Earliest deadline among frames waiting in the kernel message queue, without
+   consuming them. The board's kernel has no MSG_COPY (CONFIG_CHECKPOINT_RESTORE
+   is not set), so each data message is received and immediately sent back;
+   their order in the kernel queue does not matter, ingest re-sorts by
+   deadline. The message exists only in this process for the microseconds
+   between the two calls -- the same exposure the existing receive -> enqueue
+   step already has. Control messages (mtype 2) are not touched. */
+static int64_t pending_min_deadline_us(void)
+{
+    int id = msgget(MSG_QUEUE_KEY, 0);
+    if (id == -1)
+        return INT64_MAX;
+    struct msqid_ds ds;
+    if (msgctl(id, IPC_STAT, &ds) == -1)
+        return INT64_MAX;
+    struct
+    {
+        long mtype;
+        char mtext[sizeof(ImageBatch)];
+    } buf;
+    int64_t best = INT64_MAX;
+    for (unsigned long k = 0; k < (unsigned long)ds.msg_qnum; k++)
+    {
+        ssize_t sz = msgrcv(id, &buf, sizeof(buf.mtext), 1, IPC_NOWAIT);
+        if (sz == -1)
+            break;
+        const ImageBatch *b = (const ImageBatch *)(void *)&buf;   /* layout as in get_message_from_queue */
+        if ((int64_t)b->priority < best)
+            best = b->priority;
+        /* Blocking resend: the slot this message occupied was just freed. */
+        if (msgsnd(id, &buf, (size_t)sz, 0) == -1)
+            printf("PEEK_RESEND_FAIL errno=%d -- a waiting frame may be lost\n", errno);
+    }
+    return best;
+}
+
+/* The uuid of the batch currently halted on energy (run_one_batch); a halted
+   batch is not a reason to yield. */
+static char halted_uuid[sizeof(((ImageBatch *)0)->uuid)] = "";
+
+int sched_yield_check(const ImageBatch *cur)
+{
+    if (sched_get_granularity() != SCHED_GRAN_STAGE || current_batch_source == NULL)
+        return 0;
+    PriorityQueue *other = (current_batch_source == ingest_pq) ? partially_processed_pq : ingest_pq;
+    int can_park = (current_batch_source == partially_processed_pq) ||
+                   pq_impl->get_queue_size(partially_processed_pq) < MAX_PARTIAL_QUEUE_SIZE;
+    int64_t best = pending_min_deadline_us();
+    ImageBatch head;
+    if (pq_impl->get_queue_size(other) > 0 && pq_impl->peek_copy(other, &head) == 0 &&
+        !(halted_uuid[0] && strcmp(head.uuid, halted_uuid) == 0) && (int64_t)head.priority < best)
+        best = head.priority;
+    if (!sched_should_yield(cur->priority, best, can_park))
+        return 0;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    printf("PREEMPT ts_us=%lld uuid=%s progress=%d deadline_us=%lld by_deadline_us=%lld\n",
+           (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000, cur->uuid, cur->progress,
+           (long long)cur->priority, (long long)best);
+    return 1;
 }
 
 
@@ -528,7 +630,6 @@ static int run_one_batch(PriorityQueue *src)
        second (67,616 lines / 8,408 commits in 25 s on the board, 2026-09-30)
        -- eMMC writes for nothing, and a campaign-sized log. The halt is logged
        once (SCHED_HALT) and its end once (SCHED_RESUME). */
-    static char halted_uuid[sizeof(batch.uuid)] = "";
     static int halted_progress = -2;
     static long long halted_since_us = 0;
     int was_quiet = (src == partially_processed_pq && halted_uuid[0] &&
@@ -543,7 +644,7 @@ static int run_one_batch(PriorityQueue *src)
 
     setup_cache_if_needed();
     update_heuristic(pq_impl->get_queue_size(ingest_pq),
-                     pq_impl->get_queue_size(partially_processed_pq));
+                     pq_impl->get_queue_size(partially_processed_pq), pipeline_len);
 
     retry_lowest_effort = quarantine_retry_pending(&batch);
     if (retry_lowest_effort)
@@ -767,6 +868,11 @@ void process_images_loop()
     global_storage_mode = STORAGE_MMAP;
 
     get_env_vars();
+    if (sched_params_init() != 0)
+    {
+        printf("FATAL: invalid scheduling parameters (SCHED_CONFIG_ERROR above); refusing to start\n");
+        exit(2);
+    }
 
     pq_impl = get_priority_queue_impl(global_storage_mode);
 
@@ -816,6 +922,19 @@ void process_images_loop()
         ImageBatch datarcv;
         while (get_message_from_queue(&datarcv, 0) == SUCCESS)
         {
+            /* The scheduler observes every arriving frame: capture time,
+               deadline, queue depth before it (sched_policy.h). A producer
+               that sets no capture time breaks the policy's inputs; say so. */
+            {
+                long depth_before = pq_impl->get_queue_size(ingest_pq) + pq_impl->get_queue_size(partially_processed_pq);
+                int plen = get_pipeline_length(datarcv.pipeline_id);
+                if (datarcv.capture_us <= 0 || datarcv.capture_us > datarcv.priority)
+                    printf("CAPTURE_TIME_INVALID uuid=%s capture_us=%lld deadline_us=%lld; frame not observed\n",
+                           datarcv.uuid, (long long)datarcv.capture_us, (long long)datarcv.priority);
+                else
+                    sched_obs_note_arrival(datarcv.capture_us, datarcv.priority, (uint32_t)depth_before,
+                                           plen > 0 ? (uint32_t)plen : 0);
+            }
             /* A frame arriving means the board is powered to take it. */
             battery_simulator_board_activity();
             struct timespec ts;
@@ -837,9 +956,10 @@ void process_images_loop()
             else
             {
                 printf("INGEST ts_us=%lld uuid=%s pipeline=%d num_images=%d deadline_us=%lld slo_us=%lld "
-                       "ingest_depth=%ld partial_depth=%ld\n",
+                       "capture_us=%lld ingest_depth=%ld partial_depth=%ld\n",
                        ts_us, datarcv.uuid, datarcv.pipeline_id, datarcv.num_images,
                        (long long)datarcv.priority, (long long)(datarcv.priority - ts_us),
+                       (long long)datarcv.capture_us,
                        (long)pq_impl->get_queue_size(ingest_pq),
                        (long)pq_impl->get_queue_size(partially_processed_pq));
             }
@@ -867,8 +987,33 @@ void process_images_loop()
         // Prefer the partially processed queue, then fall back to ingest.
         // run_one_batch: 1 = work done, 0 = queue empty, 2 = head is halted
         // (energy) and made no progress.
-        int rp = run_one_batch(partially_processed_pq);
-        int ri = (rp == 1) ? 0 : run_one_batch(ingest_pq);
+        int rp, ri;
+        if (sched_get_granularity() == SCHED_GRAN_STAGE)
+        {
+            /* Stage granularity: earliest deadline across BOTH queues (a
+               preempted batch waits in the partial queue and must not jump
+               the frame it yielded to). Fall back to the other queue when
+               the first head is halted. */
+            ImageBatch hp, hi;
+            int has_p = pq_impl->get_queue_size(partially_processed_pq) > 0 &&
+                        pq_impl->peek_copy(partially_processed_pq, &hp) == 0;
+            int has_i = pq_impl->get_queue_size(ingest_pq) > 0 && pq_impl->peek_copy(ingest_pq, &hi) == 0;
+            if (has_i && (!has_p || hi.priority < hp.priority))
+            {
+                ri = run_one_batch(ingest_pq);
+                rp = (ri == 1) ? 0 : run_one_batch(partially_processed_pq);
+            }
+            else
+            {
+                rp = run_one_batch(partially_processed_pq);
+                ri = (rp == 1) ? 0 : run_one_batch(ingest_pq);
+            }
+        }
+        else
+        {
+            rp = run_one_batch(partially_processed_pq);
+            ri = (rp == 1) ? 0 : run_one_batch(ingest_pq);
+        }
         if (rp != 1 && ri != 1)
         {
             int halted = (rp == 2);
@@ -883,7 +1028,8 @@ void process_images_loop()
 
         // Keep ingest draining even while the partial queue has work, so a
         // steady stream of partially processed batches cannot starve arrivals.
-        if (rp == 1 && pq_impl->get_queue_size(partially_processed_pq) < MAX_PARTIAL_QUEUE_SIZE)
+        if (sched_get_granularity() == SCHED_GRAN_BATCH && rp == 1 &&
+            pq_impl->get_queue_size(partially_processed_pq) < MAX_PARTIAL_QUEUE_SIZE)
             run_one_batch(ingest_pq);
     }
 

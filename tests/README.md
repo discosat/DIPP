@@ -149,8 +149,10 @@ that frames land within 0.5 s of their simulated times; a compressed gap is
 fast-forwarded only once the daemon is idle or halted, never past the next
 frame, and less the wall time already spent in it; every advance is confirmed
 by a `BATTERY_FF` line; the tail fast-forwards while halted and stops once the
-daemon is idle; each frame's SLO reaches the camera; and seven kinds of
-malformed trace plus a missing argument are refused before anything is fed.
+daemon is idle; each frame's SLO reaches the camera; seven kinds of
+malformed trace plus a missing argument are refused before anything is fed;
+and `--image-list` gives frame k line k mod N, logs it, and refuses a list
+naming a missing file or combined with `--image`.
 
 It caught nothing on the host that the board did not also show, but the board
 showed one thing the first version missed: the quiescence wait reused the
@@ -164,3 +166,55 @@ in eclipse below the margin, the tail recharged it and all 6 completed;
 0.21780-0.21790 Wh against 13.07 W x 60 s = 0.21783 Wh. An urgent frame (SLO
 15 s) fed behind five routine ones (SLO 300 s) on static high completed
 second.
+
+## `test_make_arrival_trace.py`
+
+```
+python3 tests/test_make_arrival_trace.py      # ~10 s
+```
+
+`tools/make_arrival_trace.py`. Orbit: the sun-synchronous inclination for
+DISCO-II's 95.43 min period is 97-98 deg; the profile's dark arc ends at phase
+0 (eclipse exit) and lasts 35-36.5 min. Steady state: full at eclipse entry,
+and at eclipse exit full minus the bus load over the eclipse. Footprint:
+46.73 x 56 km, half-widths checked at 23/24 km and 27.5/29 km; a polygon target
+under the frame, 1 deg away, and larger than the frame. CLI: a Poisson trace
+has the asked count and urgent fraction, urgent rows carry the urgent SLO,
+gaps over the real-time limit are fast-forwarded in full and none under it,
+the compressed clock never decreases, the header carries phase0 and
+soc0_steady, `feed_trace.sh --check` accepts it, the same seed gives the same
+trace, a missing SLO is refused, and an urgent SLO below the EDF bound of a
+stub cost model is refused. On the East Greenland windows every frame's phase
+is within 30 s of the phase its latitude implies.
+
+## `test_parse_stage5.py`
+
+```
+python3 tests/test_parse_stage5.py
+```
+
+The Stage 5a tables of `analysis/parse_runs.py` on a synthetic console in the
+daemon's exact formats plus a feed.log: frame classes joined through `MARK`,
+non-preemptive blocking (an urgent frame arriving 2 s into a routine 4 s
+stage is blocked 2 s), latency and deadline met, wait before the first stage,
+halts and halted time per batch, energy debited per batch, the dropped batch,
+battery and event rows, and the run summary (met fractions, unfinished, battery
+minimum over `BATTERY` and `BATTERY_FF`, configuration, `BATTERY_EMPTY` with
+its prose tail, the feeder's `TRACE_END`).
+
+## `test_sched_policy.c`
+
+```
+gcc -DDIPP_HOST_TEST -Isrc/include -o /tmp/test_sched_policy \
+    tests/test_sched_policy.c src/heuristics/sched_policy.c && /tmp/test_sched_policy
+```
+
+The default scheduling policy's pure decisions and parameters
+(`src/heuristics/sched_policy.c`): the effort tier from the queue depth
+(boundaries belong to the lower tier; q_med = q_low reproduces the original
+two-tier policy; q = inf never leaves high, i.e. deadline-greedy); the
+stage-boundary yield rule (only for a strictly earlier deadline, never when
+the batch cannot be parked); the compiled defaults (the rule's 12 / 20, gates
+5 s / 3 s, stage granularity); environment overrides including `inf`; and
+refusal of non-numeric, negative, unknown-granularity and q_med > q_low
+settings.

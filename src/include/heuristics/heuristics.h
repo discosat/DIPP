@@ -9,8 +9,9 @@
 #include "cost_store.h"
 #include "cost_model.h"
 
-#define BEST_EFFORT_MAX_LATENCY_MEDIUM_EFFORT 5000000 // 5 seconds maximum per module latency to be considered for medium effort
-#define BEST_EFFORT_MAX_LATENCY_LOW_EFFORT 3000000    // 3 seconds maximum per module latency to be considered for low effort
+/* The medium / low latency gates (per-module budget below which those levels
+   are considered at all) are runtime parameters now: sched_gate_med_us(),
+   sched_gate_low_us() in sched_policy.h (defaults 5 s / 3 s, as before). */
 
 typedef enum HEURISTIC_TYPE
 {
@@ -20,6 +21,9 @@ typedef enum HEURISTIC_TYPE
 
 typedef struct Heuristic
 {
+    /* Logged with every execution (EXEC heuristic=). A mission-specific policy
+       implements heuristic_function and is selected in update_heuristic. */
+    const char *name;
     // Pick a module effort level based on the currently used heuristic.
     // The module_param_id will be populated with the ID of the picked module.
     // The picked_hash will be populated with the hash of the image batch metadata

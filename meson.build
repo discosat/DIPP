@@ -42,6 +42,7 @@ sources = files(
 	'src/heuristics/best_effort_heuristic.c',
 	'src/heuristics/default_effort.c',
 	'src/heuristics/implementation_judge.c',
+	'src/heuristics/sched_policy.c',
 	'src/heuristics/lowest_effort_heuristic.c',
 	'src/cost_store/cost_store.c',
 	'src/cost_store/cost_store_mmap.c',

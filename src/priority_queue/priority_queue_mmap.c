@@ -31,7 +31,7 @@
 #include <stdio.h>
 
 #define PQ_MAGIC 0x53495050u /* "SIPP" */
-#define PQ_VERSION 1u
+#define PQ_VERSION 2u /* 2: ImageBatch gained capture_us (2026-10-11); a v1 file is refused */
 /* Layout granularity, NOT the page size. msync() requires a page-aligned
    address and fails with EINVAL otherwise, so an unaligned slot silently never
    reaches storage -- exactly the failure this file exists to prevent. The

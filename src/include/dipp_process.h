@@ -33,6 +33,14 @@ extern int retry_lowest_effort;
 extern int sched_quiet;
 /* Called before each module execution: logs SCHED_STATE busy on transition. */
 void sched_note_module_start(void);
+/* Stage granularity: called by the executor after each module; returns 1 if a
+   waiting frame has an earlier deadline and the batch should be parked
+   (logs PREEMPT). Always 0 at batch granularity. */
+#include "sched_policy.h"
+#include <stddef.h>
+/* Queued frames (both queues, except exclude_uuid) for the feasibility test. */
+size_t sched_collect_queued(const char *exclude_uuid, SchedFrame *out, size_t max);
+int sched_yield_check(const ImageBatch *cur);
 
 // Main processing loop running in a thread
 // This loop first initialiazes queues, which possibly already hold elements,

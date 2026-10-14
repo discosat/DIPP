@@ -19,6 +19,7 @@
 #include "battery_simulator.h"
 #include "dipp_process.h"
 #include "priority_queue.h"
+#include "sched_policy.h"
 #include <time.h>
 
 
@@ -238,12 +239,31 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
            measured point at this input size, else the fitted model, else the
            YAML hint (cost_model.c). Taken once, before the run, on the input
            size the module actually sees. Energy is never measured on-board,
-           so this is also what the battery is debited (the store's energy is
-           the offline Otii characterisation, seeded, or the hint). */
+           so the battery is debited from it: its energy / latency is the
+           operating point's mean power (the offline Otii characterisation,
+           seeded, or the hint), charged for the measured latency below. */
         int n_input = data->num_images;
         uint32_t pred_latency_us;
         float energy_cost;
         CostSource cost_src = cost_model_predict(module_config, n_input, &pred_latency_us, &energy_cost);
+
+        /* What this module would have cost at its LOWEST effort for this
+           input size: the utilisation guard's service estimate
+           (sched_policy.h). Recorded for every executed module. */
+        {
+            Module *m = &pipeline->modules[i];
+            int low_id = m->default_effort_param_id != -1 ? m->default_effort_param_id
+                         : m->low_effort_param_id != -1   ? m->low_effort_param_id
+                         : m->medium_effort_param_id != -1 ? m->medium_effort_param_id
+                                                           : m->high_effort_param_id;
+            if (low_id != -1)
+            {
+                uint32_t low_lat_us;
+                float low_en_uwh;
+                cost_model_predict(&module_parameter_lists[low_id], n_input, &low_lat_us, &low_en_uwh);
+                sched_obs_note_module((uint32_t)i, low_lat_us, (double)low_en_uwh);
+            }
+        }
 
         /* Always time the module. Previously this ran only on a cache miss, so
            499 of every 500 executions produced no latency sample at all. */
@@ -274,12 +294,40 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         cost_model_observe_latency(module_config, n_input, elapsed_us, energy_cost);
         MTR_INSTANT_I(__FILE__, "latency observed", "latency_us", (int)elapsed_us);
 
+        /* R3.3: flag a prediction that missed by more than 25 % (latency; the
+           board has no per-module energy sensor). The on-board correction
+           (cost_model_observe_latency) then folds the measurement in. */
+        if (pred_latency_us > 0)
+        {
+            double ratio = (double)elapsed_us / (double)pred_latency_us;
+            if (ratio > 1.25 || ratio < 0.75)
+            {
+                static unsigned long cost_flags = 0;
+                printf("COST_FLAG module=%s param_id=%d n_input=%d latency_pred_us=%u latency_meas_us=%ld "
+                       "ratio=%.3f source=%s count=%lu\n",
+                       pipeline->modules[i].module_name ? pipeline->modules[i].module_name : "?",
+                       module_param_id, n_input, pred_latency_us, elapsed_us, ratio,
+                       cost_source_name(cost_src), ++cost_flags);
+            }
+        }
+
         /* Charge the battery for EVERY execution. This used to sit inside the
            cache-miss branch above, so a 100-batch run drew energy 19 times
            instead of 500 and "mission completion under energy constraints" was
            measuring an almost-unloaded battery. */
-        put_load_on_battery(energy_cost);
-        MTR_COUNTER("main", "energy_debited_uwh", (int)energy_cost);
+        /* What is charged is the configuration's mean power times the
+           latency this execution actually had (decided 2026-09-28): mean
+           power = the store's energy / its latency for (config, n), i.e. the
+           Otii-calibrated draw of that operating point, so a slow run costs
+           more than its prediction and a fast one less, and prediction error
+           shows up in the battery rather than being hidden by it. The size
+           sweep tests the premise -- that a stage's mean power does not
+           depend on its input size (analysis/cost_model_fit.py, U3). */
+        float energy_debited = pred_latency_us > 0
+                                   ? (float)((double)energy_cost * (double)elapsed_us / (double)pred_latency_us)
+                                   : energy_cost;
+        put_load_on_battery(energy_debited);
+        MTR_COUNTER("main", "energy_debited_uwh", (int)energy_debited);
 
         /* One structured record per module execution.
            Deliberately a plain greppable line rather than a trace event:
@@ -297,7 +345,7 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
                    "latency_pred_us=%u latency_meas_us=%ld "
                    "energy_pred_uwh=%u energy_debited_uwh=%.3f "
                    "battery_wh=%.6f deadline_us=%lld slack_us=%lld "
-                   "ingest_depth=%ld partial_depth=%ld heuristic=%s "
+                   "ingest_depth=%ld partial_depth=%ld heuristic=%s tier=%s "
                    "rss_kb=%ld peak_rss_kb=%ld child_peak_rss_kb=%ld "
                    "io_read_bytes=%llu io_write_bytes=%llu\n",
                    (long long)now_us, data->uuid, data->pipeline_id, i,
@@ -306,12 +354,12 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
                    data->num_images, data->batch_size,
                    (cost_src != COST_SRC_HINT) ? 1 : 0, n_input, cost_source_name(cost_src),
                    pred_latency_us, elapsed_us,
-                   (unsigned)(energy_cost + 0.5f), energy_cost,
+                   (unsigned)(energy_cost + 0.5f), energy_debited,
                    get_battery_level_wh(),
                    (long long)data->priority, (long long)(data->priority - now_us),
                    pq_impl ? (long)pq_impl->get_queue_size(ingest_pq) : -1L,
                    pq_impl ? (long)pq_impl->get_queue_size(partially_processed_pq) : -1L,
-                   (current_heuristic == &best_effort_heuristic) ? "BEST_EFFORT" : "LOWEST_EFFORT",
+                   h->name, sched_tier_name(retry_lowest_effort ? SCHED_TIER_LOWEST : sched_current_tier),
                    res.rss_kb, res.peak_rss_kb, res.child_peak_rss_kb,
                    res.io_read_bytes, res.io_write_bytes);
         }
@@ -374,6 +422,16 @@ int execute_pipeline(Pipeline *pipeline, ImageBatch *data)
         }
 
         MTR_END(__FILE__, "execute_module_loop");
+
+        /* Stage granularity (sched_policy.h): at a module boundary, park this
+           batch if a waiting frame has an earlier deadline. Returning here is
+           exactly the halt path: the caller checkpoints it into the partial
+           queue. Not on a quarantine retry, which must finish at lowest effort. */
+        if (i + 1 < pipeline->num_modules && !retry_lowest_effort && sched_yield_check(data))
+        {
+            MTR_END_FUNC();
+            return 0;
+        }
     }
 
     MTR_END_FUNC();

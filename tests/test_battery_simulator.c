@@ -61,7 +61,7 @@ static void env_set(const char *k, const char *v)
 static const char *ALL_VARS[] = {
     "DIPP_BATT_CAPACITY_WH", "DIPP_BATT_SOC0", "DIPP_BATT_BUS_W", "DIPP_BATT_ORBIT_MIN",
     "DIPP_BATT_PHASE0", "DIPP_BATT_PROFILE", "DIPP_BATT_BOARD_MODE", "DIPP_BATT_BOARD_IDLE_W",
-    "DIPP_BATT_BOARD_HOLD_S", "DIPP_BATT_RESERVE_FRAC", "DIPP_BATT_MARGIN_WH"};
+    "DIPP_BATT_BOARD_HOLD_S", "DIPP_BATT_SURVIVAL_ORBITS", "DIPP_BATT_MARGIN_WH"};
 
 static void clear_env(void)
 {
@@ -93,13 +93,13 @@ static void platform(void)
     env_set("DIPP_BATT_BOARD_MODE", "burst");
     env_set("DIPP_BATT_BOARD_IDLE_W", "3.30");
     env_set("DIPP_BATT_BOARD_HOLD_S", "60");
-    env_set("DIPP_BATT_RESERVE_FRAC", "0.02");
+    env_set("DIPP_BATT_SURVIVAL_ORBITS", "2");
 }
 
-/* The derived margin: capacity x (1 + reserve) - one orbit's surplus. */
-static double want_margin(double gen_avg_w, double reserve)
+/* The derived margin: N orbits of the bus load with no generation. */
+static double want_margin(double n_orbits)
 {
-    return 92.0 * (1.0 + reserve) - (gen_avg_w - 13.07) * ORBIT_S / 3600.0;
+    return n_orbits * 13.07 * ORBIT_S / 3600.0;
 }
 
 /* stdout -> file, for asserting on the log lines. */
@@ -194,11 +194,11 @@ static void t_complete_platform(void)
     check("SoC0 0.7 of 92 Wh -> 64.4 Wh stored", close_to(get_battery_level_wh(), 64.4, 1e-3));
     check("eclipse read from the profile: 36 min",
           close_to(sim.eclipse_s, ECLIPSE_S, ORBIT_S / 3600.0 + 1e-6));
-    /* 92 x 1.02 - (16.435 - 13.07) W x 95.43 min = 93.84 - 5.35 */
-    check("margin derived: capacity + 2 % reserve - one orbit's surplus = 88.5 Wh",
-          close_to(battery_safety_margin_wh, want_margin(GEN_DELIVERED_W * SUNLIT_S / ORBIT_S, 0.02), 0.02) &&
-              close_to(battery_safety_margin_wh, 88.49, 0.05) && strstr(log, "margin_src=derived") &&
-              strstr(log, "orbit_surplus_wh=5.35"));
+    /* 2 x 13.07 W x 95.43 min = 41.58 Wh */
+    check("margin derived: 2 orbits of the bus load without sun = 41.6 Wh",
+          close_to(battery_safety_margin_wh, want_margin(2), 0.01) &&
+              close_to(battery_safety_margin_wh, 41.58, 0.01) && strstr(log, "margin_src=derived") &&
+              strstr(log, "survival_orbits=2.00") && strstr(log, "orbit_surplus_wh=5.35"));
     check("phase 0 is eclipse exit, so t=0 is sunlit", sim.current_state == SUNLIT);
 }
 
@@ -207,7 +207,7 @@ static void t_each_input_required(void)
     const char *required[] = {"DIPP_BATT_CAPACITY_WH", "DIPP_BATT_SOC0", "DIPP_BATT_BUS_W",
                               "DIPP_BATT_ORBIT_MIN", "DIPP_BATT_PHASE0", "DIPP_BATT_PROFILE",
                               "DIPP_BATT_BOARD_MODE", "DIPP_BATT_BOARD_IDLE_W",
-                              "DIPP_BATT_BOARD_HOLD_S", "DIPP_BATT_RESERVE_FRAC"};
+                              "DIPP_BATT_BOARD_HOLD_S", "DIPP_BATT_SURVIVAL_ORBITS"};
     int all = 1;
     for (size_t i = 0; i < sizeof(required) / sizeof(*required); i++)
     {
@@ -225,7 +225,8 @@ static void t_bad_values(void)
         {"DIPP_BATT_SOC0", "0"},            {"DIPP_BATT_SOC0", "1.5"},
         {"DIPP_BATT_BUS_W", "-1"},          {"DIPP_BATT_ORBIT_MIN", "95.43min"},
         {"DIPP_BATT_BOARD_MODE", "sometimes"}, {"DIPP_BATT_BOARD_IDLE_W", "-3"},
-        {"DIPP_BATT_RESERVE_FRAC", "-0.01"}, {"DIPP_BATT_RESERVE_FRAC", "1.0"},
+        {"DIPP_BATT_SURVIVAL_ORBITS", "0"}, {"DIPP_BATT_SURVIVAL_ORBITS", "-1"},
+        {"DIPP_BATT_SURVIVAL_ORBITS", "two"},
         {"DIPP_BATT_PROFILE", "/nonexistent.profile"},
     };
     int all = 1;
@@ -276,19 +277,21 @@ static void t_margin_sources(void)
     CubeSatBatterySimulator sim;
     char *log;
     int rc = configure_quiet(&sim, &log);
-    check("an explicit MARGIN_WH wins over RESERVE_FRAC, and says so",
+    check("MARGIN_WH and SURVIVAL_ORBITS together refuse (exactly one)",
+          rc != 0 && strstr(log, "both_margin_and_survival_orbits_set"));
+
+    platform();
+    unsetenv("DIPP_BATT_SURVIVAL_ORBITS");
+    env_set("DIPP_BATT_MARGIN_WH", "50");
+    rc = configure_quiet(&sim, &log);
+    check("MARGIN_WH alone is enough, and says so",
           rc == 0 && close_to(battery_safety_margin_wh, 50.0, 1e-4) && strstr(log, "margin_src=env"));
 
     platform();
-    env_set("DIPP_BATT_BUS_W", "20"); /* more than the arrays deliver on average */
+    env_set("DIPP_BATT_SURVIVAL_ORBITS", "5"); /* 5 x 20.8 Wh > 92 Wh */
     rc = configure_quiet(&sim, &log);
-    check("a platform with no surplus configures, and says the payload can never run",
+    check("a survival reserve beyond capacity configures, and says the payload can never run",
           rc == 0 && battery_safety_margin_wh > 92.0 && strstr(log, "BATTERY_MARGIN_ABOVE_CAPACITY"));
-
-    platform();
-    unsetenv("DIPP_BATT_RESERVE_FRAC");
-    env_set("DIPP_BATT_MARGIN_WH", "50");
-    check("MARGIN_WH alone is enough", configure_quiet(&sim, &log) == 0);
 
     platform();
     env_set("DIPP_BATT_BOARD_MODE", "off");
@@ -463,9 +466,9 @@ static void t_digitised_profiles(void)
         char what[128];
         snprintf(what, sizeof(what), "%s delivers %.3f W", j ? "EOL" : "BOL", want[j]);
         check(what, close_to(sum / 36000.0, want[j], 0.01));
-        snprintf(what, sizeof(what), "%s margin %.1f Wh follows the profile's surplus",
-                 j ? "EOL" : "BOL", want_margin(want[j], 0.02));
-        check(what, close_to(battery_safety_margin_wh, want_margin(sum / 36000.0, 0.02), 0.01));
+        snprintf(what, sizeof(what), "%s margin %.1f Wh is independent of generation",
+                 j ? "EOL" : "BOL", want_margin(2));
+        check(what, close_to(battery_safety_margin_wh, want_margin(2), 0.01));
         if (j == 0)
             check("its eclipse is 35.8 +- 0.3 min", close_to(sim.eclipse_s / 60.0, 35.8, 0.3));
     }

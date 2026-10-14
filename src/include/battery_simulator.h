@@ -34,9 +34,9 @@
  *   DIPP_BATT_BOARD_IDLE_W  board draw while powered   } unless mode = off
  *   DIPP_BATT_BOARD_HOLD_S  burst: powered this long   }
  *                           after the last activity
- *   DIPP_BATT_RESERVE_FRAC  reserve above the derived margin, fraction of
- *                           capacity,
- *   or DIPP_BATT_MARGIN_WH  or the margin itself (wins if both are set)
+ *   DIPP_BATT_SURVIVAL_ORBITS  N: orbits the platform alone must be able to
+ *                           ride out with no generation (margin, below)
+ *   or DIPP_BATT_MARGIN_WH  the margin itself -- exactly one of the two
  *
  * The battery is clamped to [0, capacity] -- the physical limits, not a
  * chosen floor. Reaching empty logs BATTERY_EMPTY: the scenario has broken
@@ -52,17 +52,16 @@
  *   always an always-on board, the counterfactual.
  *   off    not charged (the pre-Stage-5a behaviour).
  *
- * The payload safety margin, when derived:
- *   surplus = (orbit-average generation - BUS_W) * orbit period
- *   margin  = CAPACITY_WH * (1 + RESERVE_FRAC) - surplus
- * The payload may spend at most one orbit's surplus -- what the arrays
- * deliver over an orbit beyond the platform's own load -- so whatever it
- * takes, one orbit of generation puts back and the battery is full again:
- * cycling stays as shallow as the platform's own eclipse swing plus one
- * orbit's surplus, with no depth-of-discharge figure taken from outside.
- * The reserve (a few % of capacity) covers the payload drawing more than
- * predicted. Every term but the reserve comes from the platform itself; a
- * margin at or above capacity (a platform with no surplus) is logged as
+ * The payload safety margin, when derived (decided 2026-10-03):
+ *   margin = SURVIVAL_ORBITS * BUS_W * orbit period
+ * The payload may never take the battery below what the platform alone needs
+ * to survive N orbits without any generation (tumbling, safe mode). Every
+ * term but N comes from the platform; N is the stated policy (2 for DISCO-II:
+ * 41.6 Wh, 45 % of 92 Wh). It replaces "one orbit's surplus below full + 2 %"
+ * (88.5 Wh, 96.2 %), which sat above the battery's own post-eclipse level
+ * and halted the payload after every eclipse whatever it had spent. Battery
+ * wear is not a floor here: the depth of discharge reached per orbit is a
+ * measured result. A margin at or above capacity is logged as
  * BATTERY_MARGIN_ABOVE_CAPACITY -- the payload never runs.
  *
  * Simulated time advances 1:1 with wall-clock time. Previously one 10 ms
@@ -150,6 +149,14 @@ double battery_simulator_p_gen(const CubeSatBatterySimulator *sim, double phase)
 /* Current simulated time and orbit phase. */
 double battery_simulator_time_s(void);
 double battery_simulator_phase(void);
+
+/* What the scheduler's energy-timed check reads (sched_policy.h, SchedEnergy):
+   battery now, floor, the board's idle power and mode, simulated time, the
+   payload's cumulative energy (board idle + module debits) and the orbit
+   period. On a satellite these come from EPS telemetry and the platform's
+   configuration. Returns 0, or -1 before the simulator is configured. */
+int battery_simulator_energy_state(double *w_wh, double *floor_wh, double *idle_w, double *hold_s,
+                                   int *always, double *t_s, double *payload_wh, double *orbit_s);
 
 /* Processing-board activity, from the daemon: an ingest, or a module
    starting/finishing. busy=1 keeps the board powered for the whole of an

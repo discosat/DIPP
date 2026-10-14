@@ -49,7 +49,8 @@ BENCH_RUN_ARGS = ("--platform disco2-bol.env --soc0 1.0 --phase0 0.3 "
                   " --sched-q-med 12 --sched-q-low 20 --sched-granularity batch"
                   " --sched-gate-med-ms 5000 --sched-gate-low-ms 3000"
                   " --sched-window 8 --sched-frame-overhead-ms 780 --sched-guard off"
-                  " --sched-accept split --sched-k-x10 20 --sched-smax-high-ms 12150 --sched-smax-med-ms 7330")
+                  " --sched-accept split --sched-k-x10 20 --sched-smax-high-ms 12150 --sched-smax-med-ms 7330"
+                  " --sched-energy off")
 
 # A campaign runs for hours; block-buffered stdout means no visible progress
 # until it ends, and no partial record if it is killed.
@@ -258,7 +259,7 @@ def spec_problems(spec):
                                    "sched_q_med", "sched_q_low", "sched_granularity",
                                    "sched_gate_med_ms", "sched_gate_low_ms",
                                    "sched_window", "sched_frame_overhead_ms", "sched_guard", "sched_accept",
-                                   "sched_k_x10", "sched_smax_high_ms", "sched_smax_med_ms")
+                                   "sched_k_x10", "sched_smax_high_ms", "sched_smax_med_ms", "sched_energy")
            if k not in spec]
     load = spec.get("load")
     if load is not None and load not in LOAD_KEYS:
@@ -357,7 +358,8 @@ def run_one(spec, outdir, energy):
              f" --sched-gate-med-ms {spec['sched_gate_med_ms']} --sched-gate-low-ms {spec['sched_gate_low_ms']}"
              f" --sched-window {spec['sched_window']} --sched-frame-overhead-ms {spec['sched_frame_overhead_ms']}"
              f" --sched-guard {spec['sched_guard']} --sched-accept {spec['sched_accept']} --sched-k-x10 {spec['sched_k_x10']}"
-             f" --sched-smax-high-ms {spec['sched_smax_high_ms']} --sched-smax-med-ms {spec['sched_smax_med_ms']}")
+             f" --sched-smax-high-ms {spec['sched_smax_high_ms']} --sched-smax-med-ms {spec['sched_smax_med_ms']}"
+             f" --sched-energy {spec['sched_energy']}")
     args += f" --cost-seed {spec['cost_seed']}"
     if spec.get("image") and spec.get("image_prefix"):
         raise ValueError(f"{spec['label']}: image and image_prefix are exclusive")

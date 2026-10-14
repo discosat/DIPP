@@ -39,10 +39,12 @@ POL = {
     "adaptive-k1.5": dict(pipeline=1, sched_k_x10=15),
     "adaptive-k3": dict(pipeline=1, sched_k_x10=30),
     # baselines and the policy as evaluated on 2026-10-07 (v1)
-    "greedy": dict(pipeline=1, sched_q_med="inf", sched_q_low="inf", sched_guard="off", sched_accept="split"),
+    "greedy": dict(pipeline=1, sched_q_med="inf", sched_q_low="inf", sched_guard="off", sched_accept="split",
+                   sched_energy="off"),
     "twotier-orig": dict(pipeline=1, sched_q_med=5, sched_q_low=5, sched_granularity="batch", sched_guard="off",
-                         sched_accept="split"),
-    "adaptive-v1": dict(pipeline=1, sched_q_med=12, sched_q_low=20, sched_guard="off", sched_accept="split"),
+                         sched_accept="split", sched_energy="off"),
+    "adaptive-v1": dict(pipeline=1, sched_q_med=12, sched_q_low=20, sched_guard="off", sched_accept="split",
+                        sched_energy="off"),
 }
 COMMON = {
     "storage": "HYBRID", "heuristic": "BEST_EFFORT", "load": "trace", "images": 1, "cost_seed": "cost.seed",
@@ -53,6 +55,9 @@ COMMON = {
     "sched_gate_med_ms": 5000, "sched_gate_low_ms": 3000,
     "sched_window": 8, "sched_frame_overhead_ms": 780, "sched_guard": "on", "sched_accept": "feas",
     "sched_k_x10": 20, "sched_smax_high_ms": 12150, "sched_smax_med_ms": 7330,
+    # final policy (2026-10-14): energy-timed feasibility on; the platform file
+    # states the power budget (DIPP_SCHED_POWER_BUDGET_MW)
+    "sched_energy": "on",
 }
 
 

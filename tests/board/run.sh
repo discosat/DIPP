@@ -26,7 +26,7 @@ IMAGE=cs12_validation_00.bayerRG
 LABEL=""; PIPELINE=2; STORAGE=MMAP; HEURISTIC=BEST_EFFORT
 LOAD=populate; N=20; IMAGES=1; SEED=43; KEEP_CACHE=0; TRACE=1; MIN_DRAIN=""; ENVELOPE_IVL=""
 SCHED_Q_MED=""; SCHED_Q_LOW=""; SCHED_GRAN=""; SCHED_GATE_MED_MS=""; SCHED_GATE_LOW_MS=""
-SCHED_WINDOW=""; SCHED_FRAME_OVERHEAD_MS=""; SCHED_GUARD=""; SCHED_ACCEPT=""; SCHED_K_X10=""; SCHED_SMAX_HIGH_MS=""; SCHED_SMAX_MED_MS=""
+SCHED_WINDOW=""; SCHED_FRAME_OVERHEAD_MS=""; SCHED_GUARD=""; SCHED_ACCEPT=""; SCHED_K_X10=""; SCHED_SMAX_HIGH_MS=""; SCHED_SMAX_MED_MS=""; SCHED_ENERGY=""
 PLATFORM=""; SOC0=""; PHASE0=""
 IMAGE_PREFIX=""; SLO=""; MEAN=""; TRACEF=""; IDLE_WIN=""; FF_CHUNK=""; FF_TICK=""; TAIL_FF=""; COST_SEED=""
 while [ $# -gt 0 ]; do
@@ -56,6 +56,7 @@ while [ $# -gt 0 ]; do
         --sched-k-x10) SCHED_K_X10="$2"; shift 2;;
         --sched-smax-high-ms) SCHED_SMAX_HIGH_MS="$2"; shift 2;;
         --sched-smax-med-ms) SCHED_SMAX_MED_MS="$2"; shift 2;;
+        --sched-energy) SCHED_ENERGY="$2"; shift 2;;
         --sched-frame-overhead-ms) SCHED_FRAME_OVERHEAD_MS="$2"; shift 2;;
         --platform) PLATFORM="$2"; shift 2;;
         --soc0) SOC0="$2"; shift 2;;
@@ -81,7 +82,7 @@ for pair in sched-q-med:SCHED_Q_MED sched-q-low:SCHED_Q_LOW sched-granularity:SC
             sched-gate-med-ms:SCHED_GATE_MED_MS sched-gate-low-ms:SCHED_GATE_LOW_MS \
             sched-window:SCHED_WINDOW sched-frame-overhead-ms:SCHED_FRAME_OVERHEAD_MS sched-guard:SCHED_GUARD \
             sched-accept:SCHED_ACCEPT sched-k-x10:SCHED_K_X10 sched-smax-high-ms:SCHED_SMAX_HIGH_MS \
-            sched-smax-med-ms:SCHED_SMAX_MED_MS; do
+            sched-smax-med-ms:SCHED_SMAX_MED_MS sched-energy:SCHED_ENERGY; do
     eval "val=\${${pair#*:}}"
     [ -n "$val" ] || { echo "--${pair%%:*} is required" >&2; exit 2; }
 done
@@ -195,6 +196,7 @@ STORAGE_MODE="$STORAGE" \
     DIPP_SCHED_WINDOW="$SCHED_WINDOW" DIPP_SCHED_FRAME_OVERHEAD_MS="$SCHED_FRAME_OVERHEAD_MS" \
     DIPP_SCHED_GUARD="$SCHED_GUARD" DIPP_SCHED_ACCEPT="$SCHED_ACCEPT" DIPP_SCHED_K_X10="$SCHED_K_X10" \
     DIPP_SCHED_SMAX_HIGH_MS="$SCHED_SMAX_HIGH_MS" DIPP_SCHED_SMAX_MED_MS="$SCHED_SMAX_MED_MS" \
+    DIPP_SCHED_ENERGY="$SCHED_ENERGY" \
     setsid ./dipp -i CAN -p can0 -a 5423 $TRACE_ARG > "$OUT/console.log" 2>&1 &
 sleep 5
 # Optional operating-envelope sampler (R1.5): memory of SIPP's processes,
@@ -374,6 +376,9 @@ cat > "$OUT/board.json" <<JSON
   "sched_smax_high_ms": $SCHED_SMAX_HIGH_MS,
   "sched_smax_med_ms": $SCHED_SMAX_MED_MS,
   "sched_frame_overhead_ms": $SCHED_FRAME_OVERHEAD_MS,
+  "sched_energy": "$SCHED_ENERGY",
+  "sched_power_budget_mw": "${DIPP_SCHED_POWER_BUDGET_MW:-unset}",
+  "energy_waits": $(cnt '^SCHED_ENERGY_WAIT ' "$OUT/console.log"),
   "sched_config": "$(grep -m1 '^SCHED_CONFIG ' "$OUT/console.log" 2>/dev/null | tr -d '\000-\037\"')",
   "preemptions": $(cnt '^PREEMPT ' "$OUT/console.log"),
   "cost_flags": $(cnt '^COST_FLAG ' "$OUT/console.log"),

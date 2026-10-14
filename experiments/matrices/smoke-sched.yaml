@@ -1,0 +1,31 @@
+# Smoke of the 2026-10-06 scheduling change (3-tier ladder, stage-boundary
+# yielding): a short, deliberately heavy trace (40 frames, Poisson 3 s, 27 %
+# urgent) on clear-sky content so tiers change and preemptions occur. Checks:
+# SCHED_CONFIG as passed, SCHED_TIER transitions, PREEMPT only at stage
+# granularity, EXEC tier=, margin_wh=41.58, all frames completed, no
+# QUEUE_MISMATCH / QUEUE_CORRUPT.
+run_set: smoke-sched
+defaults:
+  storage: HYBRID
+  heuristic: BEST_EFFORT
+  load: trace
+  images: 1
+  cost_seed: cost.seed
+  image_prefix: cs12_test_matchedkeep_
+  min_drain: 150
+  idle_window: 5
+  ff_chunk: 60
+  ff_tick: 0.5
+  tail_ff: 5726
+  platform: disco2-bol.env
+  arrivals: experiments/traces/smoke-sched.trace
+  phase0: 0.3
+  soc0: 0.9849
+  pipeline: 1
+  sched_q_med: 12
+  sched_q_low: 20
+  sched_gate_med_ms: 5000
+  sched_gate_low_ms: 3000
+runs:
+  - {label: smoke-sched-stage, sched_granularity: stage}
+  - {label: smoke-sched-batch, sched_granularity: batch}

@@ -155,7 +155,7 @@ def main():
     ap.add_argument("-o", "--out", default=os.path.join(REPO, "analysis", "stage4.5-models", "e2e_runs.json"))
     a = ap.parse_args()
     import campaign
-    energy = campaign.Energy()
+    energy = campaign.Energy(required=True)
     if not a.no_push:
         vmem = os.path.join(tempfile.gettempdir(), "flight.vmem")
         subprocess.run([sys.executable, os.path.join(HERE, "make_storage_vmem.py"), "build",

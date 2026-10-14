@@ -94,6 +94,28 @@ run "$W/t2.trace" > /dev/null 2>&1
 qw=$(sed -n 's/^FF .* quiescent_wait_s=\([0-9.]*\) .*/\1/p' "$W/feed.log")
 check "no fast-forward while busy; halted counts as quiescent (waited ${qw} s)" 'num "$qw >= 4.5"'
 
+# 2b. A daemon busy for the whole gap: the gap elapses in real time, nothing
+#     is fast-forwarded, and the frames after it keep their own spacing
+#     (2026-10-09: the wait used to be unbounded, and every overdue frame was
+#     then fed at once).
+cat > "$W/t2b.trace" <<EOF
+0 0 1 DT1 300 routine
+1 5 2 DT2 300 routine
+4 0 3 DT2 300 routine
+EOF
+reset
+echo "SCHED_STATE state=busy" >> "$W/console.log"
+( sleep 15; echo "SCHED_STATE state=idle" >> "$W/console.log" ) &
+run "$W/t2b.trace" > /dev/null 2>&1
+late2=$(sed -n 's/^FEED scene=2 .* late_s=\([0-9.-]*\) .*/\1/p' "$W/feed.log")
+late3=$(sed -n 's/^FEED scene=3 .* late_s=\([0-9.-]*\) .*/\1/p' "$W/feed.log")
+adv2=$(sed -n 's/^FF .* advanced_s=\([0-9.]*\) .*/\1/p' "$W/feed.log")
+check "busy through a gap: the next frame is fed when due, not after the backlog (late ${late2} s)" 'num "$late2 < 1.5"'
+check "busy through a gap: nothing is fast-forwarded (${adv2} s) and it is logged as not quiescent" \
+      'num "$adv2 == 0" && grep -q "^FF .* quiescent=0" "$W/feed.log"'
+check "busy through a gap: the frame after it keeps its spacing (late ${late3} s)" 'num "$late3 < 0.5"'
+wait
+
 # 3. The tail: advance while halted, stop once the daemon is idle.
 cat > "$W/t3.trace" <<EOF
 0 0 1 DT1 300 routine
@@ -125,6 +147,33 @@ sh "$FEED" --trace "$W/t1.trace" --pipeline 1 > /dev/null 2>&1; rc=$?
 check "refuses a missing argument (no defaults)" '[ $rc -eq 2 ] && [ ! -e "$W/cam.log" ]'
 sh "$FEED" --check --trace "$W/t1.trace" > /dev/null 2>&1; rc=$?
 check "--check validates a trace without feeding" '[ $rc -eq 0 ] && [ ! -e "$W/cam.log" ]'
+
+# 5. --image-list: frame k gets line k mod N.
+: > "$W/a.bayerRG"; : > "$W/b.bayerRG"
+printf '%s\n%s\n' "$W/a.bayerRG" "$W/b.bayerRG" > "$W/images.txt"
+cat > "$W/t5.trace" <<EOF
+0 0 1 DT1 300 routine
+1 0 2 DT1 300 routine
+2 0 3 DT1 300 routine
+EOF
+reset
+sh "$FEED" --trace "$W/t5.trace" --pipeline 1 --images 1 --image-list "$W/images.txt" \
+   --console "$W/console.log" --feed-log "$W/feed.log" --dipp-ctl "$W/dipp_ctl" \
+   --camera "$W/camera" --idle-window 1 --ff-chunk 10 --ff-tick 0.3 --tail-ff 0 > /dev/null 2>&1; rc=$?
+imgs=$(awk '{ print $4 }' "$W/cam.log" | sed 's#.*/##' | tr '\n' ' ')
+check "--image-list rotates a, b, a (got: $imgs)" '[ $rc -eq 0 ] && [ "$imgs" = "a.bayerRG b.bayerRG a.bayerRG " ]'
+check "feed.log records each frame's image" '[ "$(grep -c "image=a.bayerRG" "$W/feed.log")" -eq 2 ]'
+printf '%s\n' "$W/missing.bayerRG" > "$W/images_bad.txt"
+reset
+sh "$FEED" --trace "$W/t5.trace" --pipeline 1 --images 1 --image-list "$W/images_bad.txt" \
+   --console "$W/console.log" --feed-log "$W/feed.log" --dipp-ctl "$W/dipp_ctl" \
+   --camera "$W/camera" --idle-window 1 --ff-chunk 10 --ff-tick 0.3 --tail-ff 0 > /dev/null 2>&1; rc=$?
+check "refuses a list naming a missing image, before feeding" '[ $rc -eq 2 ] && [ ! -e "$W/cam.log" ]'
+reset
+sh "$FEED" --trace "$W/t5.trace" --pipeline 1 --images 1 --image "$W/a.bayerRG" --image-list "$W/images.txt" \
+   --console "$W/console.log" --feed-log "$W/feed.log" --dipp-ctl "$W/dipp_ctl" \
+   --camera "$W/camera" --idle-window 1 --ff-chunk 10 --ff-tick 0.3 --tail-ff 0 > /dev/null 2>&1; rc=$?
+check "refuses --image with --image-list" '[ $rc -eq 2 ] && [ ! -e "$W/cam.log" ]'
 
 [ "$FAIL" -eq 0 ] && echo "OK (0 failures)" || echo "FAILED ($FAIL failures)"
 exit "$FAIL"

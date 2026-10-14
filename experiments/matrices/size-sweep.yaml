@@ -19,7 +19,9 @@
 # k=5, ~37.5 s); the pilot hit the old 30 s limit (monolith high, k=5).
 run_set: size-sweep
 outdir: analysis/size-sweep
-settings: {storage: HYBRID, idle_s: 60, min_drain: 30}
+# min_drain is the stall limit only (run.sh drains on completions); 150 s
+# exceeds the slowest batch, 5 frames at high effort (~50 s), with margin.
+settings: {storage: HYBRID, idle_s: 60, min_drain: 150}
 runs:
 - {label: p2-low-val04-k1, pipeline: 2, image: cs12_validation_04.bayerRG, images: 1, n: 6}
 - {label: p2-low-val11-k1, pipeline: 2, image: cs12_validation_11.bayerRG, images: 1, n: 6}

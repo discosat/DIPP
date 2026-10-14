@@ -1,0 +1,34 @@
+# Operating envelope (R1.5): one heavy v2 run (C5) with the sampler every 2 s.
+run_set: envelope
+defaults:
+  storage: HYBRID
+  heuristic: BEST_EFFORT
+  load: trace
+  images: 1
+  cost_seed: cost.seed
+  min_drain: 150
+  idle_window: 5
+  ff_chunk: 60
+  ff_tick: 0.5
+  tail_ff: 5726
+  platform: disco2-bol.env
+  sched_q_med: auto
+  sched_q_low: auto
+  sched_granularity: stage
+  sched_gate_med_ms: 5000
+  sched_gate_low_ms: 3000
+  sched_window: 8
+  sched_frame_overhead_ms: 780
+  sched_guard: 'on'
+  sched_accept: feas
+  sched_k_x10: 20
+  sched_smax_high_ms: 12150
+  sched_smax_med_ms: 7330
+runs:
+- label: envelope-C5-adaptive-s1
+  arrivals: experiments/traces/main2x-s1.trace
+  image_prefix: cs12_test_matchedkeep_
+  phase0: 0.1202
+  soc0: 0.9338
+  pipeline: 1
+  envelope_ivl: 2

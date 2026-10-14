@@ -85,11 +85,12 @@ def main():
     # went through at once. The md5 check below is what says it worked.
     steps = [
         "rm -f /usr/share/pipeline/*.so",
-        f"cd {a.board_dir} && rm -f dipp dipp_ctl emulate_camera run.sh feed_trace.sh storage.vmem cost.seed *.profile *.env",
+        f"cd {a.board_dir} && rm -f dipp dipp_ctl emulate_camera run.sh feed_trace.sh envelope_sampler.sh storage.vmem cost.seed *.profile *.env",
         f"cd {stage_dir} && cp *.so /usr/share/pipeline/",
         f"cd {stage_dir} && cp dipp dipp_ctl emulate_camera storage.vmem cost.seed {a.board_dir}/",
         f"cd {stage_dir} && (cp run.sh {a.board_dir}/ 2>/dev/null || true)",
         f"cd {stage_dir} && cp feed_trace.sh {a.board_dir}/",
+        f"cd {stage_dir} && (cp envelope_sampler.sh {a.board_dir}/ 2>/dev/null || true)",
         f"cd {stage_dir} && cp *.profile *.env {a.board_dir}/",
         "chmod +x /usr/share/pipeline/*.so",
         f"cd {a.board_dir} && chmod +x dipp dipp_ctl emulate_camera run.sh feed_trace.sh 2>/dev/null",

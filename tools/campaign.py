@@ -32,7 +32,7 @@ board once per md5), `idle_window`, `ff_chunk`, `ff_tick` and `tail_ff`. The
 whole matrix is checked before the first run, so a missing key fails at once
 rather than at run 37. (`trace: false` is unrelated: it turns off minitrace.)
 """
-import argparse, hashlib, json, os, subprocess, sys, time
+import argparse, hashlib, json, os, re, subprocess, sys, time
 import yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -45,7 +45,11 @@ BOARD_DIR = "/home/root/tmp-experiments"
 # 60 s SLO is the old emulate_camera default; the store starts empty. Stated
 # once, here, so no bench inherits a value silently.
 BENCH_RUN_ARGS = ("--platform disco2-bol.env --soc0 1.0 --phase0 0.3 "
-                  "--slo 60 --cost-seed none")
+                  "--slo 60 --cost-seed none"
+                  " --sched-q-med 12 --sched-q-low 20 --sched-granularity batch"
+                  " --sched-gate-med-ms 5000 --sched-gate-low-ms 3000"
+                  " --sched-window 8 --sched-frame-overhead-ms 780 --sched-guard off"
+                  " --sched-accept split --sched-k-x10 20 --sched-smax-high-ms 12150 --sched-smax-med-ms 7330")
 
 # A campaign runs for hours; block-buffered stdout means no visible progress
 # until it ends, and no partial record if it is killed.
@@ -61,7 +65,9 @@ def board(cmd, timeout=300):
 def fetch(remote, local, md5sum, timeout=1800):
     r = subprocess.run([os.path.join(HERE, "board_fetch.py"), remote, local, md5sum],
                        capture_output=True, text=True, timeout=timeout)
-    return "MATCH" in r.stdout
+    # board_fetch prints "-> MATCH, saved" or "-> MISMATCH (...)" and exits 1;
+    # a bare "MATCH" substring test accepted mismatches (found 2026-10-07).
+    return r.returncode == 0 and "-> MATCH" in r.stdout
 
 
 def remote_md5(path):
@@ -82,12 +88,31 @@ def sha256(path):
 
 
 # ------------------------------------------------------------------ energy
-class Energy:
-    """Otii recording around a run. Degrades to no-energy rather than failing:
-    a wedged instrument must not be able to kill a campaign."""
+# Every Otii request waits this long. The client's default is 3 s, and the app
+# exceeds it with a few hundred recordings in the project: start_recording
+# timed out at sweep run 6 (2026-10-01) and again on 2026-10-02, then
+# stop_recording. A timed-out request also leaves its late reply on the socket,
+# so the connection cannot be trusted afterwards -- hence a generous timeout
+# rather than retries.
+REQUEST_TIMEOUT_S = 30
 
-    def __init__(self, enabled=True):
+
+class EnergyError(RuntimeError):
+    pass
+
+
+class Energy:
+    """Otii recording around a run.
+
+    required=False: degrades to no-energy, saying so on every failure -- a
+    wedged instrument must not be able to kill a campaign.
+    required=True: any failure raises EnergyError. The size sweep needs this:
+    with the old silent degrade, a start_recording failure at run 6 of 68
+    (2026-10-01) left 62 runs recorded as complete with no energy at all."""
+
+    def __init__(self, enabled=True, required=False):
         self.ok = False
+        self.required = required and enabled
         self.otii = self.dev = self.ctx = None
         if not enabled:
             return
@@ -96,23 +121,38 @@ class Energy:
             client = otii_client.OtiiClient()
             self.ctx = client.connect(licensing=otii_client.LicensingMode.MANUAL)
             self.otii = self.ctx.__enter__()
+            conn = self.otii.connection
+            send = conn.send_and_receive
+            conn.send_and_receive = lambda req, timeout=REQUEST_TIMEOUT_S: \
+                send(req, max(timeout, REQUEST_TIMEOUT_S))
             # get_devices() before get_licenses(): the licence call is a remote
             # request that hangs for minutes when the app is unhappy.
             self.dev = self.otii.get_devices()[0]
             self.dev.enable_channel("mc", True)
             self.ok = True
         except Exception as e:
-            print(f"  [energy] unavailable ({type(e).__name__}); continuing without")
+            self._fail(f"unavailable ({type(e).__name__}: {e})")
+
+    def _fail(self, what):
+        if self.required:
+            raise EnergyError(f"Otii {what}")
+        print(f"  [energy] {what}; continuing without")
 
     def start(self):
-        if self.ok:
-            try:
-                self.otii.get_active_project().start_recording()
-            except Exception:
-                self.ok = False
+        if not self.ok:
+            if self.required:
+                raise EnergyError("Otii not connected")
+            return
+        try:
+            self.otii.get_active_project().start_recording()
+        except Exception as e:
+            self.ok = False
+            self._fail(f"start_recording failed ({type(e).__name__}: {e})")
 
     def stop(self):
         if not self.ok:
+            if self.required:
+                raise EnergyError("Otii not connected")
             return {}
         try:
             proj = self.otii.get_active_project()
@@ -121,12 +161,15 @@ class Energy:
             info = rec.get_channel_info(self.dev.id, "mc")
             st = rec.get_channel_statistics(self.dev.id, "mc", info["from"], info["to"])
             secs = max(info["to"] - info["from"], 1e-9)
+            # Read; now delete, so the project does not grow run by run (its
+            # size is what slows start_recording). The numbers are returned.
+            rec.delete()
             return {"avg_current_a": st["average"],
                     "avg_power_w": st["average"] * 5.0,
                     "energy_wh": st["average"] * 5.0 * secs / 3600.0,
                     "measured_s": secs}
         except Exception as e:
-            print(f"  [energy] read failed: {type(e).__name__}")
+            self._fail(f"read failed ({type(e).__name__}: {e})")
             return {}
 
     def close(self):
@@ -211,7 +254,11 @@ LOAD_KEYS = {
 def spec_problems(spec):
     """Everything a spec lacks, so the whole matrix can be refused up front."""
     out = [f"lacks {k}" for k in ("label", "pipeline", "storage", "heuristic",
-                                   "platform", "soc0", "phase0", "load", "cost_seed")
+                                   "platform", "soc0", "phase0", "load", "cost_seed", "min_drain",
+                                   "sched_q_med", "sched_q_low", "sched_granularity",
+                                   "sched_gate_med_ms", "sched_gate_low_ms",
+                                   "sched_window", "sched_frame_overhead_ms", "sched_guard", "sched_accept",
+                                   "sched_k_x10", "sched_smax_high_ms", "sched_smax_med_ms")
            if k not in spec]
     load = spec.get("load")
     if load is not None and load not in LOAD_KEYS:
@@ -221,6 +268,14 @@ def spec_problems(spec):
             out.append(f"load {load} lacks {k}")
     if load == "trace" and "arrivals" in spec and not os.path.isfile(spec["arrivals"]):
         out.append(f"arrivals file not found: {spec['arrivals']}")
+    elif load == "trace" and "arrivals" in spec and "phase0" in spec:
+        # The trace places every burst on the orbit relative to its phase0
+        # (tools/make_arrival_trace.py); any other start phase breaks that.
+        hdr = [l for l in open(spec["arrivals"]) if l.startswith("# phase0=")]
+        if not hdr:
+            out.append(f"{spec['arrivals']} has no '# phase0=' header")
+        elif abs(float(hdr[0].split("=", 1)[1]) - float(spec["phase0"])) > 1e-4:
+            out.append(f"phase0 {spec['phase0']} differs from the trace's {hdr[0].split('=', 1)[1].strip()}")
     return out
 
 
@@ -271,7 +326,10 @@ def run_one(spec, outdir, energy):
     run_json = os.path.join(dest, "RUN.json")
     if os.path.exists(run_json):
         try:
-            if json.load(open(run_json)).get("complete"):
+            prev = json.load(open(run_json))
+            # A run recorded without energy (the old silent degrade) is not
+            # complete for an energy campaign; it is run again.
+            if prev.get("complete") and (not energy.required or prev.get("energy")):
                 print(f"  {label}: already complete, skipping")
                 return "skipped"
         except Exception:
@@ -291,9 +349,22 @@ def run_one(spec, outdir, energy):
             f"--n {spec.get('n',20)} --images {spec.get('images',1)} "
             f"--seed {spec.get('seed',43)}")
     args += f" --platform {spec['platform']} --soc0 {spec['soc0']} --phase0 {spec['phase0']}"
+    args += f" --min-drain {spec['min_drain']}"
+    if spec.get("envelope_ivl"):
+        args += f" --envelope-ivl {spec['envelope_ivl']}"
+    args += (f" --sched-q-med {spec['sched_q_med']} --sched-q-low {spec['sched_q_low']}"
+             f" --sched-granularity {spec['sched_granularity']}"
+             f" --sched-gate-med-ms {spec['sched_gate_med_ms']} --sched-gate-low-ms {spec['sched_gate_low_ms']}"
+             f" --sched-window {spec['sched_window']} --sched-frame-overhead-ms {spec['sched_frame_overhead_ms']}"
+             f" --sched-guard {spec['sched_guard']} --sched-accept {spec['sched_accept']} --sched-k-x10 {spec['sched_k_x10']}"
+             f" --sched-smax-high-ms {spec['sched_smax_high_ms']} --sched-smax-med-ms {spec['sched_smax_med_ms']}")
     args += f" --cost-seed {spec['cost_seed']}"
+    if spec.get("image") and spec.get("image_prefix"):
+        raise ValueError(f"{spec['label']}: image and image_prefix are exclusive")
     if spec.get("image"):
         args += f" --image {spec['image']}"
+    if spec.get("image_prefix"):
+        args += f" --image-prefix '{spec['image_prefix']}'"
     if spec.get("keep_cost_cache"):
         args += " --keep-cost-cache"
     if spec.get("trace") is False:
@@ -336,11 +407,16 @@ def run_one(spec, outdir, energy):
     wall = time.time() - t0
 
     # Collect. Compress first: these cross a 9.7 KB/s serial link.
-    board(f"cd {BOARD_DIR}/runs/{label} && gzip -9 -f console.log trace.json 2>/dev/null; echo GZ", 120)
+    board(f"cd {BOARD_DIR}/runs/{label} && gzip -9 -f console.log trace.json predictions.txt kept_pixels.txt "
+          f"2>/dev/null; echo GZ", 300)
     got = {}
-    for name in ("board.json", "pre.txt", "post.txt", "console.log.gz",
-                 "trace.json.gz", "storage.vmem", "predictions.txt", "kept_pixels.txt",
-                 "feed.log"):
+    # Essential and small first. Fetching an uncompressed multi-MB
+    # predictions.txt killed the serial console twice (pilot and t7-adaptive-s1,
+    # 2026-10-03) and every file after it was lost, feed.log included. The
+    # module logs are now gzipped and fetched last.
+    for name in ("board.json", "feed.log", "images.txt", "pre.txt", "post.txt", "envelope.txt",
+                 "console.log.gz", "storage.vmem", "trace.json.gz",
+                 "predictions.txt.gz", "kept_pixels.txt.gz"):
         remote = f"{BOARD_DIR}/runs/{label}/{name}"
         m = remote_md5(remote)
         if not m:
@@ -361,6 +437,19 @@ def run_one(spec, outdir, energy):
         if os.path.exists(p):
             rec[f"{f}_sha256"] = sha256(p)
     rec["complete"] = bool(rec.get("n_executions")) and "board.json" in got
+    # A trace run is unusable without its feed.log (frame classes, arrival
+    # times): the console died during the pilot's fetch (2026-10-03) and the
+    # run was still recorded complete. Not complete -> redone on resume.
+    if spec["load"] == "trace" and "feed.log" not in got:
+        rec["complete"] = False
+        rec["error"] = "feed.log not fetched"
+    # A frame fed more than 1 s after its due time means the replay no longer
+    # matches the trace (2026-10-09: the unbounded idle wait compressed
+    # arrivals in every overloaded run). Such a run is a bench fault.
+    m = re.search(r"late_frames=(\d+)", str(rec.get("trace_end", "")))
+    if spec["load"] == "trace" and rec["complete"] and (m is None or int(m.group(1)) > 0):
+        rec["complete"] = False
+        rec["error"] = f"feeder late: {rec.get('trace_end', 'no TRACE_END')}"
     json.dump(rec, open(run_json, "w"), indent=2)
 
     status = "ok" if rec["complete"] else "failed"
@@ -399,13 +488,18 @@ def main():
     os.makedirs(outdir, exist_ok=True)
     print(f"=== campaign '{m.get('run_set')}': {len(specs)} runs -> {outdir} ===")
 
-    energy = Energy(enabled=not a.no_energy)
+    # Energy is required unless --no-energy: an Otii failure stops the
+    # campaign (EnergyError) instead of recording runs without energy; the
+    # campaign resumes from the first incomplete run when invoked again.
+    energy = Energy(enabled=not a.no_energy, required=True)
     tally = {"ok": 0, "failed": 0, "skipped": 0}
     try:
         for i, s in enumerate(specs, 1):
             print(f"[{i}/{len(specs)}]")
             try:
                 tally[run_one(s, outdir, energy)] += 1
+            except EnergyError:
+                raise
             except Exception as ex:
                 tally["failed"] += 1
                 print(f"  {s['label']}: EXCEPTION {type(ex).__name__}: {ex}")

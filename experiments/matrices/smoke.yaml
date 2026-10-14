@@ -2,6 +2,13 @@
 # run, Otii energy, fetch, RUN.json) without costing a real campaign's time.
 run_set: smoke
 defaults:
+  # scheduling policy stated explicitly (run.sh requires it, 2026-10-06)
+  sched_q_med: 12
+  sched_q_low: 20
+  sched_granularity: batch
+  sched_gate_med_ms: 5000
+  sched_gate_low_ms: 3000
+  min_drain: 20      # explicit: run.sh no longer defaults it (2026-10-03)
   n: 5
   images: 1
   seed: 43

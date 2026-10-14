@@ -127,7 +127,7 @@ def main():
     ap.add_argument("matrix")
     ap.add_argument("--only", nargs="*", default=None)
     ap.add_argument("--no-energy", action="store_true",
-                    help="latency only; without it, an unavailable Otii stops the sweep")
+                    help="latency only; without it, any Otii failure stops the sweep")
     a = ap.parse_args()
 
     m = load_matrix(a.matrix)
@@ -135,9 +135,9 @@ def main():
     outdir = m.get("outdir", f"analysis/{m.get('run_set', 'size-sweep')}")
     os.makedirs(outdir, exist_ok=True)
 
-    energy = campaign.Energy(enabled=not a.no_energy)
-    if not a.no_energy and not energy.ok:
-        raise SystemExit("Otii unavailable: refusing an energy sweep (--no-energy for latency only)")
+    # required: an Otii failure mid-sweep stops the sweep (EnergyError) rather
+    # than recording runs as complete without energy.
+    energy = campaign.Energy(enabled=not a.no_energy, required=True)
 
     todo = []
     for r in m["runs"]:
@@ -147,7 +147,14 @@ def main():
         if os.path.exists(p):
             try:
                 prev = json.load(open(p))
-                if prev.get("complete") and prev.get("valid", True):
+                # an energy sweep needs the run's energy and both floors;
+                # a record without them (the 2026-10-01 silent degrade) is redone
+                has_energy = bool(prev.get("energy")) and prev.get("floor_before_w") is not None \
+                    and prev.get("floor_after_w") is not None
+                # and every batch completed (records written before that rule
+                # say complete=true for runs the old drain cut short)
+                done_all = int(prev.get("n_completed") or 0) >= int(r["n"])
+                if prev.get("complete") and done_all and prev.get("valid", True) and (a.no_energy or has_energy):
                     continue
             except Exception:
                 pass
@@ -188,7 +195,14 @@ def main():
                     mm = re.search(rf'"{key}": "?([^",\n]*)"?', bj)
                     if mm:
                         rec[key] = mm.group(1)
-                rec["complete"] = bool(rec["execs"])
+                for key in ("n_expected", "drain_stalled"):
+                    mm = re.search(rf'"{key}": "?([^",\n]*)"?', bj)
+                    if mm:
+                        rec[key] = mm.group(1)
+                # Complete = every batch fed completed. Execution lines alone
+                # are not enough: a drain that cut a run off before its first
+                # batch finished left 4 EXEC lines and no encoder (2026-10-03).
+                rec["complete"] = bool(rec["execs"]) and int(rec.get("n_completed") or 0) >= int(r["n"])
                 if before is not None and after is not None:
                     rec["valid"] = (before < BAND_EDGE_W) == (after < BAND_EDGE_W)
                     rec["floor_shift_w"] = round(after - before, 4)
@@ -197,7 +211,8 @@ def main():
             json.dump(rec, open(os.path.join(outdir, f"{r['label']}.json"), "w"), indent=1)
             if not rec["complete"]:
                 tally["failed"] += 1
-                print(f"  FAILED ({status})")
+                print(f"  FAILED ({status}; completed {rec.get('n_completed')} of {r['n']}"
+                      f"{', drain stalled' if rec.get('drain_stalled') == '1' else ''})")
             elif not rec.get("valid", True):
                 tally["invalid"] += 1
                 print(f"  INVALID: floor {before:.3f} -> {after:.3f} W crosses {BAND_EDGE_W} W; "

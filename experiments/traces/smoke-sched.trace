@@ -1,0 +1,50 @@
+# generated 2026-10-06T13:51:37+00:00 by tools/make_arrival_trace.py
+# argv poisson --mean-s 3 --n 40 --urgent-fraction 0.2 --phase0 0.3 --seed 7 --platform experiments/platforms/disco2-bol.env --profile-dir analysis/power-profile --realtime-max-gap-s 60 --slo-urgent 20 --slo-routine 300 --no-feasibility-check -o experiments/traces/smoke-sched.trace
+# source Poisson mean 3.0 s n 40 urgent fraction 0.2 seed 7
+# platform experiments/platforms/disco2-bol.env profile analysis/power-profile/disco2_fig7-3_bol.profile
+# phase0=0.3000
+# soc0_steady=0.9849
+# frames=40 urgent=11 routine=29 urgent_frac=0.275 bursts=1
+# span_s=105.9 realtime_s=105.9 ff_total_s=0.0
+# slo urgent=20 routine=300; urgent feasibility bound not checked (--no-feasibility-check)
+# columns: t_s ff_s scene datatake slo_s class (tests/board/feed_trace.sh)
+0.000 0.000 1 poisson 300 routine
+0.491 0.000 2 poisson 300 routine
+0.716 0.000 3 poisson 300 routine
+2.082 0.000 4 poisson 20 urgent
+4.206 0.000 5 poisson 20 urgent
+5.912 0.000 6 poisson 20 urgent
+6.197 0.000 7 poisson 300 routine
+11.458 0.000 8 poisson 20 urgent
+12.216 0.000 9 poisson 300 routine
+21.069 0.000 10 poisson 300 routine
+22.584 0.000 11 poisson 300 routine
+22.728 0.000 12 poisson 300 routine
+23.753 0.000 13 poisson 20 urgent
+24.129 0.000 14 poisson 300 routine
+29.210 0.000 15 poisson 20 urgent
+31.824 0.000 16 poisson 300 routine
+33.221 0.000 17 poisson 300 routine
+33.416 0.000 18 poisson 20 urgent
+34.108 0.000 19 poisson 300 routine
+35.782 0.000 20 poisson 300 routine
+38.424 0.000 21 poisson 300 routine
+39.493 0.000 22 poisson 300 routine
+43.095 0.000 23 poisson 300 routine
+45.658 0.000 24 poisson 300 routine
+51.899 0.000 25 poisson 300 routine
+52.918 0.000 26 poisson 300 routine
+53.295 0.000 27 poisson 300 routine
+57.541 0.000 28 poisson 20 urgent
+59.555 0.000 29 poisson 20 urgent
+62.865 0.000 30 poisson 300 routine
+65.418 0.000 31 poisson 300 routine
+66.547 0.000 32 poisson 300 routine
+69.254 0.000 33 poisson 300 routine
+71.082 0.000 34 poisson 300 routine
+79.766 0.000 35 poisson 300 routine
+83.039 0.000 36 poisson 20 urgent
+86.666 0.000 37 poisson 300 routine
+101.593 0.000 38 poisson 300 routine
+102.598 0.000 39 poisson 300 routine
+105.911 0.000 40 poisson 20 urgent

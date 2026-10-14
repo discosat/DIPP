@@ -26,10 +26,11 @@ PIPELINE = [
     ("tile",                       "libtile.so"),
     ("tflite_classification",      "libtflite_classification.so"),
     ("tflite_binary_segmentation", "libtflite_binary_segmentation.so"),
-    ("jpegxl_encode",              "libjpegxl_encode.so"),
+    ("jpeg2000_module",            "libjpeg2000_module.so"),  # flight encoder
 ]
 MONOLITH = ("single_module", "libsingle_module.so")
-OTHER = [("resize", "libresize.so"), ("jpegxl_module", "libjpegxl_module.so"),
+OTHER = [("resize", "libresize.so"), ("jpegxl_encode", "libjpegxl_encode.so"),
+         ("jpegxl_module", "libjpegxl_module.so"),
          ("crash_and_burn", "libcrash_and_burn.so")]
 
 # UHF uplink, the only operational uplink on DISCO-2 (SI-DISCOII-DR-001 7.5)

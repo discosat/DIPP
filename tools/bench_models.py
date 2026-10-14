@@ -473,7 +473,7 @@ def main():
     a = ap.parse_args()
 
     import campaign
-    energy = campaign.Energy()
+    energy = campaign.Energy(required=True)
     results = {}
 
     if a.idle:

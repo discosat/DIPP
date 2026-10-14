@@ -95,7 +95,7 @@ def t_known_good_run_counts():
     """The 20-batch pipeline-2 run parses to exactly 100 executions."""
     if not os.path.exists(os.path.join(FIX_STAGE4, "console.log.gz")):
         raise FileNotFoundError(FIX_STAGE4)
-    row, execs, _ = parse_runs.collect(FIX_STAGE4)
+    row, execs, _, _s5 = parse_runs.collect(FIX_STAGE4)
     assert row["n_executions"] == 100, f"n_executions={row['n_executions']}, want 100"
     assert row["n_batches"] == 20, f"n_batches={row['n_batches']}, want 20"
     assert len(execs) == 100
@@ -141,7 +141,7 @@ def t_warmup_discard():
     """Exactly the first batch of each run is discarded."""
     if not os.path.exists(os.path.join(FIX_STAGE4, "console.log.gz")):
         raise FileNotFoundError(FIX_STAGE4)
-    _row, execs, _ = parse_runs.collect(FIX_STAGE4)
+    _row, execs, _, _s5 = parse_runs.collect(FIX_STAGE4)
     for e in execs:
         e["run_id"] = "r"
     kept, dropped = tables.drop_warmup(execs)

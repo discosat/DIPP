@@ -69,6 +69,7 @@ cp "$MODULES/builddir/emulate_camera" "$OUT/"
 cp "$MODULES/builddir"/*.so "$OUT/"
 cp "$HERE/tests/board/run.sh" "$OUT/" 2>/dev/null || true
 cp "$HERE/tests/board/feed_trace.sh" "$OUT/"
+cp "$HERE/tools/envelope_sampler.sh" "$OUT/"
 # Battery generation profiles and platform presets (run.sh --platform); the
 # daemon refuses to start without them, so a set without them is not staged.
 cp "$HERE"/analysis/power-profile/*.profile "$OUT/"

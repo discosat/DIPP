@@ -1,0 +1,53 @@
+# generated 2026-10-07T10:41:35+00:00 by tools/make_arrival_trace.py
+# argv s2 --windows analysis/s2-workload/east_greenland/windows.json --satellite S2A --merge-gap-s 600 --day 2026-10-11 --days 1 --first-burst 0 --n-bursts 1 --targets analysis/s2-workload/targets.geojson --seed 1 --frame-period-s 6.68 --frame-along-km 46.73 --frame-across-km 56 --platform experiments/platforms/disco2-bol.env --profile-dir analysis/power-profile --realtime-max-gap-s 60 --slo-urgent 20 --slo-routine 300 --cost-model analysis/cost_model.json --manifest experiments/board/flight-config/manifest.yaml --pipelines 1,2,3,4,6 -o experiments/traces/eg.trace
+# source S2 windows analysis/s2-workload/east_greenland/windows.json satellite S2A day 2026-10-11 (+1 d) bursts 0..0 of 1 (merge gap 600.0 s)
+# epoch_utc 2026-10-11T14:21:13.480000+00:00
+# targets file analysis/s2-workload/targets.geojson
+# orbit beta 0 noon/midnight SSO, period 5725.8 s, altitude 539 km, inclination 97.55 deg; eclipse centre at profile phase 0.8113 (35.5 min dark)
+# inter_burst_adjust_s none
+# phase_vs_latitude_err_s max 9 median 2
+# platform experiments/platforms/disco2-bol.env profile analysis/power-profile/disco2_fig7-3_bol.profile
+# phase0=0.0924
+# soc0_steady=0.9269
+# frames=38 urgent=1 routine=37 urgent_frac=0.026 bursts=1
+# span_s=277.0 realtime_s=277.0 ff_total_s=0.0
+# slo urgent=20 routine=300; urgent feasibility bound 17.89 s (pipeline 1: longest stage as blocking + own path at the slowest operating point, 99 tiles kept); per pipeline p1:17.89 p2:8.05 p3:17.89 p4:12.60 p6:11.38
+# columns: t_s ff_s scene datatake slo_s class (tests/board/feed_trace.sh)
+0.000 0.000 1 S2A:59038-1 300 routine
+7.000 0.000 2 S2A:59038-1 300 routine
+13.680 0.000 3 S2A:59038-1 300 routine
+20.360 0.000 4 S2A:59038-1 300 routine
+27.040 0.000 5 S2A:59038-1 300 routine
+33.720 0.000 6 S2A:59038-1 300 routine
+40.400 0.000 7 S2A:59038-1 300 routine
+47.080 0.000 8 S2A:59038-1 300 routine
+53.760 0.000 9 S2A:59038-1 300 routine
+60.440 0.000 10 S2A:59038-1 300 routine
+67.120 0.000 11 S2A:59038-1 300 routine
+73.800 0.000 12 S2A:59038-1 300 routine
+80.480 0.000 13 S2A:59038-1 300 routine
+87.160 0.000 14 S2A:59038-1 300 routine
+93.840 0.000 15 S2A:59038-1 300 routine
+100.520 0.000 16 S2A:59038-1 300 routine
+107.200 0.000 17 S2A:59038-1 300 routine
+113.880 0.000 18 S2A:59038-1 300 routine
+120.560 0.000 19 S2A:59038-1 300 routine
+127.240 0.000 20 S2A:59038-1 300 routine
+133.920 0.000 21 S2A:59038-1 300 routine
+140.600 0.000 22 S2A:59038-1 300 routine
+147.280 0.000 23 S2A:59038-1 300 routine
+153.960 0.000 24 S2A:59038-1 300 routine
+160.640 0.000 25 S2A:59038-1 300 routine
+167.320 0.000 26 S2A:59038-1 300 routine
+174.000 0.000 27 S2A:59038-1 20 urgent
+180.680 0.000 28 S2A:59038-1 300 routine
+204.000 0.000 29 S2A:59038-1 300 routine
+211.000 0.000 30 S2A:59038-1 300 routine
+217.680 0.000 31 S2A:59038-1 300 routine
+224.360 0.000 32 S2A:59038-1 300 routine
+243.000 0.000 33 S2A:59038-1 300 routine
+249.680 0.000 34 S2A:59038-1 300 routine
+256.360 0.000 35 S2A:59038-1 300 routine
+263.040 0.000 36 S2A:59038-1 300 routine
+269.000 0.000 37 S2A:59038-1 300 routine
+277.000 0.000 38 S2A:59038-1 300 routine

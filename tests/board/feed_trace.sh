@@ -2,7 +2,7 @@
 # Replay an arrival trace against a running dipp. Board side; run.sh calls it.
 #
 #   feed_trace.sh --check --trace FILE
-#   feed_trace.sh --trace FILE --pipeline N --images N --image PATH
+#   feed_trace.sh --trace FILE --pipeline N --images N (--image PATH | --image-list FILE)
 #                 --console LOG --feed-log FILE --dipp-ctl PATH --camera PATH
 #                 --idle-window S --ff-chunk S --ff-tick S --tail-ff S
 #
@@ -30,6 +30,10 @@
 # the next frame's time. Every advance is confirmed from the daemon's own
 # BATTERY_FF lines before the frame is fed.
 #
+# Images. --image feeds the same file for every frame; --image-list FILE (one
+# path per line) gives frame k (0-based, in trace order) line k mod N, so a
+# run's frames differ in content while keeping the set's statistics.
+#
 # After the last frame, --tail-ff S lets the backlog finish: while the daemon
 # is halted it fast-forwards in chunks, up to S simulated seconds in total,
 # until it is idle. 0 disables it. Whatever is still queued then is reported
@@ -40,7 +44,7 @@
 # is fed anything.
 set -u
 
-TRACE=""; PIPELINE=""; IMAGES=""; IMG=""; CONSOLE=""; FEEDLOG=""
+TRACE=""; PIPELINE=""; IMAGES=""; IMG=""; IMGLIST=""; CONSOLE=""; FEEDLOG=""
 CTL=""; CAM=""; IDLE=""; CHUNK=""; TICK=""; TAIL=""; CHECK=0
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -49,6 +53,7 @@ while [ $# -gt 0 ]; do
         --pipeline) PIPELINE="$2"; shift 2;;
         --images) IMAGES="$2"; shift 2;;
         --image) IMG="$2"; shift 2;;
+        --image-list) IMGLIST="$2"; shift 2;;
         --console) CONSOLE="$2"; shift 2;;
         --feed-log) FEEDLOG="$2"; shift 2;;
         --dipp-ctl) CTL="$2"; shift 2;;
@@ -88,7 +93,7 @@ awk '
 
 [ "$CHECK" -eq 1 ] && { echo "feed_trace: $TRACE ok"; exit 0; }
 
-for pair in pipeline:PIPELINE images:IMAGES image:IMG console:CONSOLE feed-log:FEEDLOG \
+for pair in pipeline:PIPELINE images:IMAGES console:CONSOLE feed-log:FEEDLOG \
             dipp-ctl:CTL camera:CAM idle-window:IDLE ff-chunk:CHUNK ff-tick:TICK tail-ff:TAIL; do
     eval "val=\${${pair#*:}}"
     [ -n "$val" ] || die "--${pair%%:*} is required"
@@ -99,7 +104,16 @@ gt "$CHUNK" 0 || die "--ff-chunk must be positive"
 gt "$TICK" 0.2 || die "--ff-tick must exceed 0.2 s"
 [ -x "$CTL" ] || die "dipp_ctl not executable: $CTL"
 [ -x "$CAM" ] || die "camera not executable: $CAM"
-[ -f "$IMG" ] || die "image not found: $IMG"
+if [ -n "$IMG" ] && [ -n "$IMGLIST" ]; then die "--image and --image-list are exclusive"; fi
+if [ -n "$IMGLIST" ]; then
+    [ -f "$IMGLIST" ] || die "image list not found: $IMGLIST"
+    NIMG=$(grep -c . "$IMGLIST")
+    [ "$NIMG" -gt 0 ] || die "image list is empty: $IMGLIST"
+    while read -r f; do [ -f "$f" ] || die "image not found: $f (in $IMGLIST)"; done < "$IMGLIST"
+else
+    [ -n "$IMG" ] || die "--image or --image-list is required"
+    [ -f "$IMG" ] || die "image not found: $IMG"
+fi
 [ -f "$CONSOLE" ] || die "console log not found: $CONSOLE"
 
 
@@ -111,9 +125,18 @@ state() {
 # has no local variables, so these carry a wq_ prefix: an earlier version used
 # `t`, overwrote the trace loop's own t_s, and logged a wall-clock value as the
 # frame's trace time for every frame after a gap.
+# With an argument (a simulated time), give up and return 1 once that time is
+# reached while the daemon is still busy: the gap has then elapsed in real
+# time and the next frame is due. Without that bound, a backlog that outlasted
+# a gap held the feed back and every overdue frame was then fed at once
+# (found 2026-10-09: 351 s wait at a 138 s gap, 60 frames 0.09 s apart).
 wait_quiescent() {
+    wq_until="${1:-}"
     wq_since=""
     while :; do
+        if [ -n "$wq_until" ] && ! gt "$wq_until" "$(simnow)"; then
+            return 1
+        fi
         wq_state=$(state); wq_now=$(now)
         case "$wq_state" in
             idle|halted)
@@ -121,7 +144,12 @@ wait_quiescent() {
                 gt "$wq_now - $wq_since" "$IDLE - 0.0001" && return 0 ;;
             *) wq_since="" ;;
         esac
-        sleep 1
+        if [ -n "$wq_until" ]; then
+            # never sleep past the next frame's due time
+            sleep "$(awk "BEGIN { r = $wq_until - $(simnow); printf \"%.3f\", (r < 1 ? (r > 0.05 ? r : 0.05) : 1) }")"
+        else
+            sleep 1
+        fi
     done
 }
 
@@ -158,10 +186,10 @@ while read -r t ff scene datatake slo cls; do
     target=$(calc "$t + $FFCUM")
     if gt "$ff" 0; then
         q0=$(now)
-        wait_quiescent
+        quiet=1; wait_quiescent "$target" || quiet=0
         qw=$(calc "$(now) - $q0")
         a0=$ADV; chunks=0
-        while :; do
+        while [ "$quiet" -eq 1 ]; do
             rem=$(calc "$target - $(simnow)")
             gt "$rem" 0.001 || break
             c=$(awk "BEGIN { r = $rem; c = $CHUNK; printf \"%.3f\", (r < c ? r : c) }")
@@ -169,16 +197,17 @@ while read -r t ff scene datatake slo cls; do
             sleep "$TICK"
         done
         confirm_ff
-        echo "FF scene=$scene ff_s=$ff advanced_s=$(calc "$ADV - $a0") chunks=$chunks quiescent_wait_s=$qw state=$(state)" >> "$FEEDLOG"
+        echo "FF scene=$scene ff_s=$ff advanced_s=$(calc "$ADV - $a0") chunks=$chunks quiescent_wait_s=$qw quiescent=$quiet state=$(state)" >> "$FEEDLOG"
     fi
     w=$(calc "$target - $(simnow)")
     gt "$w" 0 && sleep "$w"
     late=$(calc "$(simnow) - $target")
     gt "$late" 1.0 && LATE=$((LATE + 1))
     "$CTL" mark "$scene" > /dev/null || die "dipp_ctl mark $scene failed"
-    "$CAM" "$IMAGES" "$PIPELINE" 123 "$IMG" "$slo" > /dev/null 2>&1 || die "camera failed on scene $scene"
+    if [ -n "$IMGLIST" ]; then img=$(sed -n "$((N % NIMG + 1))p" "$IMGLIST"); else img=$IMG; fi
+    "$CAM" "$IMAGES" "$PIPELINE" 123 "$img" "$slo" > /dev/null 2>&1 || die "camera failed on scene $scene"
     N=$((N + 1))
-    echo "FEED scene=$scene datatake=$datatake class=$cls slo_s=$slo t_s=$t target_sim_s=$target sim_now_s=$(simnow) late_s=$late wall=$(now)" >> "$FEEDLOG"
+    echo "FEED scene=$scene datatake=$datatake class=$cls slo_s=$slo t_s=$t target_sim_s=$target sim_now_s=$(simnow) late_s=$late image=${img##*/} wall=$(now)" >> "$FEEDLOG"
 done < /tmp/feed_trace.$$
 rm -f /tmp/feed_trace.$$
 

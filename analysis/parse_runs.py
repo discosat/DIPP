@@ -10,6 +10,25 @@ and nothing ever read the trace JSON at all.
 Emits:
     executions.csv  one row per module execution
     runs.csv        one row per run
+    batches.csv     one row per ingested (or dropped) batch: ingest, deadline,
+                    class, completion, latency, deadline met, blocking, halts
+    battery.csv     the battery timeline: BATTERY / BATTERY_FF / BATTERY_SET /
+                    BOARD_POWER lines
+    events.csv      scheduler and harness events: SCHED_STATE / SCHED_HALT /
+                    SCHED_RESUME / MARK / INGEST_DROP / BATTERY_EMPTY
+
+Stage 5a lines are key=value (src/battery_simulator.c, dipp_process.c,
+pipeline_executor.c) and are read by one tokenizer. A trace run's feed.log
+(tests/board/feed_trace.sh) gives each frame's class and datatake: the feeder
+sends `dipp_ctl mark <scene>` immediately before the camera, and both reach
+the daemon in send order, so the n-th MARK belongs to the n-th INGEST (or
+INGEST_DROP) however the two interleave. The daemon reads its queue -- data
+and control alike -- only between batches, so neither INGEST nor MARK
+carries the arrival time. The camera does: deadline = send time + SLO, so a
+frame ARRIVES at deadline_us - slo_s (slo_s from feed.log), and latency,
+blocking and waiting are measured from there; ingest_delay is arrival ->
+INGEST. Its simulated arrival time is the feeder's sim_now_s. Without a
+feed.log (populate / poisson loads) arrival is the INGEST.
 
 The EXEC line is the primary source, not the trace. It already carries every
 field the tables need, it is line-buffered so it survives a kill, and
@@ -127,6 +146,206 @@ def parse_console(path):
     }
 
 
+# ------------------------------------------------------ Stage 5a key=value
+KV_TAGS = {
+    "BATTERY", "BATTERY_FF", "BATTERY_SET", "BATTERY_CONFIG", "BATTERY_EMPTY",
+    "BATTERY_MARGIN_ABOVE_CAPACITY", "BOARD_POWER", "INGEST", "INGEST_DROP",
+    "MARK", "COST_MODEL", "COST_OBSERVE", "COST_STORE_INIT", "COST_STORE_RESET",
+    "SCHED_STATE", "SCHED_HALT", "SCHED_RESUME", "CTL_STALE_DISCARDED",
+    "SCHED_CONFIG", "SCHED_TIER", "PREEMPT", "COST_FLAG",
+}
+BATTERY_TAGS = ("BATTERY", "BATTERY_FF", "BATTERY_SET", "BOARD_POWER")
+EVENT_TAGS = ("SCHED_STATE", "SCHED_HALT", "SCHED_RESUME", "MARK", "INGEST_DROP", "BATTERY_EMPTY",
+              "SCHED_TIER", "PREEMPT", "COST_FLAG")
+COMPLETION_RX = re.compile(r"^Pipeline fully executed successfully uuid=(\S+) ts_us=(\d+) deadline_us=(-?\d+)")
+UPLOAD_BATCH_RX = re.compile(r"^Uploading batch size of (\d+) bytes")
+UPLOAD_IMAGE_RX = re.compile(r"^Uploading image \d+: metadata size = \d+, image size = \d+")
+
+
+def _num(v):
+    try:
+        return int(v)
+    except ValueError:
+        try:
+            return float(v)
+        except ValueError:
+            return v
+
+
+def parse_kv(line):
+    """`TAG k=v k=v ... [-- prose]` -> (TAG, {k: number-or-str})."""
+    head, _, _ = line.partition(" -- ")
+    toks = head.split()
+    return toks[0], {k: _num(v) for k, _, v in (t.partition("=") for t in toks[1:]) if v != "" or "=" in t}
+
+
+def parse_stage5(console, feedlog=None):
+    kv = []                    # (tag, dict) in file order
+    completions = {}
+    uploads = {}               # uuid -> [bytes, tiles]: upload() runs right after the completion line
+    last_done = None
+    opener = gzip.open if str(console).endswith(".gz") else open
+    with opener(console, "rt", errors="replace") as fh:
+        for line in fh:
+            tag = line.split(" ", 1)[0]
+            if tag in KV_TAGS:
+                kv.append(parse_kv(line.rstrip("\n")))
+            elif tag == "Pipeline":
+                m = COMPLETION_RX.match(line)
+                if m:
+                    completions[m.group(1)] = int(m.group(2))
+                    last_done = m.group(1)
+            elif tag == "Uploading" and last_done is not None:
+                m = UPLOAD_BATCH_RX.match(line)
+                if m:
+                    uploads[last_done] = [int(m.group(1)), 0]
+                elif UPLOAD_IMAGE_RX.match(line) and last_done in uploads:
+                    uploads[last_done][1] += 1
+    feed, ff, trace_end = {}, [], {}
+    if feedlog and os.path.exists(feedlog):
+        for line in open(feedlog, errors="replace"):
+            tag, d = parse_kv(line.rstrip("\n"))
+            if tag == "FEED":
+                feed[d.get("scene")] = d
+            elif tag == "FF":
+                ff.append(d)
+            elif tag == "TRACE_END":
+                trace_end = d
+    return kv, completions, feed, ff, trace_end, uploads
+
+
+def stage5_tables(run_id, kv, completions, feed, execs, uploads=None):
+    """batches, battery rows, event rows, and the run-level summary."""
+    by_uuid = defaultdict(list)
+    for e in execs:
+        by_uuid[e.get("uuid")].append(e)
+    # Execution intervals (EXEC is printed when the module returns).
+    spans = sorted((e["ts_us"] - e.get("latency_meas_us", 0), e["ts_us"], e.get("uuid"))
+                   for e in execs if "ts_us" in e)
+
+    batches, battery, events = [], [], []
+    marks = [d for t, d in kv if t == "MARK"]      # n-th MARK <-> n-th INGEST/INGEST_DROP
+    n_in = 0
+    # deadline window (s) -> frame class, from the feeder's own log (one class per window)
+    slo_class = {}
+    for f_ in feed.values():
+        if f_.get("slo_s") is not None and f_.get("class"):
+            slo_class.setdefault(int(f_["slo_s"]), f_["class"])
+    halts = defaultdict(lambda: [0, 0.0])
+    for tag, d in kv:
+        if tag in BATTERY_TAGS:
+            battery.append(dict(run_id=run_id, tag=tag, **d))
+        if tag in EVENT_TAGS:
+            events.append(dict(run_id=run_id, tag=tag, **d))
+        if tag == "SCHED_HALT":
+            halts[d.get("uuid")][0] += 1
+        elif tag == "SCHED_RESUME":
+            halts[d.get("uuid")][1] += float(d.get("halted_s", 0))
+        elif tag in ("INGEST", "INGEST_DROP"):
+            u, t_in = d.get("uuid"), d.get("ts_us")
+            row = {"run_id": run_id, "uuid": u, "pipeline": d.get("pipeline"),
+                   "num_images": d.get("num_images"), "ingest_ts_us": t_in,
+                   "deadline_us": d.get("deadline_us"), "slo_us": d.get("slo_us"),
+                   "dropped": int(tag == "INGEST_DROP"), "ingest_depth": d.get("ingest_depth")}
+            t_arr = t_in
+            if n_in < len(marks):
+                mk = marks[n_in]
+                sc = mk.get("scene")
+                row.update(scene=sc, mark_sim_t_s=mk.get("sim_t_s"), mark_phase=mk.get("phase"))
+                f = feed.get(sc)
+                if f:
+                    row.update(cls=f.get("class"), datatake=f.get("datatake"), slo_s=f.get("slo_s"),
+                               late_s=f.get("late_s"), arrival_sim_t_s=f.get("sim_now_s"))
+                    if d.get("deadline_us") is not None and f.get("slo_s") is not None:
+                        t_arr = d["deadline_us"] - int(f["slo_s"]) * 1_000_000
+            n_in += 1
+            # From policy v2 on, frames carry their capture time (INGEST capture_us):
+            # the arrival time itself, not reconstructed from deadline - SLO.
+            if d.get("capture_us") is not None:
+                t_arr = int(d["capture_us"])
+                row["arrival_src"] = "capture"
+                # The frame's own window (deadline - capture) identifies its
+                # class; the n-th FEED <-> n-th INGEST pairing can swap two
+                # frames ingested out of feed order (2 of 4,048 frames in eval2).
+                if d.get("deadline_us") is not None and slo_class:
+                    w = round((int(d["deadline_us"]) - t_arr) / 1e6)
+                    if w in slo_class:
+                        if row.get("cls") is not None and row["cls"] != slo_class[w]:
+                            row["cls_from_feed"] = row["cls"]
+                        row["cls"], row["slo_s"] = slo_class[w], w
+            else:
+                row["arrival_src"] = "deadline-slo" if t_arr != t_in else "ingest"
+            row["arrival_ts_us"] = t_arr
+            row["ingest_delay_us"] = t_in - t_arr
+            ex = by_uuid.get(u, [])
+            row["n_exec"] = len(ex)
+            row["exec_us_sum"] = sum(e.get("latency_meas_us", 0) for e in ex)
+            row["energy_debited_uwh"] = round(sum(e.get("energy_debited_uwh", 0.0) for e in ex), 3)
+            if ex:
+                first_start = min(e["ts_us"] - e.get("latency_meas_us", 0) for e in ex)
+                row["wait_us"] = first_start - t_arr
+            # Non-preemptive blocking: what was left of another batch's
+            # execution already running when this one arrived.
+            row["blocking_us"] = max([end - t_arr for st, end, uu in spans if uu != u and st < t_arr < end] or [0])
+            done = completions.get(u)
+            row["completed"] = int(done is not None)
+            if done is not None:
+                row["completion_ts_us"] = done
+                row["latency_us"] = done - t_arr
+                row["deadline_met"] = int(done <= d.get("deadline_us", done))
+            row["n_halts"], row["halted_s"] = halts[u][0], round(halts[u][1], 3)
+            up = (uploads or {}).get(u)
+            row["downlink_bytes"] = up[0] if up else None
+            row["tiles_delivered"] = up[1] if up else None
+            batches.append(row)
+    # SCHED_HALT can precede INGEST of later batches; fill halts afterwards.
+    for row in batches:
+        row["n_halts"], row["halted_s"] = halts[row["uuid"]][0], round(halts[row["uuid"]][1], 3)
+
+    summ = {}
+    if batches:
+        def q(v, p):
+            v = sorted(v)
+            return v[min(len(v) - 1, int(round(p * (len(v) - 1))))] if v else None
+        summ["batches_ingested"] = sum(1 for b in batches if not b["dropped"])
+        summ["batches_dropped"] = sum(b["dropped"] for b in batches)
+        summ["batches_completed"] = sum(b["completed"] for b in batches)
+        summ["batches_unfinished"] = summ["batches_ingested"] - summ["batches_completed"]
+        for cls in ("urgent", "routine", None):
+            bs = [b for b in batches if (cls is None or b.get("cls") == cls) and not b["dropped"]]
+            if not bs:
+                continue
+            k = cls or "all"
+            lat = [b["latency_us"] / 1e6 for b in bs if b["completed"]]
+            summ[f"{k}_n"] = len(bs)
+            # A batch that never completed missed its deadline.
+            summ[f"{k}_met_frac"] = round(sum(b.get("deadline_met", 0) for b in bs) / len(bs), 4)
+            summ[f"{k}_latency_p50_s"] = q(lat, 0.5)
+            summ[f"{k}_latency_p95_s"] = q(lat, 0.95)
+            summ[f"{k}_blocking_max_s"] = max(b["blocking_us"] for b in bs) / 1e6
+        summ["halts"] = sum(1 for t, _ in kv if t == "SCHED_HALT")
+        summ["halted_s_total"] = round(sum(float(d.get("halted_s", 0)) for t, d in kv if t == "SCHED_RESUME"), 3)
+    wh = [d["wh"] for t, d in kv if t == "BATTERY" and "wh" in d] + \
+         [d["wh_after"] for t, d in kv if t == "BATTERY_FF" and "wh_after" in d]
+    if wh:
+        summ["battery_wh_min"] = min(wh)
+    summ["battery_empty"] = sum(1 for t, _ in kv if t == "BATTERY_EMPTY")
+    cfg = [d for t, d in kv if t == "BATTERY_CONFIG"]
+    if cfg:
+        summ.update({f"cfg_{k}": cfg[0][k] for k in ("margin_wh", "soc0", "phase0", "board_mode") if k in cfg[0]})
+    bw = [d.get("board_wh") for t, d in kv if t in ("BATTERY", "BOARD_POWER") and "board_wh" in d]
+    if bw:
+        summ["board_wh_last"] = bw[-1]
+    summ["cost_src_hint"] = sum(1 for e in execs if e.get("cost_src") == "hint")
+    summ["preemptions"] = sum(1 for t, _ in kv if t == "PREEMPT")
+    summ["cost_flags"] = sum(1 for t, _ in kv if t == "COST_FLAG")
+    sc = [d for t, d in kv if t == "SCHED_CONFIG"]
+    if sc:
+        summ.update({f"sched_{k}": sc[0][k] for k in ("q_med", "q_low", "granularity", "gate_med_ms", "gate_low_ms")
+                     if k in sc[0]})
+    return batches, battery, events, summ
+
+
 # ------------------------------------------------------------------- trace
 
 TRACE_HEADER = '{"traceEvents":['
@@ -220,7 +439,7 @@ def sha256(path):
     return h.hexdigest()
 
 
-def collect(run_dir=None, console=None, trace=None):
+def collect(run_dir=None, console=None, trace=None, feedlog=None):
     meta = {}
     if run_dir:
         rj = os.path.join(run_dir, "RUN.json")
@@ -228,6 +447,7 @@ def collect(run_dir=None, console=None, trace=None):
             meta = json.load(open(rj))
         console = console or _first(run_dir, "console.log", "console.log.gz")
         trace = trace or _first(run_dir, "trace.json", "trace.json.gz")
+        feedlog = feedlog or _first(run_dir, "feed.log", "feed.log.gz")
         meta.setdefault("run_id", os.path.basename(os.path.normpath(run_dir)))
     meta.setdefault("run_id", os.path.basename(console or trace or "unknown"))
 
@@ -255,13 +475,20 @@ def collect(run_dir=None, console=None, trace=None):
         row["parse_warnings"] = "; ".join(sorted(set(c["warnings"]))) or ""
         if console:
             row["console_sha256"] = sha256(console)
+    s5 = ([], [], [])
+    if c and console:
+        kv, comp, feed, _ff, tend, ups = parse_stage5(console, feedlog)
+        batches, battery, events, summ = stage5_tables(row["run_id"], kv, comp, feed, c["executions"], ups)
+        row.update(summ)
+        row.update({f"feed_{k}": v for k, v in tend.items()})
+        s5 = (batches, battery, events)
     if t:
         row["trace_events"] = t["events"]
         row["trace_flags"] = ";".join(t["flags"])
         row["trace_build"] = t["build"]
         if trace:
             row["trace_sha256"] = sha256(trace)
-    return row, (c["executions"] if c else []), (t["spans"] if t else [])
+    return row, (c["executions"] if c else []), (t["spans"] if t else []), s5
 
 
 def _first(d, *names):
@@ -277,13 +504,15 @@ def main():
     ap.add_argument("rundirs", nargs="*")
     ap.add_argument("--console")
     ap.add_argument("--trace")
+    ap.add_argument("--feed-log")
     ap.add_argument("-o", "--outdir", default="analysis/parsed")
     a = ap.parse_args()
 
-    jobs = [(d, None, None) for d in a.rundirs] or [(None, a.console, a.trace)]
-    run_rows, exec_rows = [], []
-    for rd, con, tr in jobs:
-        row, execs, _spans = collect(rd, con, tr)
+    jobs = [(d, None, None, None) for d in a.rundirs] or [(None, a.console, a.trace, a.feed_log)]
+    run_rows, exec_rows, batch_rows, batt_rows, event_rows = [], [], [], [], []
+    for rd, con, tr, fl in jobs:
+        row, execs, _spans, (b5, bt5, ev5) = collect(rd, con, tr, fl)
+        batch_rows += b5; batt_rows += bt5; event_rows += ev5
         run_rows.append(row)
         for e in execs:
             e = dict(e)
@@ -300,8 +529,11 @@ def main():
     os.makedirs(a.outdir, exist_ok=True)
     _write_csv(os.path.join(a.outdir, "executions.csv"), exec_rows)
     _write_csv(os.path.join(a.outdir, "runs.csv"), run_rows)
-    print(f"\nwrote {a.outdir}/executions.csv ({len(exec_rows)} rows) "
-          f"and runs.csv ({len(run_rows)} rows)")
+    _write_csv(os.path.join(a.outdir, "batches.csv"), batch_rows)
+    _write_csv(os.path.join(a.outdir, "battery.csv"), batt_rows)
+    _write_csv(os.path.join(a.outdir, "events.csv"), event_rows)
+    print(f"\nwrote {a.outdir}/executions.csv ({len(exec_rows)} rows), runs.csv ({len(run_rows)}), "
+          f"batches.csv ({len(batch_rows)}), battery.csv ({len(batt_rows)}), events.csv ({len(event_rows)})")
     return 0
 
 

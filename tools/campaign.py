@@ -32,7 +32,7 @@ board once per md5), `idle_window`, `ff_chunk`, `ff_tick` and `tail_ff`. The
 whole matrix is checked before the first run, so a missing key fails at once
 rather than at run 37. (`trace: false` is unrelated: it turns off minitrace.)
 """
-import argparse, hashlib, json, os, re, subprocess, sys, time
+import argparse, gzip, hashlib, json, os, re, subprocess, sys, time
 import yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -96,6 +96,8 @@ def sha256(path):
 # so the connection cannot be trusted afterwards -- hence a generous timeout
 # rather than retries.
 REQUEST_TIMEOUT_S = 30
+TRACE_HZ = 100        # saved current trace rate (backup; statistics stay full-rate)
+TRACE_MEAN_TOL = 0.005  # trace mean vs full-rate mean
 
 
 class EnergyError(RuntimeError):
@@ -124,8 +126,10 @@ class Energy:
             self.otii = self.ctx.__enter__()
             conn = self.otii.connection
             send = conn.send_and_receive
+            # None = blocking (the client's choice for long data requests:
+            # downsample, channel data); kept as None, not raised to 30 s.
             conn.send_and_receive = lambda req, timeout=REQUEST_TIMEOUT_S: \
-                send(req, max(timeout, REQUEST_TIMEOUT_S))
+                send(req, None if timeout is None else max(timeout, REQUEST_TIMEOUT_S))
             # get_devices() before get_licenses(): the licence call is a remote
             # request that hangs for minutes when the app is unhappy.
             self.dev = self.otii.get_devices()[0]
@@ -146,11 +150,17 @@ class Energy:
             return
         try:
             self.otii.get_active_project().start_recording()
+            self.t_start = time.time()
         except Exception as e:
             self.ok = False
             self._fail(f"start_recording failed ({type(e).__name__}: {e})")
 
-    def stop(self):
+    def stop(self, trace_path=None):
+        """Stop and return the run's statistics. With trace_path, also save
+        the main-current channel at TRACE_HZ (Otii's averaging downsample,
+        done after the statistics are read at full rate) as gzipped CSV; the
+        trace's mean must match the full-rate mean (TRACE_MEAN_TOL), else
+        EnergyError/_fail like any other read failure."""
         if not self.ok:
             if self.required:
                 raise EnergyError("Otii not connected")
@@ -162,16 +172,46 @@ class Energy:
             info = rec.get_channel_info(self.dev.id, "mc")
             st = rec.get_channel_statistics(self.dev.id, "mc", info["from"], info["to"])
             secs = max(info["to"] - info["from"], 1e-9)
+            out = {}
+            if trace_path:
+                out = self._save_trace(rec, st, info, trace_path)
             # Read; now delete, so the project does not grow run by run (its
             # size is what slows start_recording). The numbers are returned.
             rec.delete()
             return {"avg_current_a": st["average"],
                     "avg_power_w": st["average"] * 5.0,
                     "energy_wh": st["average"] * 5.0 * secs / 3600.0,
-                    "measured_s": secs}
+                    "measured_s": secs, **out}
         except Exception as e:
             self._fail(f"read failed ({type(e).__name__}: {e})")
             return {}
+
+    def _save_trace(self, rec, st, info, path):
+        sr = float(self.dev.get_channel_samplerate("mc"))
+        factor = max(1, int(round(sr / TRACE_HZ)))
+        if factor > 1:
+            rec.downsample_channel(self.dev.id, "mc", factor)
+        n = rec.get_channel_data_count(self.dev.id, "mc")
+        d = rec.get_channel_data(self.dev.id, "mc", 0, n)
+        vals = d["values"]
+        if not vals:
+            raise RuntimeError("trace: no samples")
+        mean = sum(vals) / len(vals)
+        if abs(mean / st["average"] - 1.0) > TRACE_MEAN_TOL:
+            raise RuntimeError(f"trace mean {mean:.6f} A vs full-rate {st['average']:.6f} A")
+        dt = float(d["interval"])
+        tmp = path + ".tmp"
+        with gzip.open(tmp, "wt") as fh:
+            fh.write(f"# otii main current, supply 5.0 V; sample_rate_hz={sr:g} "
+                     f"downsample={factor} interval_s={dt:.6g} rec_from_s={info['from']} "
+                     f"rec_timestamp_s={d.get('timestamp')} host_start_unix={self.t_start:.3f}\n")
+            fh.write("t_s,current_a\n")
+            t0 = float(d.get("timestamp") or 0.0)
+            for i, v in enumerate(vals):
+                fh.write(f"{t0 + i * dt:.4f},{v:.6g}\n")
+        os.replace(tmp, path)
+        return {"trace_file": os.path.basename(path), "trace_hz": round(1.0 / dt, 3),
+                "trace_n": len(vals), "min_current_a": st.get("min"), "max_current_a": st.get("max")}
 
     def close(self):
         if self.ctx:
@@ -195,11 +235,29 @@ def board_is_up(timeout, settle=0.0):
         time.sleep(settle)
     deadline = time.time() + timeout
     while time.time() < deadline:
-        if "BOARD_READY" in board("printf 'BOARD_%s\\n' READY", 20):
+        try:
+            ready = "BOARD_READY" in board("printf 'BOARD_%s\\n' READY", 20)
+        except subprocess.TimeoutExpired:
+            # A console that does not answer within 20 s is "not up yet", not
+            # a failed run (P3C3-med-s1, 2026-10-16: this escaped as an
+            # exception during a reboot and failed the run).
+            ready = False
+        if ready:
             board("mountpoint -q /mnt/flash || mount -o ro /dev/sda1 /mnt/flash", 30)
             return True
         time.sleep(10)
     return False
+
+
+def board_uptime_s():
+    """Seconds since the board booted (/proc/uptime), or None if unreadable.
+    The marker is assembled at runtime so the command's echo cannot match."""
+    try:
+        out = board("printf 'UP_%s ' S; cut -d' ' -f1 /proc/uptime", 20)
+    except subprocess.TimeoutExpired:
+        return None
+    m = re.search(r"UP_S (\d+(?:\.\d+)?)", out)
+    return float(m.group(1)) if m else None
 
 
 def power_cycle():
@@ -226,23 +284,47 @@ def power_cycle():
         return False
 
 
+def rebooted(t_cmd):
+    """The board booted after t_cmd (host time): its uptime is shorter than the
+    time since the reboot was asked for."""
+    up = board_uptime_s()
+    return up is not None and up < time.time() - t_cmd + 5
+
+
 def reboot_and_wait(timeout=240):
     """Software reboot: clears memory state and the A8 leak's effects, which is
     what the original experiments did. Never writes to the console during
     U-Boot's countdown -- a keystroke there stops autoboot and strands the board
-    at a prompt that looks exactly like a failed boot."""
-    try:
-        board("sync; reboot", 15)
-    except subprocess.TimeoutExpired:
-        # An unresponsive console is itself the symptom; fall through to the
-        # power cycle rather than aborting the campaign.
-        pass
-    if board_is_up(timeout, settle=45):   # silent through SPL, U-Boot and early init
-        return True
-    print("    board did not return from reboot; power-cycling")
+    at a prompt that looks exactly like a failed boot.
+
+    The reboot is VERIFIED by the board's uptime. "Linux answers" alone was
+    the old check, and a reboot that never happened passed it: 2026-10-17,
+    block D, a console garbled under load swallowed `reboot` for five runs in
+    a row, SysV segments left by unfinished batches piled up (47, then 141),
+    and the OOM killer killed module children (E37P2C2-med-s1: 41). Not
+    rebooted -> one more software reboot -> power cycle -> failed run."""
+    for attempt in ("reboot", "reboot again"):
+        t_cmd = time.time()
+        try:
+            # 60 s, not 15: the console driver probes every ttyUSB on start
+            # unless BOARD_TTY pins it, and with the console on the second
+            # port that alone took 10.4 s -- 15 s killed it before `reboot`
+            # was typed (2026-10-17).
+            board("sync; reboot", 60)
+        except subprocess.TimeoutExpired:
+            # An unresponsive console is itself the symptom; fall through to the
+            # power cycle rather than aborting the campaign.
+            pass
+        if not board_is_up(timeout, settle=45):   # silent through SPL, U-Boot and early init
+            break
+        if rebooted(t_cmd):
+            return True
+        print(f"    board answered but did not reboot ({attempt}); uptime {board_uptime_s()} s")
+    print("    board did not reboot; power-cycling")
+    t_cmd = time.time()
     if not power_cycle():
         return False
-    return board_is_up(timeout, settle=45)
+    return board_is_up(timeout, settle=45) and rebooted(t_cmd)
 
 
 LOAD_KEYS = {
@@ -400,12 +482,12 @@ def run_one(spec, outdir, energy):
                 f"test -f {remote_board_json} && printf 'B%s\\n' JDONE", 30):
             break
     else:
-        energy.stop()
+        energy.stop(trace_path=os.path.join(dest, "otii_mc.csv.gz"))
         json.dump({"label": label, "complete": False, "error": "run_timeout",
                    "budget_s": budget}, open(run_json, "w"), indent=2)
         print(f"  {label}: FAILED (timeout after {budget}s)")
         return "failed"
-    e = energy.stop()
+    e = energy.stop(trace_path=os.path.join(dest, "otii_mc.csv.gz"))
     wall = time.time() - t0
 
     # Collect. Compress first: these cross a 9.7 KB/s serial link.

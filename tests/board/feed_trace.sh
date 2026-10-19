@@ -25,7 +25,10 @@
 # SCHED_STATE is idle or halted, continuously, for --idle-window seconds --
 # because the time spent finishing the backlog is part of the gap: the
 # satellite processes in real time, and only the idle remainder is skipped.
-# It then advances in --ff-chunk steps, pausing --ff-tick between them so
+# It then advances in --ff-chunk steps while the daemon stays idle or halted
+# (while it works the gap passes in real time; it goes on once the daemon is
+# quiescent again), pausing
+# --ff-tick between them so
 # energy-halted batches get to run as the battery recharges, and never past
 # the next frame's time. Every advance is confirmed from the daemon's own
 # BATTERY_FF lines before the frame is fed.
@@ -188,16 +191,31 @@ while read -r t ff scene datatake slo cls; do
         q0=$(now)
         quiet=1; wait_quiescent "$target" || quiet=0
         qw=$(calc "$(now) - $q0")
-        a0=$ADV; chunks=0
+        a0=$ADV; chunks=0; resumed=0
         while [ "$quiet" -eq 1 ]; do
             rem=$(calc "$target - $(simnow)")
             gt "$rem" 0.001 || break
+            # Only while the daemon is idle or halted. An energy-halted daemon
+            # resumes part-way through a gap once the advance has recharged
+            # the battery; while it works, the gap passes in real time, and an
+            # advance sent then would wait for the running module (advances
+            # are applied between modules) and feed the next frame late by up
+            # to a module time (found 2026-10-17: block D, 2-5 frames per run
+            # 2-12 s late, each right after SCHED_RESUME). So wait, bounded by
+            # the frame's time, until it is quiescent again (it halts again
+            # once the battery is back at the floor), then go on advancing.
+            # Stopping for the rest of the gap instead ran long gaps in real
+            # time and blew the run's time budget (E37P2C2-med, same day).
+            case "$(state)" in
+                idle|halted) ;;
+                *) resumed=$((resumed + 1)); wait_quiescent "$target" || break; continue ;;
+            esac
             c=$(awk "BEGIN { r = $rem; c = $CHUNK; printf \"%.3f\", (r < c ? r : c) }")
             advance "$c"; chunks=$((chunks + 1))
             sleep "$TICK"
         done
         confirm_ff
-        echo "FF scene=$scene ff_s=$ff advanced_s=$(calc "$ADV - $a0") chunks=$chunks quiescent_wait_s=$qw quiescent=$quiet state=$(state)" >> "$FEEDLOG"
+        echo "FF scene=$scene ff_s=$ff advanced_s=$(calc "$ADV - $a0") chunks=$chunks quiescent_wait_s=$qw quiescent=$quiet resumed=$resumed state=$(state)" >> "$FEEDLOG"
     fi
     w=$(calc "$target - $(simnow)")
     gt "$w" 0 && sleep "$w"

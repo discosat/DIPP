@@ -26,6 +26,13 @@ echo "\$*" >> "$W/ctl.log"
 case "\$1" in
   advance)
     echo "BATTERY_FF adv_s=\$2" >> "$W/console.log"
+    # An energy-halted daemon that the advance recharges: it resumes work.
+    # Once: the daemon works for 3 s, then halts again at the floor.
+    if [ -f "$W/resume_mode" ]; then
+      rm -f "$W/resume_mode"
+      echo "SCHED_STATE state=busy" >> "$W/console.log"
+      ( sleep 3; echo "SCHED_STATE state=halted" >> "$W/console.log" ) &
+    fi
     # A stub backlog: the daemon goes idle once 20 s have been advanced in
     # the tail (marker file set by the test).
     if [ -f "$W/tail_mode" ]; then
@@ -49,7 +56,7 @@ run() {
        --console "$W/console.log" --feed-log "$W/feed.log" --dipp-ctl "$W/dipp_ctl" \
        --camera "$W/camera" --idle-window 1 --ff-chunk 10 --ff-tick 0.3 --tail-ff "${2:-0}"
 }
-reset() { rm -f "$W/ctl.log" "$W/cam.log" "$W/tail_mode" "$W/tail_adv"; echo "SCHED_STATE state=idle" > "$W/console.log"; }
+reset() { rm -f "$W/ctl.log" "$W/cam.log" "$W/tail_mode" "$W/tail_adv" "$W/resume_mode"; echo "SCHED_STATE state=idle" > "$W/console.log"; }
 
 echo "feed_trace.sh"
 
@@ -114,6 +121,30 @@ check "busy through a gap: the next frame is fed when due, not after the backlog
 check "busy through a gap: nothing is fast-forwarded (${adv2} s) and it is logged as not quiescent" \
       'num "$adv2 == 0" && grep -q "^FF .* quiescent=0" "$W/feed.log"'
 check "busy through a gap: the frame after it keeps its spacing (late ${late3} s)" 'num "$late3 < 0.5"'
+wait
+
+# 2c. A halted daemon that resumes part-way through the gap (the first
+#     advance recharges it), works for 3 s, then halts again: no advance is
+#     sent while it works, the feeder goes on advancing once it is halted
+#     again, and the next frame is fed on time (2026-10-17: advances sent to a
+#     busy daemon waited for its running module, frames 2-12 s late; stopping
+#     for the rest of the gap instead ran long gaps in real time).
+cat > "$W/t2c.trace" <<EOF
+0 0 1 DT1 300 routine
+1 25 2 DT2 300 routine
+EOF
+reset
+echo "SCHED_STATE state=halted" >> "$W/console.log"
+touch "$W/resume_mode"
+run "$W/t2c.trace" > /dev/null 2>&1
+late2c=$(sed -n 's/^FEED scene=2 .* late_s=\([0-9.-]*\) .*/\1/p' "$W/feed.log")
+adv2c=$(sed -n 's/^FF .* advanced_s=\([0-9.]*\) .*/\1/p' "$W/feed.log")
+ch2c=$(sed -n 's/^FF .* chunks=\([0-9]*\) .*/\1/p' "$W/feed.log")
+busyff=$(awk '/state=busy/ { b = 1 } /state=halted/ { b = 0 } /^BATTERY_FF/ && b { n++ } END { print n + 0 }' "$W/console.log")
+check "resumed in a gap: no advance while the daemon works (${busyff})" '[ "$busyff" -eq 0 ]'
+check "resumed in a gap: advancing goes on once it halts again (${ch2c} chunks, ${adv2c} s)" \
+      'num "$ch2c >= 2 && $adv2c > 15 && $adv2c < 25" && grep -q "^FF .* resumed=1" "$W/feed.log"'
+check "resumed in a gap: the next frame is fed on time (late ${late2c} s)" 'num "$late2c < 0.5"'
 wait
 
 # 3. The tail: advance while halted, stop once the daemon is idle.

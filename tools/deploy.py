@@ -68,7 +68,10 @@ def main():
     r = subprocess.run([os.path.join(HERE, "board_push.py"), tarball, remote_tar],
                        capture_output=True, text=True, timeout=1800)
     print("  " + (r.stdout.strip().splitlines() or ["(no output)"])[-1])
-    if "MATCH" not in r.stdout:
+    # The last line must be exactly MATCH: "MATCH" is also a substring of
+    # "MISMATCH", which the old check accepted.
+    last = (r.stdout.strip().splitlines() or [""])[-1].strip()
+    if r.returncode != 0 or last != "MATCH":
         print("  push failed verification", file=sys.stderr)
         return 1
 

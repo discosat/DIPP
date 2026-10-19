@@ -459,9 +459,13 @@ static int64_t pending_min_deadline_us(void)
     return best;
 }
 
-/* The uuid of the batch currently halted on energy (run_one_batch); a halted
-   batch is not a reason to yield. */
-static char halted_uuid[sizeof(((ImageBatch *)0)->uuid)] = "";
+/* The batch currently halted on energy at the head of each queue
+   (run_one_batch; index 0 ingest, 1 partial); a halted batch is not a reason
+   to yield. Tracked per queue: a halted head may sit in either queue. */
+static char halted_uuid[2][sizeof(((ImageBatch *)0)->uuid)] = {"", ""};
+static int halted_progress[2] = {-2, -2};
+static long long halted_since_us[2] = {0, 0};
+#define QIDX(q) ((q) == partially_processed_pq ? 1 : 0)
 
 int sched_yield_check(const ImageBatch *cur)
 {
@@ -473,7 +477,8 @@ int sched_yield_check(const ImageBatch *cur)
     int64_t best = pending_min_deadline_us();
     ImageBatch head;
     if (pq_impl->get_queue_size(other) > 0 && pq_impl->peek_copy(other, &head) == 0 &&
-        !(halted_uuid[0] && strcmp(head.uuid, halted_uuid) == 0) && (int64_t)head.priority < best)
+        !(halted_uuid[QIDX(other)][0] && strcmp(head.uuid, halted_uuid[QIDX(other)]) == 0) &&
+        (int64_t)head.priority < best)
         best = head.priority;
     if (!sched_should_yield(cur->priority, best, can_park))
         return 0;
@@ -601,7 +606,8 @@ static void hybrid_drop_segment(ImageBatch *b)
  *                  ingest, enqueue to partial FIRST and only then remove from
  *                  ingest. The reverse order has a window that loses the batch.
  *
- * Returns 1 if a batch was processed, 0 if the queue was empty.
+ * Returns 1 if a batch was processed, 0 if the queue was empty, 2 if its head
+ * is halted (energy) and made no progress.
  */
 static int run_one_batch(PriorityQueue *src)
 {
@@ -630,10 +636,9 @@ static int run_one_batch(PriorityQueue *src)
        second (67,616 lines / 8,408 commits in 25 s on the board, 2026-09-30)
        -- eMMC writes for nothing, and a campaign-sized log. The halt is logged
        once (SCHED_HALT) and its end once (SCHED_RESUME). */
-    static int halted_progress = -2;
-    static long long halted_since_us = 0;
-    int was_quiet = (src == partially_processed_pq && halted_uuid[0] &&
-                     strcmp(batch.uuid, halted_uuid) == 0 && batch.progress == halted_progress);
+    const int qi = QIDX(src);
+    int was_quiet = (halted_uuid[qi][0] && strcmp(batch.uuid, halted_uuid[qi]) == 0 &&
+                     batch.progress == halted_progress[qi]);
     sched_quiet = was_quiet;
     if (!was_quiet)
         printf("QUEUE_SELECT queue=%s uuid=%s progress=%d depth=%ld\n",
@@ -659,6 +664,7 @@ static int run_one_batch(PriorityQueue *src)
     char file_before[sizeof(batch.filename)];
     strncpy(file_before, batch.filename, sizeof(file_before));
     int progress_before = batch.progress;   /* the progress the durable file corresponds to */
+    int loaded_now = 0;                      /* HYBRID: a segment was created for it on this pass */
     if (global_storage_mode == STORAGE_HYBRID)
     {
         if (!image_batch_shm_exists(&batch))
@@ -672,6 +678,7 @@ static int run_one_batch(PriorityQueue *src)
                 outcome = BATCH_FAILED;
                 goto dispose;
             }
+            loaded_now = 1;
         }
         batch.storage_mode = STORAGE_MEM;
     }
@@ -689,9 +696,9 @@ dispose:
         printf("SCHED_RESUME ts_us=%lld uuid=%s progress_from=%d progress_now=%d halted_s=%.3f "
                "battery_wh=%.4f\n",
                now_us, batch.uuid, progress_before, batch.progress,
-               (now_us - halted_since_us) / 1e6, get_battery_level_wh());
-        halted_uuid[0] = '\0';
-        halted_progress = -2;
+               (now_us - halted_since_us[qi]) / 1e6, get_battery_level_wh());
+        halted_uuid[qi][0] = '\0';
+        halted_progress[qi] = -2;
         sched_quiet = 0;
     }
 
@@ -742,21 +749,42 @@ dispose:
                 batch.progress = progress_before;
             }
         }
-        if (src == partially_processed_pq && batch.progress == progress_before)
+        if (batch.progress == progress_before)
         {
-            /* Halted again with nothing done: the entry is already exactly
-               this, so there is nothing to commit. */
+            /* Halted with nothing done: the entry is already exactly this, so
+               there is nothing to commit -- and nothing to move. A batch from
+               ingest used to be moved to the partial queue here although no
+               module had run; while the battery sat at the floor the main loop
+               then moved the next ingest head, and the next, every pass (the
+               move counted as work, so it never slept): the partial queue
+               filled with untouched batches, and once it held
+               MAX_QUEUE_SIZE the "leave it in ingest" fallback below spun on
+               the same batch for good (2026-10-17, E37P2C2-high-s1: board
+               grid, energy-deficit block). It stays where it is, halted.
+               HYBRID: if its segment was created on this pass, the entry
+               must name it, or every retry (each HALT_POLL_US) loads the
+               file into yet another segment and leaks the last one -- an
+               ingest entry names only its file (E37P2C2-med-s1, same day:
+               69 loads of one batch, then the camera could not hand over
+               frames). One commit; later retries find the segment. */
+            if (loaded_now)
+            {
+                int rc = pq_impl->commit_head(src, &batch);
+                printf("HALT_KEEP_SEGMENT queue=%s uuid=%s progress=%d shmid=%d rc=%d\n",
+                       qi ? "partial" : "ingest", batch.uuid, batch.progress, batch.shmid, rc);
+            }
             if (!was_quiet)
             {
                 struct timespec ts;
                 clock_gettime(CLOCK_MONOTONIC, &ts);
-                halted_since_us = (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
-                strncpy(halted_uuid, batch.uuid, sizeof(halted_uuid) - 1);
-                halted_progress = batch.progress;
-                printf("SCHED_HALT ts_us=%lld uuid=%s progress=%d battery_wh=%.4f margin_wh=%.2f "
+                halted_since_us[qi] = (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+                strncpy(halted_uuid[qi], batch.uuid, sizeof(halted_uuid[qi]) - 1);
+                halted_progress[qi] = batch.progress;
+                printf("SCHED_HALT ts_us=%lld uuid=%s progress=%d queue=%s battery_wh=%.4f margin_wh=%.2f "
                        "ingest_depth=%ld partial_depth=%ld\n",
-                       halted_since_us, batch.uuid, batch.progress, get_battery_level_wh(),
-                       battery_safety_margin_wh, (long)pq_impl->get_queue_size(ingest_pq),
+                       halted_since_us[qi], batch.uuid, batch.progress, qi ? "partial" : "ingest",
+                       get_battery_level_wh(), battery_safety_margin_wh,
+                       (long)pq_impl->get_queue_size(ingest_pq),
                        (long)pq_impl->get_queue_size(partially_processed_pq));
             }
             sched_quiet = 0;
@@ -1016,7 +1044,8 @@ void process_images_loop()
         }
         if (rp != 1 && ri != 1)
         {
-            int halted = (rp == 2);
+            /* Either head halted (energy) and nothing else could run. */
+            int halted = (rp == 2 || ri == 2);
             sched_set_state(halted ? SCHED_HALTED : SCHED_IDLE);
             /* Nothing can run. Idle: poll for new data every 1 ms, as before.
                Halted: the battery changes on a scale of seconds, so re-check

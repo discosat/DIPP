@@ -8,15 +8,28 @@
 #include <time.h>
 #include <pthread.h>
 
+/* The stored energy is integrated in DOUBLE. It used to live only in the
+   battery_level parameter, a float: at ~41.6 Wh one float step is 3.8 uWh,
+   and a 10 ms real-time step of a 0.4 W surplus adds 1.1 uWh -- below half a
+   step, so it rounded away and the battery never recharged in real time
+   (only across fast-forward steps of 1 s). Found 2026-10-18 in the board
+   grid's energy-deficit block (16.77 W generation, 13.07 W bus, 3.3 W
+   board): every policy halted far more than the simulator, and the board
+   was 0.40 W short exactly. The parameter is kept as a float mirror for
+   CSP readers; nothing reads it back. */
+static double g_level_wh = 0.0;
 #ifdef DIPP_HOST_TEST
-/* Host unit test: no libparam. The stored energy is a plain float. */
-static float host_battery_level_wh = 0.0f;
-static float level_get(void) { return host_battery_level_wh; }
-static void level_set(float wh) { host_battery_level_wh = wh; }
+/* Host unit test: no libparam. */
+static double level_get(void) { return g_level_wh; }
+static void level_set(double wh) { g_level_wh = wh; }
 #else
 #include "dipp_battery_param.h"
-static float level_get(void) { return param_get_float(&battery_level); }
-static void level_set(float wh) { param_set_float(&battery_level, wh); }
+static double level_get(void) { return g_level_wh; }
+static void level_set(double wh)
+{
+    g_level_wh = wh;
+    param_set_float(&battery_level, (float)wh);
+}
 #endif
 
 /* Set by battery_simulator_init before any reader starts (header). */
@@ -292,7 +305,7 @@ int battery_simulator_configure(CubeSatBatterySimulator *sim)
 
     sim->soc = soc0;
     double initial = capacity * soc0;
-    level_set((float)initial);
+    level_set(initial);
     sim->p_gen_now_W = battery_simulator_p_gen(sim, sim->phase0);
     sim->current_state = sim->p_gen_now_W > 0.5 ? SUNLIT : ECLIPSE;
 
@@ -346,7 +359,7 @@ void battery_simulator_step(CubeSatBatterySimulator *sim, double dt_s)
                (long long)now_us(), sim->current_time_s, on ? "on" : "off");
     }
     level = fmax(0.0, fmin(sim->total_capacity_Wh, level));
-    level_set((float)level);
+    level_set(level);
     sim->soc = level / sim->total_capacity_Wh;
     sim->current_time_s += dt_s;
 
@@ -431,7 +444,7 @@ void battery_simulator_advance(double seconds)
     pthread_mutex_lock(&g_lock);
     require_ready_locked("battery_simulator_advance");
     double t0 = g_sim.current_time_s;
-    float wh0 = level_get();
+    double wh0 = level_get();
     double board_wh0 = g_sim.board_wh;
     double left = seconds;
     while (left > 0.0)
@@ -454,7 +467,7 @@ void battery_simulator_set_wh(float wh)
     pthread_mutex_lock(&g_lock);
     require_ready_locked("battery_simulator_set_wh");
     double level = fmax(0.0, fmin(g_sim.total_capacity_Wh, (double)wh));
-    level_set((float)level);
+    level_set(level);
     g_sim.soc = level / g_sim.total_capacity_Wh;
     printf("BATTERY_SET ts_us=%lld wh=%.4f soc=%.4f\n", (long long)now_us(), level, g_sim.soc);
     pthread_mutex_unlock(&g_lock);
@@ -499,16 +512,16 @@ double battery_simulator_phase(void)
 
 float get_battery_level_wh(void)
 {
-    return level_get();
+    return (float)level_get();
 }
 
 void put_load_on_battery(float load_uWh)
 {
     pthread_mutex_lock(&g_lock);
     require_ready_locked("put_load_on_battery");
-    float battery_level_wh = level_get();
-    float new_capacity = fmax(0.0, battery_level_wh - (load_uWh / 1000000.0));
-    if (new_capacity <= 0.0f && !g_sim.empty_logged)
+    double battery_level_wh = level_get();
+    double new_capacity = fmax(0.0, battery_level_wh - (load_uWh / 1000000.0));
+    if (new_capacity <= 0.0 && !g_sim.empty_logged)
     {
         g_sim.empty_logged = 1;
         printf("BATTERY_EMPTY ts_us=%lld sim_t_s=%.2f cause=execution_debit -- the scenario exceeds the platform\n",

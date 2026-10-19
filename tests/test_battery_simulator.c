@@ -559,6 +559,40 @@ static void t_set_wh_and_load(void)
           close_to(get_battery_level_wh(), 0.0, 1e-6) && strstr(log, "cause=execution_debit"));
 }
 
+/* A small surplus integrated in the real-time thread's 10 ms steps must
+   accumulate. The level used to be a float: at ~41.6 Wh one float step is
+   3.8 uWh and 0.4 W x 10 ms = 1.1 uWh, so every step rounded away and the
+   battery never recharged in real time (board grid, energy-deficit block,
+   2026-10-18). */
+static void t_small_surplus_real_time(void)
+{
+    clear_env();
+    FILE *f = fopen(RECT_PROFILE, "w");
+    fprintf(f, "# constant\n0.0 16.77\n0.5 16.77\n");
+    fclose(f);
+    env_set("DIPP_BATT_CAPACITY_WH", "92");
+    env_set("DIPP_BATT_SOC0", "0.4525");
+    env_set("DIPP_BATT_BUS_W", "13.07");
+    env_set("DIPP_BATT_ORBIT_MIN", "95.43");
+    env_set("DIPP_BATT_PHASE0", "0");
+    env_set("DIPP_BATT_PROFILE", RECT_PROFILE);
+    env_set("DIPP_BATT_BOARD_MODE", "always");
+    env_set("DIPP_BATT_BOARD_IDLE_W", "3.30");
+    env_set("DIPP_BATT_BOARD_HOLD_S", "60");
+    env_set("DIPP_BATT_SURVIVAL_ORBITS", "2");
+    CubeSatBatterySimulator sim;
+    char *log = NULL;
+    int rc = configure_quiet(&sim, &log);
+    double w0 = get_battery_level_wh();
+    for (int i = 0; i < 10000; i++)      /* 100 s in 10 ms steps */
+        battery_simulator_step(&sim, 0.01);
+    double gained = get_battery_level_wh() - w0;
+    double want = (16.77 - 13.07 - 3.30) * 100.0 / 3600.0;   /* 11.1 mWh */
+    check("configure accepts the energy-deficit platform", rc == 0);
+    check("a 0.4 W surplus in 10 ms steps accumulates (100 s -> 11.1 mWh, within 1 %)",
+          close_to(gained, want, 0.01 * want));
+}
+
 int main(void)
 {
     printf("battery / power model\n");
@@ -577,6 +611,7 @@ int main(void)
     t_init_refuses();
     t_advance_matches_living_through_it();
     t_set_wh_and_load();
+    t_small_surplus_real_time();
     unlink(RECT_PROFILE);
     printf("%s (%d failures)\n", failures ? "FAILED" : "OK", failures);
     return failures ? 1 : 0;

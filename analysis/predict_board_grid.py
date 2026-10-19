@@ -40,8 +40,15 @@ def predict(r):
         if not line.startswith("#"):
             p = line.split()
             slos[p[5]] = float(p[4])
-    sc = scenario(arr, sets[CONTENT[r["image_prefix"]]], content, slos["routine"] / 300.0,
+    # The pair traces already carry the pair's routine deadline in each frame
+    # (read_trace), so the frames are NOT scaled (slo_f = 1); only the policy's
+    # routine-SLO parameter is set to the pair's value. Fixed 2026-10-16: the
+    # first version scaled again by routine/300 (P1 frames got 3 s, P3 10800 s,
+    # P4 1555200 s; P2 unaffected) -- METRIC.md addendum 2026-10-16.
+    sc = scenario(arr, sets[CONTENT[r["image_prefix"]]], content, 1.0,
                   seed=stable_seed(lab, seed), slo_u=slos.get("urgent"))
+    sc["slo_r"] = slos["routine"]
+    assert all(abs(d - (slos[c])) < 1e-9 for (_, d, c, _, _) in sc["arrivals"]), "frame deadlines != trace"
     if lab.startswith("E37"):
         en = E.energy("dd3.7", int(seed))
         floor = en["floor"]

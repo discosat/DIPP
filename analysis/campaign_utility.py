@@ -26,7 +26,17 @@ QUAL = {"cls": {"low": .763, "med": .935, "high": 1.0},          # METRIC.md
         "seg": {"low": .752, "med": .960, "high": 1.0},
         "enc": {"low": .858, "med": .951, "high": 1.0}}
 STATIC = ("low", "med", "high")
-LABEL = re.compile(r"^(C\d+)-(.+)-s(\d+)$")
+# Soft-deadline utility V_G (METRIC.md addendum 2026-10-15): a late frame keeps
+# q * max(0, 1 - (lateness / its own deadline) / G). G = 0 would be U.
+GRACE = (0.5, 1.0, 2.0)
+
+
+def soft_cols(G):
+    t = f"{G:g}".replace(".", "")
+    return f"V_G{t}", f"V_G{t}_uh"      # both classes soft; urgent hard
+# Cell may carry the board grid's prefixes (E37 energy deficit, P1-P4 deadline
+# pair): P2C3-final-s1 -> cell P2C3.
+LABEL = re.compile(r"^((?:E37)?(?:P\d)?C\d+)-(.+)-s(\d+)$")
 
 
 def pct(v, p):
@@ -60,17 +70,34 @@ def main():
         on_q, tiles, nbytes = [], 0, 0
         by = {"urgent": [], "routine": []}
         incomplete_effort = 0
+        V = {c: 0.0 for G in GRACE for c in soft_cols(G)}
         for b in bs:
             k = (run, b["uuid"])
             met = b.get("deadline_met") == "1"
             by.setdefault(b.get("cls") or "unknown", []).append(b)
             if not met:
+                if b.get("completed") == "1" and b.get("dropped") != "1":
+                    e = eff.get(k, {})
+                    if len(e) < 3:
+                        incomplete_effort += 1
+                        continue
+                    q = statistics.mean(QUAL[s][e[s]] for s in ("cls", "seg", "enc"))
+                    slo = int(b["slo_us"])
+                    x = max(0, int(b["latency_us"]) - slo) / slo
+                    for G in GRACE:
+                        v = q * max(0.0, 1.0 - x / G)
+                        soft, uh = soft_cols(G)
+                        V[soft] += v
+                        if b.get("cls") != "urgent":
+                            V[uh] += v
                 continue
             e = eff.get(k, {})
             if len(e) < 3:
                 incomplete_effort += 1
                 continue
             q = statistics.mean(QUAL[s][e[s]] for s in ("cls", "seg", "enc"))
+            for c in V:
+                V[c] += q
             U += q; Uc += QUAL["cls"][e["cls"]]; Ue += QUAL["enc"][e["enc"]]
             on_q.append(q)
             tiles += int(b["tiles_delivered"] or 0); nbytes += int(b["downlink_bytes"] or 0)
@@ -82,7 +109,8 @@ def main():
                "unfinished": sum(1 for b in bs if b.get("completed") != "1" and b.get("dropped") != "1"),
                "tiles_on_time": tiles, "bytes_on_time": nbytes,
                "preemptions": runmeta.get(run, {}).get("preemptions"),
-               "missing_effort_records": incomplete_effort}
+               "missing_effort_records": incomplete_effort,
+               **{c: round(v / N, 4) for c, v in V.items()}}
         for cls, cb in by.items():
             if cls not in ("urgent", "routine") or not cb:
                 continue

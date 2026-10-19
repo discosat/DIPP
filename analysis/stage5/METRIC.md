@@ -156,3 +156,138 @@ Simulated predictions for every run, fixed before the first board run:
 analysis/board_grid_predictions.csv (analysis/predict_board_grid.py). The
 simulator is known to be up to 0.08 pessimistic for static high and
 deadline-only on 1x clear sky; no tuning to the board results.
+
+## Addendum 2026-10-15: secondary metric, soft-deadline utility V_G
+
+Added before any board-grid result beyond block A (P2, final policy only,
+whose statics are the eval_final runs) was analysed. U stays the primary
+metric; V_G is a secondary robustness check, reported for every policy and
+cell, never used to select anything.
+
+A frame delivered late still has some value. Per frame f:
+  V_G = (1/N) sum_f q_f * g(late_f / D_f),  g(x) = max(0, 1 - x / G)
+late_f = max(0, completion - deadline); D_f = the frame's own relative
+deadline (its class SLO); q_f as in U. Frames never delivered (dropped at the
+ingest cap, unfinished) count 0. G = 0 is U exactly; reported G = 0.5, 1, 2
+(a frame keeps value until G of its own deadlines late; G = 1: worth 0 at
+twice the deadline). Variant "urgent hard": urgent frames keep g = 0 when
+late (an alert is worthless late), routine frames soft. Regret and the tie
+rule (0.02) apply to V_G unchanged. Expected direction (stated before
+computing): V_G favours policies that deliver many frames late (static high,
+deadline-only in overloaded cells), so the final policy's lead in C3-C5
+shrinks; any change of ranking is reported.
+
+## Addendum 2026-10-16: prediction bug (P1/P3/P4), corrected file alongside
+
+analysis/board_grid_predictions.csv (committed e458c2d before the grid) is
+wrong for every run on a pair trace (P1, P3, P4): the pair traces already
+carry the pair's routine deadline per frame, and predict_board_grid.py scaled
+it again by routine/300 (P1 frames got 3 s instead of 30 s, P3 10800 s, P4
+1555200 s). P2 runs (trace deadline 300 s, factor 1) are unaffected. Found
+when P1 board results disagreed with every prediction (16/20 > 0.03).
+Mechanical fix only (frames unscaled, policy routine parameter = the pair's
+value, assertion that frame deadlines equal the trace's); no model change.
+Corrected predictions: analysis/board_grid_predictions_fixed.csv, written
+2026-10-16 after P1 and P3C2 results existed (so these are not blind for P1;
+they are blind for P3C3 onward and P4). All 83 unchanged rows are identical
+(every P2 row among them). The original file is kept as committed.
+
+## Addendum 2026-10-16: nominal P4 dropped from the board grid
+
+Decided after P1 and P3C2 results, from the (blind, unchanged) P3/P4
+predictions: with routine deadlines of 30 min and 6 h the final policy's
+budget is set by the queue capacity, not the deadline, so P4 predicts the
+same as P3 in every cell. The 24 nominal P4 runs (block B P4 x C2-C5 x 5
+policies, block C P4 seeds 2-3) are removed; P4 stays in block D (energy
+deficit), where recovering needs the longer deadline. Grid: 83 runs. No run
+already made is removed and no kept run's spec changed. Same day: the
+extra-seed block C moved after block D (run order only).
+
+## Addendum 2026-10-17: feeder fix, block D (energy deficit) re-run
+
+Harness defect, found in block D (dawndusk-3w7): the first frame after an
+idle gap was fed 2-12 s late in 7 of 9 runs (campaign: "feeder late", run
+failed). Cause: tests/board/feed_trace.sh fast-forwards a gap in chunks
+while the daemon is halted; the advance recharges the battery, the daemon
+resumes mid-gap, and later chunks wait for its running module (advances
+are applied between modules), so the frame after the gap is late by up to a
+module time and part of the gap is fast-forwarded while the payload works.
+Nominal runs never halt at a gap and are unaffected (0 late feeds in blocks
+A and B). Fix: a chunk is sent only while the daemon is idle or halted;
+once it resumes, the rest of the gap is real time (FF lines log resumed=1).
+Host test 2c added (fails on the old feeder, passes on the new). Every block
+D run made with the old feeder (E37*, 9 runs) is moved to
+runs/board-grid-feederbug/ and block D is re-run in full with the fixed
+feeder; no other run changes.
+Correction, same day: the first fix stopped fast-forwarding for the rest of
+a gap once the daemon resumed; in the deficit regime it resumes and halts
+repeatedly, so long gaps ran in real time and E37P2C2-med exceeded its time
+budget (moved to runs/board-grid-feederbug/E37P2C2-med-s1.fix1-timeout).
+Final fix: while the daemon works the feeder waits (bounded by the next
+frame's time) until it is quiescent again, then goes on advancing; never an
+advance while it works. Test 2c covers it (fails on both earlier versions).
+E37P2C2-low and P3C3-med, run with the first fix, never resumed in a gap
+(resumed=0 on every FF line), where the two fixes behave identically, and
+are kept.
+Second harness defect, found the same day while checking the feeder fix:
+the per-run reboot silently did not happen. The ttyUSB numbers had swapped
+(console on ttyUSB1), the console driver's port probe then took 10.4 s,
+and the campaign's 15 s budget for `sync; reboot` killed the driver before
+`reboot` was typed; the campaign only checked that Linux answered. SysV
+segments left by unfinished batches of energy-deficit runs then accumulated
+(47 segments / 464 MB from E37P2C2-greedy on, 141 / 1.4 GB later) and the
+OOM killer killed module children (E37P2C2-med-s1 with the fixed feeder:
+41 SIGKILLs). Every nominal run (blocks A, B) started with 0 leftover
+segments and ~10 MB shared memory (pre.txt), so none is affected. Fixes
+(campaign.py): reboot verified by the board's /proc/uptime (else reboot
+again, then power cycle, else the run fails); 60 s for the reboot command;
+console timeouts while waiting for the board count as "not up yet";
+runs/board-grid-chain2.sh pins BOARD_TTY to the console's /dev/serial/by-id
+name. The OOM-affected run is in runs/board-grid-feederbug/
+(E37P2C2-med-s1.fix2-oom); block D continues with both fixes.
+Third defect, same day, in the daemon (not the harness): an energy-halted
+batch from the INGEST queue that made no progress was moved to the partial
+queue (only partial-queue heads entered the quiet halted state), and the move
+counted as work, so the main loop never slept and moved the next ingest head
+every pass. Under a long deficit the partial queue filled with untouched
+batches; at MAX_QUEUE_SIZE the daemon spun on one batch and the feeder died
+(E37P2C2-high-s1, 26 of 222 frames). Fix (src/dipp_process.c run_one_batch):
+a batch halted with nothing done stays in its own queue and returns
+"halted"; halt state is tracked per queue; the main loop sleeps when either
+head is halted. Nominal runs never took this path (0 untouched parks in
+every block A/B run and in eval_final C5), so their behaviour is unchanged.
+Build s5a-final3 (dipp + feed_trace.sh changed vs s5a-final2), deployed
+27/27. Block D is re-run in full on it; every earlier block D run is in
+runs/board-grid-feederbug/.
+Follow-up to the daemon fix (same day): with HYBRID storage an ingest entry
+names only its file, so a batch now kept halted in ingest was re-loaded into
+a new segment on every retry and the old one leaked (E37P2C2-med-s1 on
+s5a-final3: 69 loads of one batch, then the camera could not hand frames
+over). Fix: a segment created on that pass is committed to the halted
+entry once (HALT_KEEP_SEGMENT); retries reuse it. Build s5a-final4 (dipp
+only vs s5a-final3), deployed 27/27; block D restarted on it. deploy.py
+now requires the push's last line to be exactly MATCH.
+
+## Addendum 2026-10-18: battery level was a float; block D re-run again
+
+Found while analysing block D (board far below the simulator for every
+policy at E37P2, e.g. static low C3 0.652 vs 0.791, static med C2 0.731 vs
+0.949, final 0.640 vs 0.961; per-frame energy and time identical in both).
+src/battery_simulator.c kept the stored energy only in the battery_level
+parameter, a float. At ~41.6 Wh one float step is 3.8 uWh; the real-time
+thread steps every ~10 ms, and the deficit platform's 0.4 W surplus adds
+1.1 uWh per step -- below half a float step, so every gain rounded away and
+the battery recharged only across fast-forward steps (1 s). Measured on the
+board: 0.405 W missing over the first 150 s of E37P2C3-low. Fix: the level is
+integrated in double, the parameter is a float mirror (host test added:
+fails on the old code, passes on the new; 53/53). Build s5a-final5 (dipp
+only vs s5a-final4). Block D (20 runs) is re-run on it by
+runs/board-grid-chain3.sh after the current chain; the float-battery runs go
+to runs/board-grid-floatbug/.
+Scope: the nominal DISCO-2 runs (blocks A-C, eval_final) integrate the same
+rounding (small sunlit surpluses are lost; eclipse drains are quantised by
+up to ~4 %), but no nominal run was energy-limited: every SCHED_HALT in
+them was well above the floor (0 of 7 within 0.05 Wh) and their U matches
+the simulator. Their modelled battery TRACES (timeline figures, per-orbit
+depth of discharge) are biased and must not be quoted without a re-check;
+the Otii measurements are real hardware power and are unaffected.

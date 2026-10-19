@@ -29,7 +29,9 @@ runs = {  # run -> list of (effort, met, completed, cls, latency_s)
     "C1-low-s1": [("low", 1, 1, "urgent", 2), ("low", 1, 1, "routine", 3)],
     "C1-adaptive-s1": [("high", 1, 1, "urgent", 6), ("med", 1, 1, "routine", 8)],
     "C1-adaptive-s2": [("high", 1, 1, "urgent", 6), ("high", 1, 1, "routine", 8)],
+    "C1-greedy-s1": [("high", 0, 1, "urgent", 30), ("high", 0, 0, "routine", 900)],  # late urgent; unfinished
 }
+SLO = {"urgent": 20, "routine": 300}
 ex, bt = [], []
 for run, frames in runs.items():
     for i, (e, met, done, cls, lat) in enumerate(frames):
@@ -37,7 +39,7 @@ for run, frames in runs.items():
         for slot in EFF[e]:
             ex.append({"run_id": run, "uuid": u, "param_id": slot - 1, "module": "m"})
         bt.append({"run_id": run, "uuid": u, "cls": cls, "deadline_met": met, "completed": done, "dropped": 0,
-                   "latency_us": lat * 1_000_000, "blocking_us": 0, "tiles_delivered": 10, "downlink_bytes": 1000})
+                   "latency_us": lat * 1_000_000, "slo_us": SLO[cls] * 1_000_000, "blocking_us": 0, "tiles_delivered": 10, "downlink_bytes": 1000})
 with tempfile.TemporaryDirectory() as d:
     write(os.path.join(d, "executions.csv"), ex)
     write(os.path.join(d, "batches.csv"), bt)
@@ -62,5 +64,13 @@ check("regret of med is 0", abs(float(C[("C1", "med")]["regret_s1"])) < 1e-9)
 check("adaptive aggregates 2 seeds", C[("C1", "adaptive")]["seeds"] == "2")
 check("tiles counted only for on-time frames", R["C1-high-s1"]["tiles_on_time"] == "10")
 check("urgent hit rate per class", R["C1-high-s1"]["urgent_hit"] == "1.0" and R["C1-high-s1"]["routine_hit"] == "0.0")
+# V_G: high-s1 routine 100 s late of 300 s -> x = 1/3; greedy urgent 10 s late of 20 s -> x = 1/2
+check("V_G1: late frame keeps 1 - x", abs(float(R["C1-high-s1"]["V_G1"]) - (1 + 2 / 3) / 2) < 1e-4, R["C1-high-s1"]["V_G1"])
+check("V_G05 and V_G2", abs(float(R["C1-high-s1"]["V_G05"]) - (1 + 1 / 3) / 2) < 1e-4
+      and abs(float(R["C1-high-s1"]["V_G2"]) - (1 + 5 / 6) / 2) < 1e-4)
+check("V_G equals U when nothing is late", R["C1-med-s1"]["V_G1"] == R["C1-med-s1"]["U"])
+check("urgent hard: late urgent counts 0, soft keeps it; unfinished counts 0",
+      abs(float(R["C1-greedy-s1"]["V_G1"]) - 0.25) < 1e-4 and float(R["C1-greedy-s1"]["V_G1_uh"]) == 0.0,
+      (R["C1-greedy-s1"]["V_G1"], R["C1-greedy-s1"]["V_G1_uh"]))
 print(f"\n{'ALL PASS' if not fails else f'{fails} FAILED'}")
 sys.exit(1 if fails else 0)

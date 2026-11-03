@@ -20,7 +20,7 @@ gated medium/low), "capmed" (medium then low), "lowest". Everything a policy
 uses is what the daemon can observe: queue depth, drain times, the cost
 model at the input sizes past frames had.
 """
-import argparse, bisect, collections, csv, math, os, random, statistics, sys, time
+import argparse, bisect, collections, csv, itertools, math, os, random, statistics, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -345,6 +345,20 @@ class Policy:
     def tier(self, t, d, obs):
         return "best"
 
+    def choose(self, f, mod):
+        """Effort for module mod of frame f, or None to use the policy's own rule."""
+        return None
+
+
+class FixedAssignment(Policy):
+    """Replays a precomputed effort per (frame index, module), e.g. the oracle's."""
+
+    def __init__(self, assign, gran="stage", name="fixed"):
+        self.assign, self.gran, self.name = assign, gran, name
+
+    def choose(self, f, mod):
+        return self.assign[(f.i, mod)]
+
 
 class Static(Policy):
     gran = "batch"
@@ -516,6 +530,57 @@ class Ladder(Policy):
                 return False
             grow = (r - 1.0) * tr
         return d * sm + grow <= self.B
+
+
+class RungLadder(Ladder):
+    """SIPP's decision rule over a ladder of per-stage effort combinations (rungs,
+    ordered by quality) instead of the three uniform efforts. fits(r): the queue plus
+    this frame at rung r's worst-case frame time stays within B; before each module the
+    highest rung that fits and whose effort for this module is feasible (safe) is used.
+    rungs="pareto": the quality/worst-case-time Pareto frontier of the 27 combinations
+    (quality from QUAL, times from the cost model); rungs="uniform": low, med, high only
+    (must reproduce Ladder exactly)."""
+
+    def __init__(self, rungs="pareto", **kw):
+        super().__init__(**kw)
+        self.rung_mode = rungs
+
+    def setup(self, sc):
+        super().setup(sc)
+        c = sc["cost"]
+        st = ("cls", "seg", "enc")
+
+        def t_max(cmb):
+            return (c.lat(1, 1) + c.lat(2, 1) + sum(c.lat(SLOT[s][e], 99) for s, e in zip(st, cmb))
+                    + self.smax_over)
+
+        def q(cmb):
+            return sum(QUAL[s][e] for s, e in zip(st, cmb)) / 3.0
+        if self.rung_mode == "uniform":
+            cand = [(e, e, e) for e in EFF]
+        else:
+            allc = sorted(itertools.product(EFF, repeat=3), key=lambda x: (t_max(x), -q(x)))
+            cand, best = [], -1.0
+            for x in allc:
+                if q(x) > best + 1e-12:
+                    cand.append(x); best = q(x)
+        # rung 0 = all low (the guard's fallback, as in Ladder), top = all high; with a wrong
+        # cost model the believed frontier may lack either, so they are added
+        lo, hi = ("low",) * 3, ("high",) * 3
+        cand = [lo] + [x for x in cand if x not in (lo, hi)] + [hi]
+        self.rungs = [dict(zip(st, x)) for x in cand]
+        self.r_smax = [t_max(x) for x in cand]
+
+    def tier(self, t, d, obs):
+        """Highest rung whose worst-case frame time fits: (d + 1) * s_r <= B, i.e. d < floor(B / s_r)."""
+        self.refresh(obs)
+        if self.guard_fires(t, d, obs):
+            return 0
+        r = 0
+        for i, sr in enumerate(self.r_smax):
+            if d < math.floor(self.B / sr):
+                r = i
+        return r
 
 
 class Greedy(Policy):
@@ -817,8 +882,27 @@ def simulate(sc, pol):
     def decide(f, mod, mode, now):
         if mod in ("demosaic", "tile"):
             return "default" if energy_ok(f, mod, "default") else None
+        e = pol.choose(f, mod)
+        if e is not None:
+            return e if energy_ok(f, mod, e) else None
         if pol.static:
             return pol.static if energy_ok(f, mod, pol.static) else None
+        if getattr(pol, "rungs", None) is not None:
+            tried = set()
+            for r in range(mode, -1, -1):
+                e = pol.rungs[r][mod]
+                if e in tried:
+                    continue
+                tried.add(e)
+                if e == "low":
+                    return "low" if energy_ok(f, mod, "low") else None
+                if feasible(f, mod, e, now):
+                    if energy_ok(f, mod, e):
+                        return e
+                    if getattr(pol, "energy_time", False) and bat is not None:
+                        halt["need"] = max(halt.get("need", 0.0), en_est(f, mod, e) / 1e6)
+                        return None
+            return "low" if energy_ok(f, mod, "low") else None
         if pol.accept == "feas":
             if mode == "lowest":
                 return "low" if energy_ok(f, mod, "low") else None
@@ -1211,6 +1295,13 @@ def policy_set(name):
             out += [Ladder(**dict(vb, cap_budget=True, nohist="fill"), name="sipp-noET"),
                     Ladder(**dict(fin, energy_feas=True), name="sipp+E1")]
         return out
+    if name == "ladder":
+        # 2026-11-01: SIPP's rule over per-stage effort rungs (analysis/lab/ladder_protocol.md)
+        vb = dict(guard="hist", accept="feas", boundary="backlog", cad_src="arrival", budget="frames", path_k=2.0)
+        fin = dict(vb, cap_budget=True, nohist="fill", energy_time=True)
+        return [Static("low"), Static("med"), Static("high"), Ladder(**fin, name="sipp"),
+                RungLadder(rungs="uniform", **fin, name="sipp-rungs-uniform"),
+                RungLadder(rungs="pareto", **fin, name="sipp-ladder")]
     if name == "capfix":
         v2 = dict(guard="hist", accept="feas", boundary="backlog", cad_src="arrival", budget="frames", path_k=2.0)
         return [Static("low"), Static("med"), Static("high"), Greedy(), Ladder(name="ladder-as-evaluated"),

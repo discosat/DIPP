@@ -27,7 +27,9 @@ CONTENT = {"cs12_test_[0-9]": "cloudy", "cs12_test_matched_": "matched", "cs12_t
 _content = None
 
 
-def predict(r):
+def build_scenario(r):
+    """Simulator scenario of one board-grid run (also used by analysis/oracle.py).
+    Returns (sc, lab, policy, seed, slos)."""
     global _content
     if _content is None:
         _content = S.build_content()
@@ -55,6 +57,11 @@ def predict(r):
         en["w0"] = r["soc0"] * en["cap"]
         assert abs(en["w0"] - (floor + 0.05)) < 0.01, (en["w0"], floor)
         sc["energy"], sc["p_budget"] = en, 3.7
+    return sc, lab, policy, seed, slos
+
+
+def predict(r):
+    sc, lab, policy, seed, slos = build_scenario(r)
     pol = [p for p in L.policy_set("final3") if p.name == LAB[policy]][0]
     out = L.simulate(sc, pol)
     return {"label": r["label"], "policy": policy, "slo_urgent": slos.get("urgent", ""),

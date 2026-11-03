@@ -1,0 +1,26 @@
+# Fixed med/med/low combination (cls/seg/enc), added 2026-11-02: the "worst-design" design
+# an operator would pick from the cost model (highest-quality combination whose
+# frame time fits the 6.68 s period on clear-sky content), one combination for every
+# content mix; slot 5 in manifest_fixed_designs.yaml. Board check of the simulated fixed designs (analysis/lab/
+# oracle_soft_summary.md). classification 4, segmentation 19, JPEG 2000 16.
+pipeline:
+- name: libdemosaic
+  implementations:
+  - param_id: 1
+    effort_level: default
+- name: libtile
+  implementations:
+  - param_id: 2
+    effort_level: default
+- name: libtflite_classification
+  implementations:
+  - param_id: 4
+    effort_level: default
+- name: libtflite_binary_segmentation
+  implementations:
+  - param_id: 19
+    effort_level: default
+- name: libjpeg2000_module
+  implementations:
+  - param_id: 16
+    effort_level: default

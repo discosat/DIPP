@@ -1,0 +1,39 @@
+# 2026-11-02: as manifest.yaml, but slots 4 and 5 (monolith, demosaic+jxl; unused by the
+# board grid) hold the two fixed designs -- the daemon has N_PIPELINES = 6 slots.
+pipelines:
+  1: pipeline_1.yaml
+  2: pipeline_2.yaml
+  3: pipeline_3.yaml
+  4: pipeline_avg_design.yaml     # high/med/high
+  5: pipeline_worst_design.yaml   # med/med/low
+  6: pipeline_6.yaml
+modules:
+  1: module_1.yaml
+  2: module_2.yaml
+  3: module_3.yaml
+  4: module_4.yaml
+  5: module_5.yaml
+  6: module_6.yaml
+  7: module_7.yaml
+  8: module_8.yaml
+  9: module_9.yaml
+  10: module_10.yaml
+  11: module_11.yaml
+  12: module_12.yaml
+  13: module_13.yaml
+  14: module_14.yaml
+  15: module_15.yaml
+  16: module_16.yaml
+  17: module_17.yaml
+  18: module_18.yaml
+  19: module_19.yaml
+radio_node_id: 0
+# SECONDS: the daemon passes this straight to alarm(). 0 = alarm(0) = no
+# timeout, which is why MODULE_EXIT_TIMEOUT never fired; the daemon now floors
+# 0 to 30 s. Its job is to catch a HUNG module, not to cap legitimate work: a
+# batch of k frames puts k x (per-frame time) into one execution, and 30 s
+# killed the high-effort monolith at k=5 (6.1 s x 5 = 30.7 s), retried it and
+# quarantined it (size sweep pilot, 2026-10-01). 120 s covers the slowest
+# configuration, JPEG XL e5 at 20.3 s per frame, up to k=5 (~101 s), and still
+# catches a real hang within two minutes.
+module_timeout: 120

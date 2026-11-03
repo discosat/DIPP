@@ -75,3 +75,6 @@ __pycache__/
 # Training outputs (checkpoints, weights, logs): not versioned; the flight
 # models the board runs are copied to experiments/board/models/.
 /training/out/
+
+# Parsed run tables: regenerable from runs/ with analysis/parse_runs.py
+/analysis/parsed/

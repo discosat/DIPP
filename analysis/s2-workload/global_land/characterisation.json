@@ -1,0 +1,234 @@
+{
+ "aoi": "analysis/s2-workload/aoi_global_land.geojson",
+ "merge_gap_s": 600.0,
+ "step_s": 2.0,
+ "sources": [
+  {
+   "file": "s2a_mp_acq__kml_20261001t150000_20261019t180000.kml",
+   "sha256": "7ff7028bc0c99927dbd20f2c21f036c18f655b2466d0975342120c6dc92c9987",
+   "satellite": "S2A",
+   "from": "2026-10-01T15:00:00+00:00",
+   "to": "2026-10-19T18:00:00+00:00",
+   "nominal_datatakes": 335
+  },
+  {
+   "file": "s2b_mp_acq__kml_20260924t120000_20261012t150000.kml",
+   "sha256": "4832dc11b42d663fc5e3aea3c56d745bbf07f42d14209c19e9c07f8914322d40",
+   "satellite": "S2B",
+   "from": "2026-09-24T12:00:00+00:00",
+   "to": "2026-10-12T15:00:00+00:00",
+   "nominal_datatakes": 995
+  },
+  {
+   "file": "s2c_mp_acq__kml_20261001t113000_20261019t143000.kml",
+   "sha256": "39fd0004848565be763b04a6fb693ddb93550b324ad12014eb20e60e3b3ec817",
+   "satellite": "S2C",
+   "from": "2026-10-01T11:30:00+00:00",
+   "to": "2026-10-19T14:30:00+00:00",
+   "nominal_datatakes": 886
+  }
+ ],
+ "full_days": [
+  "2026-10-02",
+  "2026-10-03",
+  "2026-10-04",
+  "2026-10-05",
+  "2026-10-06",
+  "2026-10-07",
+  "2026-10-08",
+  "2026-10-09",
+  "2026-10-10",
+  "2026-10-11"
+ ],
+ "datatakes_nominal": 2216,
+ "scene_spacing_outside_3.60_3.62_s": 0,
+ "centre_line_notes": {
+  "apex inside the datatake": 0,
+  "unexpected ring shape": 0
+ },
+ "windows_total": 4101,
+ "per_day": [
+  {
+   "day": "2026-10-02",
+   "windows": 237,
+   "aoi_seconds": 25702.5,
+   "duty_cycle": 0.29748,
+   "bursts": 31,
+   "by_satellite": {
+    "S2A": 48,
+    "S2B": 114,
+    "S2C": 75
+   }
+  },
+  {
+   "day": "2026-10-03",
+   "windows": 236,
+   "aoi_seconds": 24809.6,
+   "duty_cycle": 0.28715,
+   "bursts": 31,
+   "by_satellite": {
+    "S2A": 43,
+    "S2B": 95,
+    "S2C": 98
+   }
+  },
+  {
+   "day": "2026-10-04",
+   "windows": 236,
+   "aoi_seconds": 26354.3,
+   "duty_cycle": 0.30503,
+   "bursts": 32,
+   "by_satellite": {
+    "S2A": 39,
+    "S2B": 109,
+    "S2C": 88
+   }
+  },
+  {
+   "day": "2026-10-05",
+   "windows": 220,
+   "aoi_seconds": 25760.2,
+   "duty_cycle": 0.29815,
+   "bursts": 29,
+   "by_satellite": {
+    "S2A": 44,
+    "S2B": 106,
+    "S2C": 70
+   }
+  },
+  {
+   "day": "2026-10-06",
+   "windows": 243,
+   "aoi_seconds": 26239.9,
+   "duty_cycle": 0.3037,
+   "bursts": 30,
+   "by_satellite": {
+    "S2A": 45,
+    "S2B": 106,
+    "S2C": 92
+   }
+  },
+  {
+   "day": "2026-10-07",
+   "windows": 204,
+   "aoi_seconds": 25269.4,
+   "duty_cycle": 0.29247,
+   "bursts": 30,
+   "by_satellite": {
+    "S2A": 33,
+    "S2B": 82,
+    "S2C": 89
+   }
+  },
+  {
+   "day": "2026-10-08",
+   "windows": 247,
+   "aoi_seconds": 25794.9,
+   "duty_cycle": 0.29855,
+   "bursts": 32,
+   "by_satellite": {
+    "S2A": 49,
+    "S2B": 110,
+    "S2C": 88
+   }
+  },
+  {
+   "day": "2026-10-09",
+   "windows": 218,
+   "aoi_seconds": 24930.1,
+   "duty_cycle": 0.28854,
+   "bursts": 33,
+   "by_satellite": {
+    "S2A": 43,
+    "S2B": 98,
+    "S2C": 77
+   }
+  },
+  {
+   "day": "2026-10-10",
+   "windows": 218,
+   "aoi_seconds": 25977.6,
+   "duty_cycle": 0.30067,
+   "bursts": 27,
+   "by_satellite": {
+    "S2A": 42,
+    "S2B": 91,
+    "S2C": 85
+   }
+  },
+  {
+   "day": "2026-10-11",
+   "windows": 213,
+   "aoi_seconds": 25839.8,
+   "duty_cycle": 0.29907,
+   "bursts": 33,
+   "by_satellite": {
+    "S2A": 31,
+    "S2B": 99,
+    "S2C": 83
+   }
+  }
+ ],
+ "summary": {
+  "windows_per_day": {
+   "median": 228.0,
+   "iqr": [
+    218,
+    236
+   ],
+   "min": 204,
+   "max": 247,
+   "n": 10
+  },
+  "aoi_seconds_per_day": {
+   "median": 25777.55,
+   "iqr": [
+    25269.4,
+    25839.8
+   ],
+   "min": 24809.6,
+   "max": 26354.3,
+   "n": 10
+  },
+  "duty_cycle_pct": {
+   "median": 29.835,
+   "iqr": [
+    29.247,
+    29.907
+   ],
+   "min": 28.715,
+   "max": 30.503,
+   "n": 10
+  },
+  "bursts_per_day": {
+   "median": 31.0,
+   "iqr": [
+    30,
+    32
+   ],
+   "min": 27,
+   "max": 33,
+   "n": 10
+  },
+  "burst_seconds": {
+   "median": 966.0,
+   "iqr": [
+    506.0,
+    1678.648
+   ],
+   "min": 0.0,
+   "max": 5379.306,
+   "n": 308
+  },
+  "inter_burst_gap_s": {
+   "median": 1433.814,
+   "iqr": [
+    1014.362,
+    1974.164
+   ],
+   "min": 601.739,
+   "max": 3992.287,
+   "n": 307
+  }
+ }
+}

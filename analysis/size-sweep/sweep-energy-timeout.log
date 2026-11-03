@@ -1,0 +1,118 @@
+=== size sweep: 63 of 68 runs to do -> analysis/size-sweep ===
+[1/63] p2-low-val01-k1: pipeline 2 k=1 n=6 cs12_validation_01.bayerRG
+Traceback (most recent call last):
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 128, in start
+    self.otii.get_active_project().start_recording()
+  File "/home/roba/miniconda3/lib/python3.12/site-packages/otii_tcp_client/project.py", line 130, in start_recording
+    response = self.connection.send_and_receive(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/roba/miniconda3/lib/python3.12/site-packages/otii_tcp_client/otii_connection.py", line 133, in send_and_receive
+    data = self.receive_response(timeout, request["trans_id"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/roba/miniconda3/lib/python3.12/site-packages/otii_tcp_client/otii_connection.py", line 92, in receive_response
+    recv_data = self.sock.recv(self.recv_buffer)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/roba/dipp-paper/DIPP/tools/size_sweep.py", line 222, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/roba/dipp-paper/DIPP/tools/size_sweep.py", line 186, in main
+    after = floor(energy, s["idle_s"]) if not a.no_energy else None
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/roba/dipp-paper/DIPP/tools/size_sweep.py", line 77, in floor
+    energy.start()
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 131, in start
+    self._fail(f"start_recording failed ({type(e).__name__}: {e})")
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 119, in _fail
+    raise EnergyError(f"Otii {what}")
+campaign.EnergyError: Otii start_recording failed (TimeoutError: timed out)
+=== size sweep: 63 of 68 runs to do -> analysis/size-sweep ===
+[1/63] p2-low-val01-k1: pipeline 2 k=1 n=6 cs12_validation_01.bayerRG
+  ok: 30 executions, 109 s, 83.94 mWh, floors 2.697/2.698 W
+[2/63] p2-low-test_matched_00-k1: pipeline 2 k=1 n=6 cs12_test_matched_00.bayerRG
+  ok: 30 executions, 108 s, 84.43 mWh, floors 2.698/2.699 W
+[3/63] p2-low-test_matchedkeep_00-k1: pipeline 2 k=1 n=6 cs12_test_matchedkeep_00.bayerRG
+  ok: 30 executions, 145 s, 112.48 mWh, floors 2.699/2.700 W
+[4/63] p2-low-val11-k2: pipeline 2 k=2 n=5 cs12_validation_11.bayerRG
+  ok: 25 executions, 108 s, 84.21 mWh, floors 2.700/2.700 W
+[5/63] p2-low-val11-k4: pipeline 2 k=4 n=3 cs12_validation_11.bayerRG
+Traceback (most recent call last):
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 151, in stop
+    proj.stop_recording()
+  File "/home/roba/miniconda3/lib/python3.12/site-packages/otii_tcp_client/project.py", line 140, in stop_recording
+    response = self.connection.send_and_receive(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/roba/miniconda3/lib/python3.12/site-packages/otii_tcp_client/otii_connection.py", line 133, in send_and_receive
+    data = self.receive_response(timeout, request["trans_id"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/roba/miniconda3/lib/python3.12/site-packages/otii_tcp_client/otii_connection.py", line 92, in receive_response
+    recv_data = self.sock.recv(self.recv_buffer)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/roba/dipp-paper/DIPP/tools/size_sweep.py", line 222, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/roba/dipp-paper/DIPP/tools/size_sweep.py", line 175, in main
+    e = energy.stop()
+        ^^^^^^^^^^^^^
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 164, in stop
+    self._fail(f"read failed ({type(e).__name__}: {e})")
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 122, in _fail
+    raise EnergyError(f"Otii {what}")
+campaign.EnergyError: Otii read failed (TimeoutError: timed out)
+=== size sweep: 59 of 68 runs to do -> analysis/size-sweep ===
+[1/59] p2-low-val11-k4: pipeline 2 k=4 n=3 cs12_validation_11.bayerRG
+  ok: 15 executions, 109 s, 84.96 mWh, floors 2.699/2.700 W
+[2/59] p2-low-val00-k2: pipeline 2 k=2 n=5 cs12_validation_00.bayerRG
+  ok: 25 executions, 108 s, 85.47 mWh, floors 2.700/2.700 W
+[3/59] p2-low-val00-k4: pipeline 2 k=4 n=3 cs12_validation_00.bayerRG
+  ok: 15 executions, 109 s, 84.92 mWh, floors 2.700/2.699 W
+[4/59] p2-low-val01-k2: pipeline 2 k=2 n=5 cs12_validation_01.bayerRG
+  ok: 25 executions, 108 s, 84.53 mWh, floors 2.699/2.699 W
+[5/59] p2-low-val01-k4: pipeline 2 k=4 n=3 cs12_validation_01.bayerRG
+  ok: 15 executions, 109 s, 84.48 mWh, floors 2.699/2.700 W
+[6/59] p2-low-test_matched_00-k2: pipeline 2 k=2 n=5 cs12_test_matched_00.bayerRG
+  ok: 25 executions, 110 s, 86.96 mWh, floors 2.700/2.700 W
+[7/59] p2-low-test_matched_00-k3: pipeline 2 k=3 n=4 cs12_test_matched_00.bayerRG
+  ok: 20 executions, 144 s, 113.25 mWh, floors 2.700/2.700 W
+[8/59] p2-low-test_matched_00-k5: pipeline 2 k=5 n=3 cs12_test_matched_00.bayerRG
+  ok: 15 executions, 142 s, 115.63 mWh, floors 2.700/2.700 W
+[9/59] p2-low-test_matchedkeep_00-k2: pipeline 2 k=2 n=5 cs12_test_matchedkeep_00.bayerRG
+Traceback (most recent call last):
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 153, in stop
+    proj.stop_recording()
+  File "/home/roba/miniconda3/lib/python3.12/site-packages/otii_tcp_client/project.py", line 140, in stop_recording
+    response = self.connection.send_and_receive(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 121, in <lambda>
+    send(req, max(timeout, REQUEST_TIMEOUT_S))
+  File "/home/roba/miniconda3/lib/python3.12/site-packages/otii_tcp_client/otii_connection.py", line 133, in send_and_receive
+    data = self.receive_response(timeout, request["trans_id"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/roba/miniconda3/lib/python3.12/site-packages/otii_tcp_client/otii_connection.py", line 92, in receive_response
+    recv_data = self.sock.recv(self.recv_buffer)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/roba/dipp-paper/DIPP/tools/size_sweep.py", line 222, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/roba/dipp-paper/DIPP/tools/size_sweep.py", line 175, in main
+    e = energy.stop()
+        ^^^^^^^^^^^^^
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 166, in stop
+    self._fail(f"read failed ({type(e).__name__}: {e})")
+  File "/home/roba/dipp-paper/DIPP/tools/campaign.py", line 132, in _fail
+    raise EnergyError(f"Otii {what}")
+campaign.EnergyError: Otii read failed (TimeoutError: timed out)

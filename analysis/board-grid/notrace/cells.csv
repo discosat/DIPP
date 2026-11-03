@@ -1,0 +1,4 @@
+cell,policy,U_s1,U_mean,U_min,U_max,seeds,best_static,regret_s1,urgent_hit_s1,routine_hit_s1,urgent_p99_s1
+P2C1,final,0.9993,0.9993,0.9993,0.9993,3,,,1.0,1.0,4.4
+P2C2,final,0.9988,0.9991,0.9988,0.9993,3,,,1.0,1.0,9.82
+P2C3,final,0.9584,0.9584,0.9584,0.9584,1,,,1.0,1.0,9.96

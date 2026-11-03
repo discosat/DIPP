@@ -1,0 +1,67 @@
+  200/3000  13 s
+  400/3000  25 s
+  600/3000  38 s
+  800/3000  50 s
+  1000/3000  63 s
+  1200/3000  77 s
+  1400/3000  88 s
+  1600/3000  100 s
+  1800/3000  111 s
+  2000/3000  125 s
+  2200/3000  137 s
+  2400/3000  148 s
+  2600/3000  162 s
+  2800/3000  175 s
+  3000/3000  186 s
+wrote analysis/lab/test2_exact.csv (3000 scenarios, 186 s)
+  200/3000  16 s
+  400/3000  30 s
+  600/3000  46 s
+  800/3000  59 s
+  1000/3000  75 s
+  1200/3000  89 s
+  1400/3000  103 s
+  1600/3000  118 s
+  1800/3000  131 s
+  2000/3000  146 s
+  2200/3000  161 s
+  2400/3000  174 s
+  2600/3000  190 s
+  2800/3000  205 s
+  3000/3000  218 s
+wrote analysis/lab/test2_err03.csv (3000 scenarios, 218 s)
+  200/3000  14 s
+  400/3000  27 s
+  600/3000  41 s
+  800/3000  54 s
+  1000/3000  68 s
+  1200/3000  81 s
+  1400/3000  93 s
+  1600/3000  107 s
+  1800/3000  119 s
+  2000/3000  133 s
+  2200/3000  146 s
+  2400/3000  159 s
+  2600/3000  173 s
+  2800/3000  187 s
+  3000/3000  198 s
+wrote analysis/lab/test2_err07.csv (3000 scenarios, 199 s)
+slo x0.5 exact done
+slo x0.5 err03 done
+slo x1.0 exact done
+slo x1.0 err03 done
+slo x2.0 exact done
+slo x2.0 err03 done
+slo x4.0 exact done
+slo x4.0 err03 done
+
+worst regret vs best static, per routine deadline and model condition
+  SLO   150 exact  greedy:0.481 ladder-as-evaluated:0.068 ladder-rho-guard:0.068 C2:0.069 C3:0.069
+  SLO   150 err03  greedy:0.522 ladder-as-evaluated:0.081 ladder-rho-guard:0.146 C2:0.081 C3:0.082
+  SLO   300 exact  greedy:0.643 ladder-as-evaluated:0.109 ladder-rho-guard:0.045 C2:0.045 C3:0.045
+  SLO   300 err03  greedy:0.645 ladder-as-evaluated:0.115 ladder-rho-guard:0.142 C2:0.062 C3:0.063
+  SLO   600 exact  greedy:0.479 ladder-as-evaluated:0.013 ladder-rho-guard:0.015 C2:0.015 C3:0.014
+  SLO   600 err03  greedy:0.477 ladder-as-evaluated:0.026 ladder-rho-guard:0.145 C2:0.049 C3:0.050
+  SLO  1200 exact  greedy:0.180 ladder-as-evaluated:0.011 ladder-rho-guard:0.040 C2:0.047 C3:0.053
+  SLO  1200 err03  greedy:0.163 ladder-as-evaluated:0.024 ladder-rho-guard:0.145 C2:0.040 C3:0.045
+ALLDONE

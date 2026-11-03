@@ -1,0 +1,104 @@
+=== platform disco2-bol.env soc0 0.9338 phase0 0.1202; DIPP_SCHED_Q_MED=12 DIPP_SCHED_Q_LOW=20 DIPP_SCHED_GRANULARITY=stage DIPP_SCHED_GATE_MED_MS=5000 DIPP_SCHED_GATE_LOW_MS=3000; SLO pattern [300, 300, 300, 20]; feed gap 2.0 s; image /mnt/flash/cs12-frames/cs12_test_matched_00.bayerRG ===
+=== ensuring power on and board booted ===
+=== clearing state ===
+cat /home/root/tmp-experiments/pc_start.sh
+#!/bin/sh
+cd /home/root/tmp-experiments
+set -a
+. ./disco2-bol.env
+set +a
+export DIPP_BATT_SOC0=0.9338 DIPP_BATT_PHASE0=0.1202
+export STORAGE_MODE=HYBRID
+export DIPP_SCHED_Q_MED=12
+export DIPP_SCHED_Q_LOW=20
+export DIPP_SCHED_GRANULARITY=stage
+export DIPP_SCHED_GATE_MED_MS=5000
+export DIPP_SCHED_GATE_LOW_MS=3000
+setsid ./dipp -i CAN -p can0 -a 5423 >> pc.log 2>&1 &
+root@fsimx8mp:~/tmp-experiments# 
+root/tmp-experiments/pc.log | cut -c1-160
+BATTERY_CONFIG capacity_wh=92.00 soc0=0.934 wh0=85.910 bus_w=13.07 gen_avg_w=16.435 orbit_min=95.430 eclipse_min=35.55 phase0=0.120 orbit_surplus_wh=5.352 margi
+SCHED_CONFIG q_med=12 q_med_src=env q_low=20 q_low_src=env gate_med_ms=5000 gate_med_src=env gate_low_ms=3000 gate_low_src=env granularity=stage granularity_src
+root@fsimx8mp:~/tmp-experiments# 
+=== feeding 30 batches ===
+--- cycle 1/10: cutting power (fed 30, completed 16) ---
+RECOVERY cycle=1 login_s=26.3 daemon_s=40.6 first_select_s=50.8 first_exec_s=50.8
+--- cycle 2/10: cutting power (fed 30, completed 23) ---
+RECOVERY cycle=2 login_s=26.2 daemon_s=40.6 first_select_s=50.8 first_exec_s=50.8
+--- cycle 3/10: cutting power (fed 30, completed 29) ---
+RECOVERY cycle=3 login_s=26.2 daemon_s=40.5 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 4/10: cutting power (fed 30, completed 30) ---
+RECOVERY cycle=4 login_s=26.1 daemon_s=40.4 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 5/10: cutting power (fed 30, completed 30) ---
+RECOVERY cycle=5 login_s=26.1 daemon_s=40.4 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 6/10: cutting power (fed 30, completed 30) ---
+RECOVERY cycle=6 login_s=26.1 daemon_s=40.4 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 7/10: cutting power (fed 30, completed 30) ---
+RECOVERY cycle=7 login_s=26.2 daemon_s=40.5 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 8/10: cutting power (fed 30, completed 30) ---
+RECOVERY cycle=8 login_s=37.2 daemon_s=51.5 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 9/10: cutting power (fed 30, completed 30) ---
+RECOVERY cycle=9 login_s=37.1 daemon_s=51.4 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 10/10: cutting power (fed 30, completed 30) ---
+RECOVERY cycle=10 login_s=37.2 daemon_s=51.5 first_select_s=none first_exec_s=none (idle or no work within timeout)
+=== draining ===
+  completions=20
+  completions=20
+  completions=20
+  completions=20
+  completions=20
+  completions=20
+=== RESULT, host-side tally (daemon-start failures: 0) ===
+fed=30 completed=30 lost=0 duplicates=0 checkpoints=2 loads_from_ingest=242 resumed_from_checkpoint=0 boots_seen=30
+  startup: STARTUP_QUEUES ingest=0 partial=0 @0
+  startup: STARTUP_QUEUES ingest=11 partial=0 @1
+  startup: STARTUP_QUEUES ingest=0 partial=0 @1
+  startup: STARTUP_QUEUES ingest=11 partial=0 @2
+  startup: STARTUP_QUEUES ingest=5 partial=0 @2
+  startup: STARTUP_QUEUES ingest=0 partial=0 @2
+  startup: STARTUP_QUEUES ingest=11 partial=0 @3
+  startup: STARTUP_QUEUES ingest=5 partial=0 @3
+  startup: STARTUP_QUEUES ingest=0 partial=0 @3
+  startup: STARTUP_QUEUES ingest=5 partial=0 @4
+  startup: STARTUP_QUEUES ingest=11 partial=0 @4
+  startup: STARTUP_QUEUES ingest=0 partial=0 @4
+  startup: STARTUP_QUEUES ingest=11 partial=0 @5
+  startup: STARTUP_QUEUES ingest=0 partial=0 @5
+  startup: STARTUP_QUEUES ingest=5 partial=0 @5
+  startup: STARTUP_QUEUES ingest=5 partial=0 @6
+  startup: STARTUP_QUEUES ingest=0 partial=0 @6
+  startup: STARTUP_QUEUES ingest=11 partial=0 @6
+  startup: STARTUP_QUEUES ingest=5 partial=0 @7
+  startup: STARTUP_QUEUES ingest=11 partial=0 @7
+  startup: STARTUP_QUEUES ingest=0 partial=0 @7
+  startup: STARTUP_QUEUES ingest=5 partial=0 @8
+  startup: STARTUP_QUEUES ingest=0 partial=0 @8
+  startup: STARTUP_QUEUES ingest=11 partial=0 @8
+  startup: STARTUP_QUEUES ingest=5 partial=0 @9
+  startup: STARTUP_QUEUES ingest=0 partial=0 @9
+  startup: STARTUP_QUEUES ingest=11 partial=0 @9
+  startup: STARTUP_QUEUES ingest=0 partial=0 @10
+  startup: STARTUP_QUEUES ingest=5 partial=0 @10
+  startup: STARTUP_QUEUES ingest=11 partial=0 @10
+=== board-side tally (the log is NOT durable under cuts; for reference only) ===
+cd /home/root/tmp-experiments; grep uuid= pc_fedd.txt | sed 's/.*uuid=//; s/ .*//' | sort -u > /tmp/f; grep 'Pipeline fully exec uted' pc.log | sed 's/.*uuid=//; s/ .*//' | sort -u > /tmp/d; grep -E '^QUEUE_SELLECT|^EXEC ' pc.log > /tmp/q; echo fed=$(grep -c . /tmp/f); echo completed=$(grepp -c . /tmp/d); nq=0; il=0; for u in $(cat /tmp/f); do if grep -q "$u" /tmp/q; t hen grep -q "^$u$" /tmp/d || il=$((il+1)); else nq=$((nq+1)); fi; done; echo nev er_reached_queue=$nq; echo IN_SCOPE_LOST=$il; echo duplicates=$(( $(grep -c 'Pip eline fully executed' pc.log) - $(grep -c . /tmp/d) )); echo QUEUE_CORRUPT=$(gre p -c QUEUE_CORRUPT pc.log); echo boots=$(grep -c 'SIPP build' pc.log); echo star tup_queues=$(grep '^STARTUP_QUEUES' pc.log | sed 's/STARTUP_QUEUES //' | tr '\n'  ' '); echo resumed_from_checkpoint=$(grep -c '^HYBRID_LOAD.*progress=[0-9]' pc. log); echo checkpoints=$(grep -c '^CHECKPOINT ' pc.log); echo hybrid_loads=$(grepp -c '^HYBRID_LOAD ' pc.log); echo test_halts=$(grep -c '^TEST_HALT' pc.log); ec ho quarantined=$(grep -c '^QUARANTINED' pc.log); echo preemptions=$(grep -c '^PR EEMPT ' pc.log); echo sched_config=$(grep -m1 '^SCHED_CONFIG' pc.log | cut -c1-8 0); echo orphans_removed=$(grep -c '^ORPHAN_REMOVE' pc.log); echo segments_now=$ (( $(wc -l < /proc/sysvipc/shm) - 1 )); echo files_now=$(ls /usr/share/dipp/data  2>/dev/null | wc -l)
+fed=30
+completed=20
+never_reached_queue=7
+IN_SCOPE_LOST=3
+duplicates=0
+QUEUE_CORRUPT=0
+boots=11
+startup_queues=ingest=0 partial=0 ingest=11 partial=0 ingest=5 partial=0 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0
+resumed_from_checkpoint=0
+checkpoints=2
+hybrid_loads=23
+test_halts=0
+quarantined=0
+preemptions=2
+sched_config=SCHED_CONFIG q_med=12 q_med_src=env q_low=20 q_low_src=env gate_med_ms=5000 gate
+orphans_removed=2
+segments_now=0
+files_now=0
+root@fsimx8mp:~/tmp-experiments# 
+=== restoring power ===

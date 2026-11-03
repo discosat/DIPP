@@ -1,0 +1,4 @@
+=== deploying 's5a-final' (paper-experiments-92-g055264e [lib/csp=8cc13c66 lib/dtp=504e2cd3 lib/libdtp=504e2cd3 lib/param=768970c6]) ===
+  WARNING: staged from a dirty tree; not reproducible from a commit
+    MATCH
+  verified 25/25 installed files

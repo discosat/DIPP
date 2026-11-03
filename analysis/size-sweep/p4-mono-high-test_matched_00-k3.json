@@ -1,0 +1,74 @@
+{
+ "label": "p4-mono-high-test_matched_00-k3",
+ "spec": {
+  "label": "p4-mono-high-test_matched_00-k3",
+  "pipeline": 4,
+  "image": "cs12_test_matched_00.bayerRG",
+  "images": 3,
+  "n": 4
+ },
+ "settings": {
+  "storage": "HYBRID",
+  "idle_s": 60,
+  "min_drain": 30
+ },
+ "status": "done",
+ "wall_s": 173.2,
+ "energy": {
+  "avg_current_a": 0.6816834528111956,
+  "avg_power_w": 3.408417264055978,
+  "energy_wh": 0.16386723423007793,
+  "measured_s": 173.078
+ },
+ "floor_before_w": 2.7204614384110446,
+ "floor_after_w": 2.7232160059220667,
+ "execs": [
+  {
+   "ts_us": 1033609484460,
+   "module": "libsingle_module",
+   "param_id": 9,
+   "num_images": 3,
+   "n_input": 3,
+   "latency_us": 18419331,
+   "energy_debited_uwh": 2708.0,
+   "uuid": "fe3fef81-287e-4fc0-9f06-0e8628157df7"
+  },
+  {
+   "ts_us": 1033628295205,
+   "module": "libsingle_module",
+   "param_id": 9,
+   "num_images": 3,
+   "n_input": 3,
+   "latency_us": 18456891,
+   "energy_debited_uwh": 2708.0,
+   "uuid": "5a8d9745-1f90-4384-9c97-766bff25be43"
+  },
+  {
+   "ts_us": 1033647133874,
+   "module": "libsingle_module",
+   "param_id": 9,
+   "num_images": 3,
+   "n_input": 3,
+   "latency_us": 18464962,
+   "energy_debited_uwh": 2708.0,
+   "uuid": "066a151f-2803-4826-a67d-c0d2b6851a5b"
+  },
+  {
+   "ts_us": 1033665959413,
+   "module": "libsingle_module",
+   "param_id": 9,
+   "num_images": 3,
+   "n_input": 3,
+   "latency_us": 18456777,
+   "energy_debited_uwh": 2708.0,
+   "uuid": "cd77b65d-8c9d-4054-9419-a1c5cb6646da"
+  }
+ ],
+ "n_executions": "4",
+ "n_completed": "4",
+ "build_id": "paper-experiments-86-gd403ed8 [lib/csp=8cc13c66 lib/dtp=504e2cd3 lib/libdtp=504e2cd3 lib/param=768970c6]",
+ "duration_s": "110",
+ "complete": true,
+ "valid": true,
+ "floor_shift_w": 0.0028
+}

@@ -1,0 +1,139 @@
+=== size sweep: 68 of 68 runs to do -> analysis/size-sweep ===
+[1/68] p2-low-val04-k1: pipeline 2 k=1 n=6 cs12_validation_04.bayerRG
+  ok: 30 executions, 107 s, 93.82 mWh, floors 3.030/3.031 W
+[2/68] p2-low-val11-k1: pipeline 2 k=1 n=6 cs12_validation_11.bayerRG
+  ok: 30 executions, 108 s, 93.73 mWh, floors 3.031/3.031 W
+[3/68] p2-low-val06-k1: pipeline 2 k=1 n=6 cs12_validation_06.bayerRG
+  INVALID: floor 3.031 -> 2.702 W crosses 2.85 W; re-run it by invoking the sweep again
+[4/68] p2-low-val00-k1: pipeline 2 k=1 n=6 cs12_validation_00.bayerRG
+  ok: 30 executions, 108 s, 83.27 mWh, floors 2.702/2.701 W
+[5/68] p2-low-val07-k1: pipeline 2 k=1 n=6 cs12_validation_07.bayerRG
+  ok: 30 executions, 108 s, 83.52 mWh, floors 2.701/2.699 W
+[6/68] p2-low-val01-k1: pipeline 2 k=1 n=6 cs12_validation_01.bayerRG
+  ok: 30 executions, 105 s
+[7/68] p2-low-test_matched_00-k1: pipeline 2 k=1 n=6 cs12_test_matched_00.bayerRG
+  ok: 30 executions, 105 s
+[8/68] p2-low-test_matchedkeep_00-k1: pipeline 2 k=1 n=6 cs12_test_matchedkeep_00.bayerRG
+  ok: 30 executions, 139 s
+[9/68] p2-low-val11-k2: pipeline 2 k=2 n=5 cs12_validation_11.bayerRG
+  ok: 25 executions, 105 s
+[10/68] p2-low-val11-k4: pipeline 2 k=4 n=3 cs12_validation_11.bayerRG
+  ok: 15 executions, 105 s
+[11/68] p2-low-val00-k2: pipeline 2 k=2 n=5 cs12_validation_00.bayerRG
+  ok: 25 executions, 105 s
+[12/68] p2-low-val00-k4: pipeline 2 k=4 n=3 cs12_validation_00.bayerRG
+  ok: 15 executions, 105 s
+[13/68] p2-low-val01-k2: pipeline 2 k=2 n=5 cs12_validation_01.bayerRG
+  ok: 25 executions, 105 s
+[14/68] p2-low-val01-k4: pipeline 2 k=4 n=3 cs12_validation_01.bayerRG
+  ok: 15 executions, 105 s
+[15/68] p2-low-test_matched_00-k2: pipeline 2 k=2 n=5 cs12_test_matched_00.bayerRG
+  ok: 25 executions, 105 s
+[16/68] p2-low-test_matched_00-k3: pipeline 2 k=3 n=4 cs12_test_matched_00.bayerRG
+  ok: 20 executions, 139 s
+[17/68] p2-low-test_matched_00-k5: pipeline 2 k=5 n=3 cs12_test_matched_00.bayerRG
+  ok: 15 executions, 139 s
+[18/68] p2-low-test_matchedkeep_00-k2: pipeline 2 k=2 n=5 cs12_test_matchedkeep_00.bayerRG
+  ok: 25 executions, 139 s
+[19/68] p2-low-test_matchedkeep_00-k3: pipeline 2 k=3 n=4 cs12_test_matchedkeep_00.bayerRG
+  ok: 20 executions, 173 s
+[20/68] p2-low-test_matchedkeep_00-k5: pipeline 2 k=5 n=3 cs12_test_matchedkeep_00.bayerRG
+  ok: 15 executions, 173 s
+[21/68] p6-medium-val04-k1: pipeline 6 k=1 n=6 cs12_validation_04.bayerRG
+  ok: 30 executions, 105 s
+[22/68] p6-medium-val11-k1: pipeline 6 k=1 n=6 cs12_validation_11.bayerRG
+  ok: 30 executions, 105 s
+[23/68] p6-medium-val06-k1: pipeline 6 k=1 n=6 cs12_validation_06.bayerRG
+  ok: 30 executions, 105 s
+[24/68] p6-medium-val00-k1: pipeline 6 k=1 n=6 cs12_validation_00.bayerRG
+  ok: 30 executions, 105 s
+[25/68] p6-medium-val07-k1: pipeline 6 k=1 n=6 cs12_validation_07.bayerRG
+  ok: 30 executions, 105 s
+[26/68] p6-medium-val01-k1: pipeline 6 k=1 n=6 cs12_validation_01.bayerRG
+  ok: 30 executions, 105 s
+[27/68] p6-medium-test_matched_00-k1: pipeline 6 k=1 n=6 cs12_test_matched_00.bayerRG
+  ok: 30 executions, 105 s
+[28/68] p6-medium-test_matchedkeep_00-k1: pipeline 6 k=1 n=6 cs12_test_matchedkeep_00.bayerRG
+  ok: 30 executions, 139 s
+[29/68] p6-medium-val11-k2: pipeline 6 k=2 n=5 cs12_validation_11.bayerRG
+  ok: 25 executions, 105 s
+[30/68] p6-medium-val11-k4: pipeline 6 k=4 n=3 cs12_validation_11.bayerRG
+  ok: 15 executions, 139 s
+[31/68] p6-medium-val00-k2: pipeline 6 k=2 n=5 cs12_validation_00.bayerRG
+  ok: 25 executions, 105 s
+[32/68] p6-medium-val00-k4: pipeline 6 k=4 n=3 cs12_validation_00.bayerRG
+  ok: 15 executions, 139 s
+[33/68] p6-medium-val01-k2: pipeline 6 k=2 n=5 cs12_validation_01.bayerRG
+  ok: 25 executions, 105 s
+[34/68] p6-medium-val01-k4: pipeline 6 k=4 n=3 cs12_validation_01.bayerRG
+  ok: 15 executions, 139 s
+[35/68] p6-medium-test_matched_00-k2: pipeline 6 k=2 n=5 cs12_test_matched_00.bayerRG
+  ok: 25 executions, 139 s
+[36/68] p6-medium-test_matched_00-k3: pipeline 6 k=3 n=4 cs12_test_matched_00.bayerRG
+  ok: 20 executions, 139 s
+[37/68] p6-medium-test_matched_00-k5: pipeline 6 k=5 n=3 cs12_test_matched_00.bayerRG
+  ok: 15 executions, 139 s
+[38/68] p6-medium-test_matchedkeep_00-k2: pipeline 6 k=2 n=5 cs12_test_matchedkeep_00.bayerRG
+  ok: 25 executions, 173 s
+[39/68] p6-medium-test_matchedkeep_00-k3: pipeline 6 k=3 n=4 cs12_test_matchedkeep_00.bayerRG
+  ok: 20 executions, 173 s
+[40/68] p6-medium-test_matchedkeep_00-k5: pipeline 6 k=5 n=3 cs12_test_matchedkeep_00.bayerRG
+  ok: 4 executions, 105 s
+[41/68] p3-high-val04-k1: pipeline 3 k=1 n=6 cs12_validation_04.bayerRG
+  ok: 30 executions, 105 s
+[42/68] p3-high-val11-k1: pipeline 3 k=1 n=6 cs12_validation_11.bayerRG
+  ok: 30 executions, 105 s
+[43/68] p3-high-val06-k1: pipeline 3 k=1 n=6 cs12_validation_06.bayerRG
+  ok: 30 executions, 105 s
+[44/68] p3-high-val00-k1: pipeline 3 k=1 n=6 cs12_validation_00.bayerRG
+  ok: 30 executions, 106 s
+[45/68] p3-high-val07-k1: pipeline 3 k=1 n=6 cs12_validation_07.bayerRG
+  ok: 30 executions, 105 s
+[46/68] p3-high-val01-k1: pipeline 3 k=1 n=6 cs12_validation_01.bayerRG
+  ok: 30 executions, 105 s
+[47/68] p3-high-test_matched_00-k1: pipeline 3 k=1 n=6 cs12_test_matched_00.bayerRG
+  ok: 30 executions, 139 s
+[48/68] p3-high-test_matchedkeep_00-k1: pipeline 3 k=1 n=6 cs12_test_matchedkeep_00.bayerRG
+  ok: 30 executions, 173 s
+[49/68] p3-high-val11-k2: pipeline 3 k=2 n=5 cs12_validation_11.bayerRG
+  ok: 25 executions, 139 s
+[50/68] p3-high-val11-k4: pipeline 3 k=4 n=3 cs12_validation_11.bayerRG
+  ok: 15 executions, 139 s
+[51/68] p3-high-val00-k2: pipeline 3 k=2 n=5 cs12_validation_00.bayerRG
+  ok: 25 executions, 139 s
+[52/68] p3-high-val00-k4: pipeline 3 k=4 n=3 cs12_validation_00.bayerRG
+  ok: 15 executions, 139 s
+[53/68] p3-high-val01-k2: pipeline 3 k=2 n=5 cs12_validation_01.bayerRG
+  ok: 25 executions, 139 s
+[54/68] p3-high-val01-k4: pipeline 3 k=4 n=3 cs12_validation_01.bayerRG
+  ok: 15 executions, 139 s
+[55/68] p3-high-test_matched_00-k2: pipeline 3 k=2 n=5 cs12_test_matched_00.bayerRG
+  ok: 25 executions, 173 s
+[56/68] p3-high-test_matched_00-k3: pipeline 3 k=3 n=4 cs12_test_matched_00.bayerRG
+  ok: 20 executions, 173 s
+[57/68] p3-high-test_matched_00-k5: pipeline 3 k=5 n=3 cs12_test_matched_00.bayerRG
+  ok: 5 executions, 105 s
+[58/68] p3-high-test_matchedkeep_00-k2: pipeline 3 k=2 n=5 cs12_test_matchedkeep_00.bayerRG
+  ok: 25 executions, 207 s
+[59/68] p3-high-test_matchedkeep_00-k3: pipeline 3 k=3 n=4 cs12_test_matchedkeep_00.bayerRG
+  ok: 4 executions, 105 s
+[60/68] p3-high-test_matchedkeep_00-k5: pipeline 3 k=5 n=3 cs12_test_matchedkeep_00.bayerRG
+  ok: 4 executions, 105 s
+[61/68] p5-mono-low-test_matched_00-k1: pipeline 5 k=1 n=6 cs12_test_matched_00.bayerRG
+  ok: 6 executions, 105 s
+[62/68] p5-mono-low-test_matched_00-k2: pipeline 5 k=2 n=5 cs12_test_matched_00.bayerRG
+  ok: 5 executions, 105 s
+[63/68] p5-mono-low-test_matched_00-k3: pipeline 5 k=3 n=4 cs12_test_matched_00.bayerRG
+  ok: 4 executions, 105 s
+[64/68] p5-mono-low-test_matched_00-k5: pipeline 5 k=5 n=3 cs12_test_matched_00.bayerRG
+  ok: 3 executions, 139 s
+[65/68] p4-mono-high-test_matched_00-k1: pipeline 4 k=1 n=6 cs12_test_matched_00.bayerRG
+  ok: 6 executions, 139 s
+[66/68] p4-mono-high-test_matched_00-k2: pipeline 4 k=2 n=5 cs12_test_matched_00.bayerRG
+  ok: 5 executions, 173 s
+[67/68] p4-mono-high-test_matched_00-k3: pipeline 4 k=3 n=4 cs12_test_matched_00.bayerRG
+  ok: 4 executions, 173 s
+[68/68] p4-mono-high-test_matched_00-k5: pipeline 4 k=5 n=3 cs12_test_matched_00.bayerRG
+  ok: 2 executions, 173 s
+
+=== 67 ok, 1 invalid, 0 failed ===

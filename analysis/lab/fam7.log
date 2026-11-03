@@ -1,0 +1,13 @@
+wrote analysis/lab/grid_fam7.csv (900 cells, 84 s)
+  200/2000  30 s
+  400/2000  52 s
+  600/2000  77 s
+  800/2000  102 s
+  1000/2000  132 s
+  1200/2000  155 s
+  1400/2000  184 s
+  1600/2000  211 s
+  1800/2000  233 s
+  2000/2000  261 s
+wrote analysis/lab/fam7_sel.csv (2000 scenarios, 261 s)
+ALLDONE

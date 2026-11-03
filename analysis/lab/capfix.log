@@ -1,0 +1,46 @@
+1602 jobs on 7 processes
+  100/1602
+  200/1602
+  300/1602
+  400/1602
+  500/1602
+  600/1602
+  700/1602
+  800/1602
+  900/1602
+  1000/1602
+  1100/1602
+  1200/1602
+  1300/1602
+  1400/1602
+  1500/1602
+  1600/1602
+wrote analysis/lab/deadline_capfix.csv
+per (urgent, routine, cap, cond): best static per cell (seed 1), worst/mean regret, v2 urgent min, cap drops
+Traceback (most recent call last):
+  File "/home/roba/dipp-paper/DIPP/analysis/lab_deadline.py", line 144, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/roba/dipp-paper/DIPP/analysis/lab_deadline.py", line 139, in main
+    summary(a.o)
+  File "/home/roba/dipp-paper/DIPP/analysis/lab_deadline.py", line 109, in summary
+    line += f" {n.replace('ladder-as-evaluated', 'v1')}:{max(reg[n]):.3f}/{statistics.mean(reg[n]):+.3f}"
+                                                             ~~~^^^
+KeyError: 'v2-k1.5'
+  200/1500  27 s
+  400/1500  47 s
+  600/1500  70 s
+  800/1500  94 s
+  1000/1500  117 s
+  1200/1500  140 s
+  1400/1500  162 s
+wrote analysis/lab/sel200k_capfix_none.csv (1500 scenarios, 174 s)
+  200/1500  46 s
+  400/1500  81 s
+  600/1500  119 s
+  800/1500  155 s
+  1000/1500  198 s
+  1200/1500  239 s
+  1400/1500  277 s
+wrote analysis/lab/sel200k_capfix_slo_r_21600.csv (1500 scenarios, 295 s)
+ALLDONE

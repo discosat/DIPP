@@ -1,0 +1,74 @@
+{
+ "label": "p5-mono-low-test_matched_00-k3",
+ "spec": {
+  "label": "p5-mono-low-test_matched_00-k3",
+  "pipeline": 5,
+  "image": "cs12_test_matched_00.bayerRG",
+  "images": 3,
+  "n": 4
+ },
+ "settings": {
+  "storage": "HYBRID",
+  "idle_s": 60,
+  "min_drain": 30
+ },
+ "status": "done",
+ "wall_s": 105.5,
+ "energy": {
+  "avg_current_a": 0.5908521496134242,
+  "avg_power_w": 2.9542607480671212,
+  "energy_wh": 0.08651552600714565,
+  "measured_s": 105.426
+ },
+ "floor_before_w": 2.7141065624203464,
+ "floor_after_w": 2.714152238987404,
+ "execs": [
+  {
+   "ts_us": 1032495725855,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 3,
+   "n_input": 3,
+   "latency_us": 5251656,
+   "energy_debited_uwh": 459.0,
+   "uuid": "286ff682-5d30-40d7-8f42-18389f947a61"
+  },
+  {
+   "ts_us": 1032501320148,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 3,
+   "n_input": 3,
+   "latency_us": 5256645,
+   "energy_debited_uwh": 459.0,
+   "uuid": "2f2e9935-9ae6-48c0-879c-5ec5b682cc97"
+  },
+  {
+   "ts_us": 1032506926722,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 3,
+   "n_input": 3,
+   "latency_us": 5256642,
+   "energy_debited_uwh": 459.0,
+   "uuid": "7cd754ca-bbd8-4d78-96af-41fcc0be7faa"
+  },
+  {
+   "ts_us": 1032512595162,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 3,
+   "n_input": 3,
+   "latency_us": 5307182,
+   "energy_debited_uwh": 459.0,
+   "uuid": "735a1b98-0b06-4c37-9291-7ceb6317bf49"
+  }
+ ],
+ "n_executions": "4",
+ "n_completed": "4",
+ "build_id": "paper-experiments-86-gd403ed8 [lib/csp=8cc13c66 lib/dtp=504e2cd3 lib/libdtp=504e2cd3 lib/param=768970c6]",
+ "duration_s": "56",
+ "complete": true,
+ "valid": true,
+ "floor_shift_w": 0.0
+}

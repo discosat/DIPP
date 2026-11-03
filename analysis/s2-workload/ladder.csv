@@ -1,0 +1,9 @@
+region,satellites,bursts_per_day,frames_per_day,burst_frames_median,burst_frames_p90,burst_frames_max,gap_min_median,days
+east_greenland,S2A,1.5,26,18,38,38,1310.8,10
+east_greenland,S2A+B+C,3.2,78,18.5,56,76,46.7,10
+greenland,S2A,2.0,39,17.5,39,41,196.7,10
+greenland,S2A+B+C,4.8,121,17.5,61,79,46.7,10
+arctic,S2A,5.1,82,15,32,41,98.8,10
+arctic,S2A+B+C,27.7,771,29,45,79,46.3,10
+global_land,S2A,10.7,810,70,136,251,83.6,10
+global_land,S2A+B+C,30.8,3970,101.0,265,746,23.9,10

@@ -1,0 +1,186 @@
+{
+ "label": "p3-high-test_matchedkeep_00-k5",
+ "spec": {
+  "label": "p3-high-test_matchedkeep_00-k5",
+  "pipeline": 3,
+  "image": "cs12_test_matchedkeep_00.bayerRG",
+  "images": 5,
+  "n": 3
+ },
+ "settings": {
+  "storage": "HYBRID",
+  "idle_s": 60,
+  "min_drain": 150
+ },
+ "status": "done",
+ "wall_s": 240.8,
+ "energy": {
+  "avg_current_a": 0.7252643571031564,
+  "avg_power_w": 3.626321785515782,
+  "energy_wh": 0.24251429865279628,
+  "measured_s": 240.754
+ },
+ "floor_before_w": 2.7309821548202744,
+ "floor_after_w": 2.734062724258726,
+ "execs": [
+  {
+   "ts_us": 1035600952155,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 1145739,
+   "energy_debited_uwh": 195.013,
+   "uuid": "548dda46-3961-4280-8abc-3185c1266542"
+  },
+  {
+   "ts_us": 1035601414523,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 453428,
+   "energy_debited_uwh": 78.18,
+   "uuid": "548dda46-3961-4280-8abc-3185c1266542"
+  },
+  {
+   "ts_us": 1035610281727,
+   "module": "libtflite_classification",
+   "param_id": 4,
+   "num_images": 495,
+   "n_input": 495,
+   "latency_us": 8859299,
+   "energy_debited_uwh": 4133.625,
+   "uuid": "548dda46-3961-4280-8abc-3185c1266542"
+  },
+  {
+   "ts_us": 1035630409547,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 6,
+   "num_images": 490,
+   "n_input": 490,
+   "latency_us": 20120184,
+   "energy_debited_uwh": 12029.238,
+   "uuid": "548dda46-3961-4280-8abc-3185c1266542"
+  },
+  {
+   "ts_us": 1035658304378,
+   "module": "libjpeg2000_module",
+   "param_id": 17,
+   "num_images": 490,
+   "n_input": 490,
+   "latency_us": 27886660,
+   "energy_debited_uwh": 3318.206,
+   "uuid": "548dda46-3961-4280-8abc-3185c1266542"
+  },
+  {
+   "ts_us": 1035661094371,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 1129987,
+   "energy_debited_uwh": 40.436,
+   "uuid": "c2c4687c-fdce-49f6-83b9-f4b96b3cd08c"
+  },
+  {
+   "ts_us": 1035661561545,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 458372,
+   "energy_debited_uwh": 17.185,
+   "uuid": "c2c4687c-fdce-49f6-83b9-f4b96b3cd08c"
+  },
+  {
+   "ts_us": 1035670433626,
+   "module": "libtflite_classification",
+   "param_id": 4,
+   "num_images": 495,
+   "n_input": 495,
+   "latency_us": 8863501,
+   "energy_debited_uwh": 849.403,
+   "uuid": "c2c4687c-fdce-49f6-83b9-f4b96b3cd08c"
+  },
+  {
+   "ts_us": 1035690566840,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 6,
+   "num_images": 490,
+   "n_input": 490,
+   "latency_us": 20124924,
+   "energy_debited_uwh": 2486.586,
+   "uuid": "c2c4687c-fdce-49f6-83b9-f4b96b3cd08c"
+  },
+  {
+   "ts_us": 1035718519458,
+   "module": "libjpeg2000_module",
+   "param_id": 17,
+   "num_images": 490,
+   "n_input": 490,
+   "latency_us": 27943949,
+   "energy_debited_uwh": 895.837,
+   "uuid": "c2c4687c-fdce-49f6-83b9-f4b96b3cd08c"
+  },
+  {
+   "ts_us": 1035721226279,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 1096022,
+   "energy_debited_uwh": 39.383,
+   "uuid": "0af8a5c9-6912-400a-be94-5f9d01a0d36b"
+  },
+  {
+   "ts_us": 1035721697990,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 461203,
+   "energy_debited_uwh": 17.235,
+   "uuid": "0af8a5c9-6912-400a-be94-5f9d01a0d36b"
+  },
+  {
+   "ts_us": 1035730575442,
+   "module": "libtflite_classification",
+   "param_id": 4,
+   "num_images": 495,
+   "n_input": 495,
+   "latency_us": 8869064,
+   "energy_debited_uwh": 849.815,
+   "uuid": "0af8a5c9-6912-400a-be94-5f9d01a0d36b"
+  },
+  {
+   "ts_us": 1035750709526,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 6,
+   "num_images": 490,
+   "n_input": 490,
+   "latency_us": 20125959,
+   "energy_debited_uwh": 2486.538,
+   "uuid": "0af8a5c9-6912-400a-be94-5f9d01a0d36b"
+  },
+  {
+   "ts_us": 1035778632682,
+   "module": "libjpeg2000_module",
+   "param_id": 17,
+   "num_images": 490,
+   "n_input": 490,
+   "latency_us": 27915384,
+   "energy_debited_uwh": 894.37,
+   "uuid": "0af8a5c9-6912-400a-be94-5f9d01a0d36b"
+  }
+ ],
+ "n_executions": "15",
+ "n_completed": "3",
+ "build_id": "paper-experiments-86-gd403ed8-dirty [lib/csp=8cc13c66 lib/dtp=504e2cd3 lib/libdtp=504e2cd3 lib/param=768970c6]",
+ "duration_s": "186",
+ "n_expected": "3",
+ "drain_stalled": "0",
+ "complete": true,
+ "valid": true,
+ "floor_shift_w": 0.0031
+}

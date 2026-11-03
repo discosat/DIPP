@@ -1,0 +1,4 @@
+2216 nominal datatakes, 1576 windows over aoi_arctic.geojson; 10 full days (2026-10-02..2026-10-11)
+  per day: 86.0 windows, 4867.0 s over the AOI (duty 5.633 %), 27.0 bursts
+  burst length median 236.0 s (IQR [158.0, 290.0]), gap median 2780.566 s (IQR [2703.132, 2849.319])
+  scene spacing outside 3.60-3.62 s: 0; centre-line notes: {'apex inside the datatake': 0, 'unexpected ring shape': 0}

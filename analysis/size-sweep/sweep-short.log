@@ -1,0 +1,13 @@
+=== size sweep: 5 of 68 runs to do -> analysis/size-sweep ===
+[1/5] p6-medium-test_matchedkeep_00-k5: pipeline 6 k=5 n=3 cs12_test_matchedkeep_00.bayerRG
+  ok: 15 executions, 173 s, 155.27 mWh, floors 2.711/2.720 W
+[2/5] p3-high-test_matched_00-k5: pipeline 3 k=5 n=3 cs12_test_matched_00.bayerRG
+  ok: 15 executions, 173 s, 172.25 mWh, floors 2.720/2.727 W
+[3/5] p3-high-test_matchedkeep_00-k3: pipeline 3 k=3 n=4 cs12_test_matchedkeep_00.bayerRG
+  ok: 20 executions, 207 s, 204.46 mWh, floors 2.727/2.731 W
+[4/5] p3-high-test_matchedkeep_00-k5: pipeline 3 k=5 n=3 cs12_test_matchedkeep_00.bayerRG
+  ok: 15 executions, 241 s, 242.51 mWh, floors 2.731/2.734 W
+[5/5] p4-mono-high-test_matched_00-k5: pipeline 4 k=5 n=3 cs12_test_matched_00.bayerRG
+  ok: 3 executions, 173 s, 172.35 mWh, floors 2.734/2.731 W
+
+=== 5 ok, 0 invalid, 0 failed ===

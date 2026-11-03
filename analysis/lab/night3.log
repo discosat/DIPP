@@ -1,0 +1,21 @@
+  200/1500  7 s
+  400/1500  13 s
+  600/1500  19 s
+  800/1500  25 s
+  1000/1500  32 s
+  1200/1500  39 s
+  1400/1500  45 s
+wrote analysis/lab/slou_10.csv (1500 scenarios, 48 s)
+  200/1500  7 s
+  400/1500  13 s
+  600/1500  21 s
+  800/1500  27 s
+  1000/1500  34 s
+  1200/1500  41 s
+  1400/1500  48 s
+wrote analysis/lab/slou_40.csv (1500 scenarios, 51 s)
+  200/600  20 s
+  400/600  36 s
+  600/600  54 s
+wrote analysis/lab/long3000.csv (600 scenarios, 54 s)
+ALLDONE

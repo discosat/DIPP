@@ -1,0 +1,94 @@
+{
+ "label": "p5-mono-low-test_matched_00-k1",
+ "spec": {
+  "label": "p5-mono-low-test_matched_00-k1",
+  "pipeline": 5,
+  "image": "cs12_test_matched_00.bayerRG",
+  "images": 1,
+  "n": 6
+ },
+ "settings": {
+  "storage": "HYBRID",
+  "idle_s": 60,
+  "min_drain": 30
+ },
+ "status": "done",
+ "wall_s": 105.5,
+ "energy": {
+  "avg_current_a": 0.5708371450735845,
+  "avg_power_w": 2.8541857253679224,
+  "energy_wh": 0.08355787276888224,
+  "measured_s": 105.392
+ },
+ "floor_before_w": 2.7217398643635597,
+ "floor_after_w": 2.715396500454693,
+ "execs": [
+  {
+   "ts_us": 1032008391595,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 1,
+   "n_input": 1,
+   "latency_us": 1814522,
+   "energy_debited_uwh": 459.0,
+   "uuid": "ff239622-deeb-4e28-aba3-2097ed55375c"
+  },
+  {
+   "ts_us": 1032010338395,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 1,
+   "n_input": 1,
+   "latency_us": 1803050,
+   "energy_debited_uwh": 459.0,
+   "uuid": "a58b3ce4-35dd-4a1e-aff8-26d9bc97e8e6"
+  },
+  {
+   "ts_us": 1032012271105,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 1,
+   "n_input": 1,
+   "latency_us": 1799281,
+   "energy_debited_uwh": 459.0,
+   "uuid": "74f9e10c-b9b1-49f1-8069-5c3b050d1608"
+  },
+  {
+   "ts_us": 1032014208949,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 1,
+   "n_input": 1,
+   "latency_us": 1808543,
+   "energy_debited_uwh": 459.0,
+   "uuid": "b96d3507-6954-4134-a291-70b6f4c1444d"
+  },
+  {
+   "ts_us": 1032016159310,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 1,
+   "n_input": 1,
+   "latency_us": 1816585,
+   "energy_debited_uwh": 459.0,
+   "uuid": "27fdc28e-c7ac-4940-b6bd-02282d26deac"
+  },
+  {
+   "ts_us": 1032018107031,
+   "module": "libsingle_module",
+   "param_id": 8,
+   "num_images": 1,
+   "n_input": 1,
+   "latency_us": 1814159,
+   "energy_debited_uwh": 459.0,
+   "uuid": "c34da39f-a4d2-492e-a0f2-03dd13b106b3"
+  }
+ ],
+ "n_executions": "6",
+ "n_completed": "6",
+ "build_id": "paper-experiments-86-gd403ed8 [lib/csp=8cc13c66 lib/dtp=504e2cd3 lib/libdtp=504e2cd3 lib/param=768970c6]",
+ "duration_s": "45",
+ "complete": true,
+ "valid": true,
+ "floor_shift_w": -0.0063
+}

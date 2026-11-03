@@ -1,0 +1,49 @@
+  200/1500  44 s
+  400/1500  74 s
+  600/1500  107 s
+  800/1500  140 s
+  1000/1500  179 s
+  1200/1500  215 s
+  1400/1500  248 s
+wrote analysis/lab/fresh_slo_r_21600_cap100.csv (1500 scenarios, 264 s)
+  200/1500  22 s
+  400/1500  37 s
+  600/1500  54 s
+  800/1500  72 s
+  1000/1500  89 s
+  1200/1500  107 s
+  1400/1500  123 s
+wrote analysis/lab/fresh_slo_u_10_cap100.csv (1500 scenarios, 132 s)
+  200/1500  22 s
+  400/1500  38 s
+  600/1500  56 s
+  800/1500  75 s
+  1000/1500  93 s
+  1200/1500  112 s
+  1400/1500  129 s
+wrote analysis/lab/fresh_slo_u_60_cap100.csv (1500 scenarios, 139 s)
+  200/1500  82 s
+  400/1500  139 s
+  600/1500  196 s
+  800/1500  258 s
+  1000/1500  332 s
+  1200/1500  401 s
+  1400/1500  463 s
+wrote analysis/lab/fresh_slo_r_21600_cap300.csv (1500 scenarios, 495 s)
+  200/1500  21 s
+  400/1500  36 s
+  600/1500  54 s
+  800/1500  72 s
+  1000/1500  91 s
+  1200/1500  109 s
+  1400/1500  125 s
+wrote analysis/lab/fresh_slo_u_10_cap300.csv (1500 scenarios, 135 s)
+  200/1500  23 s
+  400/1500  38 s
+  600/1500  56 s
+  800/1500  75 s
+  1000/1500  94 s
+  1200/1500  113 s
+  1400/1500  130 s
+wrote analysis/lab/fresh_slo_u_60_cap300.csv (1500 scenarios, 141 s)
+ALLDONE

@@ -1,0 +1,234 @@
+{
+ "aoi": "analysis/s2-workload/aoi_east_greenland.geojson",
+ "merge_gap_s": 600.0,
+ "step_s": 1.0,
+ "sources": [
+  {
+   "file": "s2a_mp_acq__kml_20261001t150000_20261019t180000.kml",
+   "sha256": "7ff7028bc0c99927dbd20f2c21f036c18f655b2466d0975342120c6dc92c9987",
+   "satellite": "S2A",
+   "from": "2026-10-01T15:00:00+00:00",
+   "to": "2026-10-19T18:00:00+00:00",
+   "nominal_datatakes": 335
+  },
+  {
+   "file": "s2b_mp_acq__kml_20260924t120000_20261012t150000.kml",
+   "sha256": "4832dc11b42d663fc5e3aea3c56d745bbf07f42d14209c19e9c07f8914322d40",
+   "satellite": "S2B",
+   "from": "2026-09-24T12:00:00+00:00",
+   "to": "2026-10-12T15:00:00+00:00",
+   "nominal_datatakes": 995
+  },
+  {
+   "file": "s2c_mp_acq__kml_20261001t113000_20261019t143000.kml",
+   "sha256": "39fd0004848565be763b04a6fb693ddb93550b324ad12014eb20e60e3b3ec817",
+   "satellite": "S2C",
+   "from": "2026-10-01T11:30:00+00:00",
+   "to": "2026-10-19T14:30:00+00:00",
+   "nominal_datatakes": 886
+  }
+ ],
+ "full_days": [
+  "2026-10-02",
+  "2026-10-03",
+  "2026-10-04",
+  "2026-10-05",
+  "2026-10-06",
+  "2026-10-07",
+  "2026-10-08",
+  "2026-10-09",
+  "2026-10-10",
+  "2026-10-11"
+ ],
+ "datatakes_nominal": 2216,
+ "scene_spacing_outside_3.60_3.62_s": 0,
+ "centre_line_notes": {
+  "apex inside the datatake": 0,
+  "unexpected ring shape": 0
+ },
+ "windows_total": 183,
+ "per_day": [
+  {
+   "day": "2026-10-02",
+   "windows": 9,
+   "aoi_seconds": 561.0,
+   "duty_cycle": 0.00649,
+   "bursts": 5,
+   "by_satellite": {
+    "S2A": 2,
+    "S2B": 4,
+    "S2C": 3
+   }
+  },
+  {
+   "day": "2026-10-03",
+   "windows": 12,
+   "aoi_seconds": 507.0,
+   "duty_cycle": 0.00587,
+   "bursts": 3,
+   "by_satellite": {
+    "S2A": 1,
+    "S2B": 1,
+    "S2C": 10
+   }
+  },
+  {
+   "day": "2026-10-04",
+   "windows": 11,
+   "aoi_seconds": 686.0,
+   "duty_cycle": 0.00794,
+   "bursts": 3,
+   "by_satellite": {
+    "S2A": 3,
+    "S2B": 7,
+    "S2C": 1
+   }
+  },
+  {
+   "day": "2026-10-05",
+   "windows": 13,
+   "aoi_seconds": 412.0,
+   "duty_cycle": 0.00477,
+   "bursts": 3,
+   "by_satellite": {
+    "S2A": 8,
+    "S2B": 4,
+    "S2C": 1
+   }
+  },
+  {
+   "day": "2026-10-06",
+   "windows": 7,
+   "aoi_seconds": 343.0,
+   "duty_cycle": 0.00397,
+   "bursts": 3,
+   "by_satellite": {
+    "S2A": 1,
+    "S2B": 1,
+    "S2C": 5
+   }
+  },
+  {
+   "day": "2026-10-07",
+   "windows": 7,
+   "aoi_seconds": 488.0,
+   "duty_cycle": 0.00565,
+   "bursts": 4,
+   "by_satellite": {
+    "S2A": 2,
+    "S2B": 1,
+    "S2C": 4
+   }
+  },
+  {
+   "day": "2026-10-08",
+   "windows": 13,
+   "aoi_seconds": 437.0,
+   "duty_cycle": 0.00506,
+   "bursts": 3,
+   "by_satellite": {
+    "S2A": 3,
+    "S2B": 9,
+    "S2C": 1
+   }
+  },
+  {
+   "day": "2026-10-09",
+   "windows": 9,
+   "aoi_seconds": 450.0,
+   "duty_cycle": 0.00521,
+   "bursts": 3,
+   "by_satellite": {
+    "S2A": 3,
+    "S2B": 1,
+    "S2C": 5
+   }
+  },
+  {
+   "day": "2026-10-10",
+   "windows": 6,
+   "aoi_seconds": 456.0,
+   "duty_cycle": 0.00528,
+   "bursts": 3,
+   "by_satellite": {
+    "S2A": 1,
+    "S2B": 1,
+    "S2C": 4
+   }
+  },
+  {
+   "day": "2026-10-11",
+   "windows": 12,
+   "aoi_seconds": 481.0,
+   "duty_cycle": 0.00557,
+   "bursts": 2,
+   "by_satellite": {
+    "S2A": 7,
+    "S2B": 4,
+    "S2C": 1
+   }
+  }
+ ],
+ "summary": {
+  "windows_per_day": {
+   "median": 10.0,
+   "iqr": [
+    7,
+    12
+   ],
+   "min": 6,
+   "max": 13,
+   "n": 10
+  },
+  "aoi_seconds_per_day": {
+   "median": 468.5,
+   "iqr": [
+    437.0,
+    488.0
+   ],
+   "min": 343.0,
+   "max": 686.0,
+   "n": 10
+  },
+  "duty_cycle_pct": {
+   "median": 0.542,
+   "iqr": [
+    0.506,
+    0.565
+   ],
+   "min": 0.397,
+   "max": 0.794,
+   "n": 10
+  },
+  "bursts_per_day": {
+   "median": 3.0,
+   "iqr": [
+    3,
+    3
+   ],
+   "min": 2,
+   "max": 5,
+   "n": 10
+  },
+  "burst_seconds": {
+   "median": 158.5,
+   "iqr": [
+    36.0,
+    692.201
+   ],
+   "min": 24.0,
+   "max": 879.5,
+   "n": 32
+  },
+  "inter_burst_gap_s": {
+   "median": 2799.215,
+   "iqr": [
+    2272.826,
+    77972.381
+   ],
+   "min": 633.131,
+   "max": 81566.399,
+   "n": 31
+  }
+ }
+}

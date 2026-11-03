@@ -1,0 +1,184 @@
+{
+ "label": "p6-medium-test_matched_00-k5",
+ "spec": {
+  "label": "p6-medium-test_matched_00-k5",
+  "pipeline": 6,
+  "image": "cs12_test_matched_00.bayerRG",
+  "images": 5,
+  "n": 3
+ },
+ "settings": {
+  "storage": "HYBRID",
+  "idle_s": 60,
+  "min_drain": 30
+ },
+ "status": "done",
+ "wall_s": 139.4,
+ "energy": {
+  "avg_current_a": 0.6260514651841669,
+  "avg_power_w": 3.1302573259208346,
+  "energy_wh": 0.12109835223286682,
+  "measured_s": 139.271
+ },
+ "floor_before_w": 2.715475163730734,
+ "floor_after_w": 2.7169518316184593,
+ "execs": [
+  {
+   "ts_us": 1025507482802,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 1127981,
+   "energy_debited_uwh": 41.0,
+   "uuid": "362ba717-2bd6-494c-9440-02f82afe60eb"
+  },
+  {
+   "ts_us": 1025507928404,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 436151,
+   "energy_debited_uwh": 17.0,
+   "uuid": "362ba717-2bd6-494c-9440-02f82afe60eb"
+  },
+  {
+   "ts_us": 1025512166133,
+   "module": "libtflite_classification",
+   "param_id": 3,
+   "num_images": 495,
+   "n_input": 495,
+   "latency_us": 4229458,
+   "energy_debited_uwh": 394.0,
+   "uuid": "362ba717-2bd6-494c-9440-02f82afe60eb"
+  },
+  {
+   "ts_us": 1025517043504,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 18,
+   "num_images": 340,
+   "n_input": 340,
+   "latency_us": 4867336,
+   "energy_debited_uwh": 496.0,
+   "uuid": "362ba717-2bd6-494c-9440-02f82afe60eb"
+  },
+  {
+   "ts_us": 1025523219968,
+   "module": "libjpeg2000_module",
+   "param_id": 16,
+   "num_images": 130,
+   "n_input": 130,
+   "latency_us": 6167136,
+   "energy_debited_uwh": 741.0,
+   "uuid": "362ba717-2bd6-494c-9440-02f82afe60eb"
+  },
+  {
+   "ts_us": 1025524943988,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 1105947,
+   "energy_debited_uwh": 41.0,
+   "uuid": "7f48889d-f235-4528-881d-4ccc349002b3"
+  },
+  {
+   "ts_us": 1025525401832,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 449530,
+   "energy_debited_uwh": 17.0,
+   "uuid": "7f48889d-f235-4528-881d-4ccc349002b3"
+  },
+  {
+   "ts_us": 1025529644107,
+   "module": "libtflite_classification",
+   "param_id": 3,
+   "num_images": 495,
+   "n_input": 495,
+   "latency_us": 4234201,
+   "energy_debited_uwh": 394.0,
+   "uuid": "7f48889d-f235-4528-881d-4ccc349002b3"
+  },
+  {
+   "ts_us": 1025534552944,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 18,
+   "num_images": 340,
+   "n_input": 340,
+   "latency_us": 4899810,
+   "energy_debited_uwh": 496.0,
+   "uuid": "7f48889d-f235-4528-881d-4ccc349002b3"
+  },
+  {
+   "ts_us": 1025540736251,
+   "module": "libjpeg2000_module",
+   "param_id": 16,
+   "num_images": 130,
+   "n_input": 130,
+   "latency_us": 6174903,
+   "energy_debited_uwh": 741.0,
+   "uuid": "7f48889d-f235-4528-881d-4ccc349002b3"
+  },
+  {
+   "ts_us": 1025542489373,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 1145677,
+   "energy_debited_uwh": 41.0,
+   "uuid": "51998a3d-326e-41a6-a7a7-e2d31877d7b9"
+  },
+  {
+   "ts_us": 1025542948054,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 5,
+   "n_input": 5,
+   "latency_us": 450138,
+   "energy_debited_uwh": 17.0,
+   "uuid": "51998a3d-326e-41a6-a7a7-e2d31877d7b9"
+  },
+  {
+   "ts_us": 1025547195988,
+   "module": "libtflite_classification",
+   "param_id": 3,
+   "num_images": 495,
+   "n_input": 495,
+   "latency_us": 4239750,
+   "energy_debited_uwh": 394.0,
+   "uuid": "51998a3d-326e-41a6-a7a7-e2d31877d7b9"
+  },
+  {
+   "ts_us": 1025552103052,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 18,
+   "num_images": 340,
+   "n_input": 340,
+   "latency_us": 4899401,
+   "energy_debited_uwh": 496.0,
+   "uuid": "51998a3d-326e-41a6-a7a7-e2d31877d7b9"
+  },
+  {
+   "ts_us": 1025558293518,
+   "module": "libjpeg2000_module",
+   "param_id": 16,
+   "num_images": 130,
+   "n_input": 130,
+   "latency_us": 6181118,
+   "energy_debited_uwh": 741.0,
+   "uuid": "51998a3d-326e-41a6-a7a7-e2d31877d7b9"
+  }
+ ],
+ "n_executions": "15",
+ "n_completed": "3",
+ "build_id": "paper-experiments-86-gd403ed8 [lib/csp=8cc13c66 lib/dtp=504e2cd3 lib/libdtp=504e2cd3 lib/param=768970c6]",
+ "duration_s": "91",
+ "complete": true,
+ "valid": true,
+ "floor_shift_w": 0.0015
+}

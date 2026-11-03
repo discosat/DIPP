@@ -1,0 +1,18 @@
+slo x0.5 exact done
+slo x0.5 err03 done
+slo x1.0 exact done
+slo x1.0 err03 done
+slo x2.0 exact done
+slo x2.0 err03 done
+slo x4.0 exact done
+slo x4.0 err03 done
+
+worst regret vs best static, per routine deadline and model condition
+  SLO   150 exact  ladder-as-evaluated:0.068 C4:0.069 C5:0.069
+  SLO   150 err03  ladder-as-evaluated:0.111 C4:0.091 C5:0.092
+  SLO   300 exact  ladder-as-evaluated:0.109 C4:0.045 C5:0.045
+  SLO   300 err03  ladder-as-evaluated:0.183 C4:0.073 C5:0.075
+  SLO   600 exact  ladder-as-evaluated:0.013 C4:0.014 C5:0.014
+  SLO   600 err03  ladder-as-evaluated:0.028 C4:0.054 C5:0.061
+  SLO  1200 exact  ladder-as-evaluated:0.011 C4:0.053 C5:0.079
+  SLO  1200 err03  ladder-as-evaluated:0.015 C4:0.069 C5:0.095

@@ -1,0 +1,4 @@
+2216 nominal datatakes, 4101 windows over aoi_global_land.geojson; 10 full days (2026-10-02..2026-10-11)
+  per day: 228.0 windows, 25777.55 s over the AOI (duty 29.835 %), 31.0 bursts
+  burst length median 966.0 s (IQR [506.0, 1678.648]), gap median 1433.814 s (IQR [1014.362, 1974.164])
+  scene spacing outside 3.60-3.62 s: 0; centre-line notes: {'apex inside the datatake': 0, 'unexpected ring shape': 0}

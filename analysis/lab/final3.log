@@ -1,0 +1,316 @@
+== held-out random
+  200/3000  15 s
+  400/3000  29 s
+  600/3000  45 s
+  800/3000  58 s
+  1000/3000  72 s
+  1200/3000  86 s
+  1400/3000  100 s
+  1600/3000  113 s
+  1800/3000  127 s
+  2000/3000  142 s
+  2200/3000  156 s
+  2400/3000  171 s
+  2600/3000  186 s
+  2800/3000  200 s
+  3000/3000  215 s
+wrote analysis/lab/final3/heldout.csv (3000 scenarios, 215 s)
+== sensitivity
+  200/1500  25 s
+  400/1500  47 s
+  600/1500  72 s
+  800/1500  92 s
+  1000/1500  113 s
+  1200/1500  136 s
+  1400/1500  158 s
+wrote analysis/lab/final3/sens_base.csv (1500 scenarios, 171 s)
+  200/1500  23 s
+  400/1500  45 s
+  600/1500  70 s
+  800/1500  89 s
+  1000/1500  109 s
+  1200/1500  130 s
+  1400/1500  152 s
+wrote analysis/lab/final3/sens_window_4.csv (1500 scenarios, 164 s)
+  200/1500  26 s
+  400/1500  49 s
+  600/1500  76 s
+  800/1500  98 s
+  1000/1500  120 s
+  1200/1500  144 s
+  1400/1500  168 s
+wrote analysis/lab/final3/sens_window_16.csv (1500 scenarios, 181 s)
+  200/1500  24 s
+  400/1500  46 s
+  600/1500  71 s
+  800/1500  91 s
+  1000/1500  112 s
+  1200/1500  134 s
+  1400/1500  156 s
+wrote analysis/lab/final3/sens_over_err_0.5.csv (1500 scenarios, 169 s)
+  200/1500  25 s
+  400/1500  47 s
+  600/1500  73 s
+  800/1500  93 s
+  1000/1500  114 s
+  1200/1500  137 s
+  1400/1500  160 s
+wrote analysis/lab/final3/sens_over_err_1.5.csv (1500 scenarios, 173 s)
+== arrivals
+  200/1500  15 s
+  400/1500  30 s
+  600/1500  46 s
+  800/1500  59 s
+  1000/1500  73 s
+  1200/1500  87 s
+  1400/1500  101 s
+wrote analysis/lab/final3/arrcv_0.3.csv (1500 scenarios, 110 s)
+  200/1500  16 s
+  400/1500  30 s
+  600/1500  46 s
+  800/1500  59 s
+  1000/1500  73 s
+  1200/1500  87 s
+  1400/1500  102 s
+wrote analysis/lab/final3/arrcv_1.0.csv (1500 scenarios, 110 s)
+== deadlines
+  200/1500  23 s
+  400/1500  44 s
+  600/1500  67 s
+  800/1500  86 s
+  1000/1500  108 s
+  1200/1500  130 s
+  1400/1500  151 s
+wrote analysis/lab/final3/fix_slo_r_21600.csv (1500 scenarios, 162 s)
+  200/1500  15 s
+  400/1500  29 s
+  600/1500  46 s
+  800/1500  59 s
+  1000/1500  72 s
+  1200/1500  86 s
+  1400/1500  100 s
+wrote analysis/lab/final3/fix_slo_u_10.csv (1500 scenarios, 108 s)
+  200/1500  16 s
+  400/1500  30 s
+  600/1500  46 s
+  800/1500  60 s
+  1000/1500  74 s
+  1200/1500  88 s
+  1400/1500  103 s
+wrote analysis/lab/final3/fix_slo_u_60.csv (1500 scenarios, 111 s)
+== grid
+wrote analysis/lab/final3/grid.csv (1200 cells, 71 s)
+== energy random
+  200/2000  42 s
+  400/2000  92 s
+  600/2000  136 s
+  800/2000  179 s
+  1000/2000  226 s
+  1200/2000  276 s
+  1400/2000  328 s
+  1600/2000  370 s
+  1800/2000  414 s
+  2000/2000  462 s
+wrote analysis/lab/final3/energy_random.csv (2000 scenarios, 462 s)
+== adversary
+R 0.332 | period=2.985 burst_mean=320.2689 burst_cv=0.5 gap=24.7368 slo_r=277.0327 urgent=0.4 water=0.1618 clear=0.4455 hi_scale=1.117 arrival_cv=0.0352 content_var=shift
+R 0.283 | period=3.1953 burst_mean=52.0182 burst_cv=0.7113 gap=39.6087 slo_r=451.432 urgent=0.349 water=0.428 clear=1.0 hi_scale=1.3222 arrival_cv=0.0673 content_var=shift
+R 0.216 | period=2.3073 burst_mean=18.717 burst_cv=0.4846 gap=27.2146 slo_r=223.2634 urgent=0.2514 water=1.0 clear=0.5771 hi_scale=1.0453 arrival_cv=0.6797 content_var=const
+R 0.202 | period=3.9894 burst_mean=596.1284 burst_cv=1.0 gap=18.4578 slo_r=199.5661 urgent=0.2 water=0.5091 clear=0.7692 hi_scale=1.6101 arrival_cv=0.03 content_var=shift
+R 0.184 | period=1.9387 burst_mean=39.9714 burst_cv=1.0 gap=59.8052 slo_r=217.2695 urgent=0.2 water=0.1204 clear=0.7755 hi_scale=1.1402 arrival_cv=0.03 content_var=shift
+R 0.175 | period=2.3365 burst_mean=30.2473 burst_cv=0.0 gap=29.8219 slo_r=214.3666 urgent=0.0148 water=0.6458 clear=0.7249 hi_scale=1.0 arrival_cv=0.03 content_var=per_burst
+R 0.148 | period=1.8 burst_mean=15.98 burst_cv=0.0 gap=318.0596 slo_r=73.2809 urgent=0.0 water=0.7346 clear=0.5775 hi_scale=1.3422 arrival_cv=0.03 content_var=shift
+R 0.147 | period=2.1308 burst_mean=24.4111 burst_cv=0.0 gap=279.479 slo_r=83.6543 urgent=0.0 water=0.6135 clear=0.8736 hi_scale=1.0 arrival_cv=0.03 content_var=const
+R 0.146 | period=1.8 burst_mean=13.1847 burst_cv=0.0 gap=2328.3737 slo_r=72.0989 urgent=0.05 water=0.8156 clear=1.0 hi_scale=2.0 arrival_cv=0.0483 content_var=const
+R 0.144 | period=2.0592 burst_mean=510.9762 burst_cv=1.5 gap=17.9901 slo_r=104.7127 urgent=0.0 water=0.4296 clear=0.3221 hi_scale=1.6993 arrival_cv=0.03 content_var=const
+wrote analysis/lab/final3/adversary.csv
+== real traces: deadline sweep
+1602 jobs on 7 processes
+  100/1602
+  200/1602
+  300/1602
+  400/1602
+  500/1602
+  600/1602
+  700/1602
+  800/1602
+  900/1602
+  1000/1602
+  1100/1602
+  1200/1602
+  1300/1602
+  1400/1602
+  1500/1602
+  1600/1602
+wrote analysis/lab/final3/deadline.csv
+per (urgent, routine, cap, cond): best static per cell (seed 1), worst/mean regret, v2 urgent min, cap drops
+err03 Du=  10 Dr=   30 cap=100 best[C1:high C2:med C3:low C4:low C5:low] sipp:0.209/+0.031 v2-board:0.209/+0.031 v1:0.209/+0.029 greedy:0.641/+0.213 | sipp urg min 0.07 lowurg 0.07 | capdrop sipp 0 high 84
+err03 Du=  10 Dr=  300 cap=100 best[C1:high C2:med C3:med C4:med C5:low] sipp:0.073/-0.010 v2-board:0.073/-0.010 v1:0.084/+0.010 greedy:0.623/+0.166 | sipp urg min 0.64 lowurg 0.48 | capdrop sipp 0 high 84
+err03 Du=  10 Dr= 1800 cap=100 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.040/-0.023 v2-board:0.045/-0.027 v1:0.012/-0.014 greedy:0.075/-0.000 | sipp urg min 0.62 lowurg 0.48 | capdrop sipp 0 high 84
+err03 Du=  10 Dr= 1800 cap=200 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.004/-0.026 v2-board:0.045/-0.023 v1:0.000/-0.019 greedy:0.000/-0.017 | sipp urg min 0.52 lowurg 0.48 | capdrop sipp 0 high 0
+err03 Du=  10 Dr= 1800 cap=300 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.045/-0.023 v2-board:0.045/-0.023 v1:0.000/-0.019 greedy:0.000/-0.017 | sipp urg min 0.52 lowurg 0.48 | capdrop sipp 0 high 0
+err03 Du=  10 Dr= 3600 cap=100 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.040/-0.023 v2-board:0.045/-0.029 v1:0.075/-0.000 greedy:0.075/-0.000 | sipp urg min 0.62 lowurg 0.48 | capdrop sipp 0 high 84
+err03 Du=  10 Dr= 3600 cap=200 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.030 v2-board:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 | sipp urg min 0.41 lowurg 0.48 | capdrop sipp 0 high 0
+err03 Du=  10 Dr= 3600 cap=300 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.034 v2-board:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 | sipp urg min 0.43 lowurg 0.48 | capdrop sipp 0 high 0
+err03 Du=  10 Dr=21600 cap=100 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.040/-0.023 v2-board:0.045/-0.029 v1:0.075/-0.000 greedy:0.075/-0.000 | sipp urg min 0.62 lowurg 0.48 | capdrop sipp 0 high 84
+err03 Du=  10 Dr=21600 cap=200 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.030 v2-board:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 | sipp urg min 0.41 lowurg 0.48 | capdrop sipp 0 high 0
+err03 Du=  10 Dr=21600 cap=300 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.035 v2-board:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 | sipp urg min 0.43 lowurg 0.48 | capdrop sipp 0 high 0
+err03 Du=  10 Dr=40320 cap=100 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.040/-0.023 v2-board:0.045/-0.029 v1:0.075/-0.000 greedy:0.075/-0.000 | sipp urg min 0.62 lowurg 0.48 | capdrop sipp 0 high 84
+err03 Du=  10 Dr=40320 cap=200 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.030 v2-board:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 | sipp urg min 0.41 lowurg 0.48 | capdrop sipp 0 high 0
+err03 Du=  10 Dr=40320 cap=300 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.035 v2-board:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 | sipp urg min 0.43 lowurg 0.48 | capdrop sipp 0 high 0
+err03 Du=  20 Dr=   30 cap=100 best[C1:high C2:med C3:low C4:low C5:low] sipp:0.209/+0.031 v2-board:0.209/+0.031 v1:0.209/+0.027 greedy:0.627/+0.206 | sipp urg min 0.05 lowurg 0.05 | capdrop sipp 0 high 84
+err03 Du=  20 Dr=  300 cap=100 best[C1:high C2:high C3:med C4:med C5:low] sipp:0.074/+0.011 v2-board:0.074/+0.011 v1:0.084/+0.022 greedy:0.650/+0.203 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  20 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.050/-0.001 v2-board:0.067/-0.006 v1:0.049/-0.002 greedy:0.125/+0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  20 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.036/-0.003 v2-board:0.074/-0.000 v1:0.014/-0.007 greedy:0.033/-0.004 | sipp urg min 0.98 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  20 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.074/-0.000 v2-board:0.074/-0.000 v1:0.014/-0.007 greedy:0.033/-0.004 | sipp urg min 0.98 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  20 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.050/-0.001 v2-board:0.067/-0.009 v1:0.125/+0.014 greedy:0.125/+0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  20 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.019/-0.016 v2-board:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 | sipp urg min 0.98 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  20 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.002/-0.022 v2-board:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 | sipp urg min 0.98 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  20 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.050/-0.001 v2-board:0.067/-0.009 v1:0.125/+0.014 greedy:0.125/+0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  20 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.019/-0.016 v2-board:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 | sipp urg min 0.98 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  20 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.002/-0.022 v2-board:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 | sipp urg min 0.98 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  20 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.050/-0.001 v2-board:0.067/-0.009 v1:0.125/+0.014 greedy:0.125/+0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  20 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.019/-0.016 v2-board:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 | sipp urg min 0.98 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  20 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.002/-0.022 v2-board:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 | sipp urg min 0.98 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  60 Dr=  300 cap=100 best[C1:high C2:high C3:med C4:med C5:low] sipp:0.073/+0.009 v2-board:0.073/+0.009 v1:0.084/+0.019 greedy:0.634/+0.198 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  60 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.076/+0.019 v2-board:0.076/+0.013 v1:0.051/+0.007 greedy:0.128/+0.026 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  60 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.066/+0.017 v2-board:0.088/+0.019 v1:0.014/+0.002 greedy:0.032/+0.005 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  60 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.088/+0.019 v2-board:0.088/+0.019 v1:0.014/+0.002 greedy:0.032/+0.005 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  60 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.076/+0.019 v2-board:0.076/+0.013 v1:0.128/+0.026 greedy:0.128/+0.026 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  60 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.043/+0.011 v2-board:0.088/+0.019 v1:0.003/-0.000 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  60 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.016/+0.004 v2-board:0.088/+0.019 v1:0.003/-0.000 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  60 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.076/+0.019 v2-board:0.076/+0.013 v1:0.128/+0.026 greedy:0.128/+0.026 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  60 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.043/+0.011 v2-board:0.088/+0.019 v1:0.000/-0.001 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  60 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.016/+0.003 v2-board:0.088/+0.019 v1:0.000/-0.001 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  60 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.076/+0.019 v2-board:0.076/+0.013 v1:0.128/+0.026 greedy:0.128/+0.026 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du=  60 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.043/+0.011 v2-board:0.088/+0.019 v1:0.000/-0.001 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=  60 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.016/+0.003 v2-board:0.088/+0.019 v1:0.000/-0.001 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du= 300 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.076/+0.019 v2-board:0.076/+0.013 v1:0.049/+0.007 greedy:0.124/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du= 300 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.066/+0.017 v2-board:0.088/+0.019 v1:0.014/+0.001 greedy:0.023/+0.004 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du= 300 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.088/+0.019 v2-board:0.088/+0.019 v1:0.014/+0.001 greedy:0.023/+0.004 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du= 300 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.076/+0.019 v2-board:0.076/+0.014 v1:0.124/+0.025 greedy:0.124/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du= 300 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.044/+0.012 v2-board:0.088/+0.020 v1:0.003/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du= 300 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.018/+0.005 v2-board:0.088/+0.020 v1:0.003/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du= 300 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.076/+0.019 v2-board:0.076/+0.014 v1:0.124/+0.025 greedy:0.124/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du= 300 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.044/+0.012 v2-board:0.088/+0.020 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du= 300 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.018/+0.004 v2-board:0.088/+0.020 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du= 300 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.076/+0.019 v2-board:0.076/+0.014 v1:0.124/+0.025 greedy:0.124/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+err03 Du= 300 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.044/+0.012 v2-board:0.088/+0.020 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du= 300 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.018/+0.004 v2-board:0.088/+0.020 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=none Dr=21600 cap=100 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=none Dr=21600 cap=200 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=none Dr=21600 cap=300 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=none Dr=40320 cap=100 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=none Dr=40320 cap=200 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+err03 Du=none Dr=40320 cap=300 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  10 Dr=   30 cap=100 best[C1:high C2:med C3:low C4:low C5:low] sipp:0.051/-0.020 v2-board:0.051/-0.020 v1:0.051/-0.018 greedy:0.612/+0.163 | sipp urg min 0.07 lowurg 0.07 | capdrop sipp 0 high 84
+exact Du=  10 Dr=  300 cap=100 best[C1:high C2:med C3:med C4:med C5:low] sipp:0.042/-0.019 v2-board:0.042/-0.019 v1:0.101/+0.002 greedy:0.605/+0.132 | sipp urg min 0.68 lowurg 0.48 | capdrop sipp 0 high 84
+exact Du=  10 Dr= 1800 cap=100 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.003/-0.028 v2-board:0.000/-0.036 v1:0.011/-0.021 greedy:0.086/-0.008 | sipp urg min 0.61 lowurg 0.48 | capdrop sipp 0 high 84
+exact Du=  10 Dr= 1800 cap=200 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.000/-0.030 v2-board:0.000/-0.032 v1:0.000/-0.027 greedy:0.000/-0.026 | sipp urg min 0.59 lowurg 0.48 | capdrop sipp 0 high 0
+exact Du=  10 Dr= 1800 cap=300 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.000/-0.032 v2-board:0.000/-0.032 v1:0.000/-0.027 greedy:0.000/-0.026 | sipp urg min 0.59 lowurg 0.48 | capdrop sipp 0 high 0
+exact Du=  10 Dr= 3600 cap=100 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.003/-0.028 v2-board:0.000/-0.037 v1:0.086/-0.008 greedy:0.086/-0.008 | sipp urg min 0.61 lowurg 0.48 | capdrop sipp 0 high 84
+exact Du=  10 Dr= 3600 cap=200 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.035 v2-board:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 | sipp urg min 0.45 lowurg 0.48 | capdrop sipp 0 high 0
+exact Du=  10 Dr= 3600 cap=300 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.035 v2-board:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 | sipp urg min 0.54 lowurg 0.48 | capdrop sipp 0 high 0
+exact Du=  10 Dr=21600 cap=100 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.003/-0.028 v2-board:0.000/-0.037 v1:0.086/-0.008 greedy:0.086/-0.008 | sipp urg min 0.61 lowurg 0.48 | capdrop sipp 0 high 84
+exact Du=  10 Dr=21600 cap=200 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.035 v2-board:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 | sipp urg min 0.45 lowurg 0.48 | capdrop sipp 0 high 0
+exact Du=  10 Dr=21600 cap=300 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.035 v2-board:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 | sipp urg min 0.54 lowurg 0.48 | capdrop sipp 0 high 0
+exact Du=  10 Dr=40320 cap=100 best[C1:high C2:med C3:high C4:med C5:med] sipp:0.003/-0.028 v2-board:0.000/-0.037 v1:0.086/-0.008 greedy:0.086/-0.008 | sipp urg min 0.61 lowurg 0.48 | capdrop sipp 0 high 84
+exact Du=  10 Dr=40320 cap=200 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.035 v2-board:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 | sipp urg min 0.45 lowurg 0.48 | capdrop sipp 0 high 0
+exact Du=  10 Dr=40320 cap=300 best[C1:high C2:med C3:high C4:med C5:high] sipp:0.000/-0.035 v2-board:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 | sipp urg min 0.54 lowurg 0.48 | capdrop sipp 0 high 0
+exact Du=  20 Dr=   30 cap=100 best[C1:high C2:med C3:low C4:low C5:low] sipp:0.051/-0.021 v2-board:0.051/-0.021 v1:0.051/-0.019 greedy:0.617/+0.144 | sipp urg min 0.05 lowurg 0.05 | capdrop sipp 0 high 84
+exact Du=  20 Dr=  300 cap=100 best[C1:high C2:high C3:med C4:med C5:low] sipp:0.045/+0.007 v2-board:0.045/+0.007 v1:0.109/+0.025 greedy:0.643/+0.172 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  20 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.029/-0.000 v2-board:0.012/-0.010 v1:0.043/-0.005 greedy:0.134/+0.012 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  20 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.034/-0.002 v2-board:0.034/-0.004 v1:0.001/-0.012 greedy:0.042/-0.006 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  20 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.034/-0.004 v2-board:0.034/-0.004 v1:0.001/-0.012 greedy:0.042/-0.006 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  20 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.029/-0.000 v2-board:0.010/-0.012 v1:0.134/+0.012 greedy:0.134/+0.012 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  20 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.009/-0.016 v2-board:0.014/-0.009 v1:0.000/-0.015 greedy:0.000/-0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  20 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.001/-0.015 v2-board:0.014/-0.009 v1:0.000/-0.015 greedy:0.000/-0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  20 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.029/-0.000 v2-board:0.010/-0.012 v1:0.134/+0.012 greedy:0.134/+0.012 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  20 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.009/-0.016 v2-board:0.014/-0.009 v1:0.000/-0.014 greedy:0.000/-0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  20 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.001/-0.015 v2-board:0.014/-0.009 v1:0.000/-0.014 greedy:0.000/-0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  20 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.029/-0.000 v2-board:0.010/-0.012 v1:0.134/+0.012 greedy:0.134/+0.012 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  20 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.009/-0.016 v2-board:0.014/-0.009 v1:0.000/-0.014 greedy:0.000/-0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  20 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.001/-0.015 v2-board:0.014/-0.009 v1:0.000/-0.014 greedy:0.000/-0.014 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  60 Dr=  300 cap=100 best[C1:high C2:high C3:med C4:med C5:low] sipp:0.044/+0.007 v2-board:0.044/+0.007 v1:0.107/+0.024 greedy:0.631/+0.172 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  60 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.044/+0.016 v2-board:0.031/+0.006 v1:0.041/+0.007 greedy:0.126/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  60 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.052/+0.015 v2-board:0.052/+0.012 v1:0.010/-0.002 greedy:0.027/+0.005 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  60 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.052/+0.013 v2-board:0.052/+0.012 v1:0.010/-0.002 greedy:0.027/+0.005 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  60 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.044/+0.016 v2-board:0.040/+0.008 v1:0.126/+0.025 greedy:0.126/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  60 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.022/+0.007 v2-board:0.074/+0.013 v1:0.004/-0.000 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  60 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.037/+0.008 v2-board:0.074/+0.013 v1:0.004/-0.000 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  60 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.044/+0.016 v2-board:0.040/+0.008 v1:0.126/+0.025 greedy:0.126/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  60 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.022/+0.007 v2-board:0.074/+0.013 v1:0.000/-0.001 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  60 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.037/+0.008 v2-board:0.074/+0.013 v1:0.000/-0.001 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  60 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.044/+0.016 v2-board:0.040/+0.008 v1:0.126/+0.025 greedy:0.126/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du=  60 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.022/+0.007 v2-board:0.074/+0.013 v1:0.000/-0.001 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=  60 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.037/+0.008 v2-board:0.074/+0.013 v1:0.000/-0.001 greedy:0.000/-0.001 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du= 300 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.044/+0.016 v2-board:0.032/+0.006 v1:0.036/+0.007 greedy:0.124/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du= 300 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.052/+0.015 v2-board:0.052/+0.012 v1:0.010/-0.002 greedy:0.023/+0.004 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du= 300 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.052/+0.013 v2-board:0.052/+0.012 v1:0.010/-0.002 greedy:0.023/+0.004 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du= 300 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.044/+0.016 v2-board:0.044/+0.009 v1:0.124/+0.025 greedy:0.124/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du= 300 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.022/+0.009 v2-board:0.073/+0.014 v1:0.004/+0.001 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du= 300 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.035/+0.009 v2-board:0.073/+0.014 v1:0.004/+0.001 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du= 300 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.044/+0.016 v2-board:0.044/+0.009 v1:0.124/+0.025 greedy:0.124/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du= 300 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.022/+0.009 v2-board:0.073/+0.014 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du= 300 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.035/+0.009 v2-board:0.073/+0.014 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du= 300 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] sipp:0.044/+0.016 v2-board:0.044/+0.009 v1:0.124/+0.025 greedy:0.124/+0.025 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 84
+exact Du= 300 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.022/+0.009 v2-board:0.073/+0.014 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du= 300 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:high] sipp:0.035/+0.009 v2-board:0.073/+0.014 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=none Dr=21600 cap=100 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=none Dr=21600 cap=200 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=none Dr=21600 cap=300 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=none Dr=40320 cap=100 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=none Dr=40320 cap=200 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+exact Du=none Dr=40320 cap=300 best[C2u0:high] sipp:0.000/+0.000 v2-board:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 | sipp urg min 1.00 lowurg 1.00 | capdrop sipp 0 high 0
+== real traces: high-cost scaling
+hi x1.0 done
+hi x1.5 done
+hi x2.0 done
+hi x3.0 done
+
+mean U over seeds; worst regret of v2 vs best static over cells
+x1.0:  C1 v2 1.000 hi 1.000 med 0.949  C2 v2 0.999 hi 1.000 med 0.949  C3 v2 0.959 hi 0.488 med 0.949  C4 v2 0.904 hi 0.323 med 0.949  C5 v2 0.786 hi 0.122 med 0.285  | worst regret 0.045 urgent min 1.00
+x1.5:  C1 v2 1.000 hi 1.000 med 0.949  C2 v2 0.980 hi 0.961 med 0.949  C3 v2 0.952 hi 0.180 med 0.949  C4 v2 0.905 hi 0.150 med 0.949  C5 v2 0.776 hi 0.075 med 0.285  | worst regret 0.043 urgent min 1.00
+x2.0:  C1 v2 1.000 hi 1.000 med 0.949  C2 v2 0.970 hi 0.333 med 0.949  C3 v2 0.951 hi 0.123 med 0.949  C4 v2 0.906 hi 0.103 med 0.949  C5 v2 0.775 hi 0.050 med 0.285  | worst regret 0.043 urgent min 1.00
+x3.0:  C1 v2 0.987 hi 0.998 med 0.949  C2 v2 0.961 hi 0.153 med 0.949  C3 v2 0.948 hi 0.075 med 0.949  C4 v2 0.907 hi 0.063 med 0.949  C5 v2 0.761 hi 0.030 med 0.285  | worst regret 0.043 urgent min 0.96
+== real traces: energy regimes
+432 jobs
+wrote analysis/lab/final3/energy_deficit.csv
+mean U over cells x seeds (worst regret vs best static) | share of frames at high
+dd3.5  Du=20 Dr=   30: static-low 0.768(+0.16)h0.00 static-med 0.583(+0.48)h0.00 static-high 0.208(+0.78)h0.57 greedy 0.519(+0.68)h0.40 ladder-as-evaluated 0.751(+0.16)h0.00 v2-board 0.751(+0.16)h0.00 sipp 0.750(+0.16)h0.00 sipp-noET 0.751(+0.16)h0.00 sipp+E1 0.775(+0.15)h0.00
+dd3.5  Du=20 Dr=  300: static-low 0.786(+0.16)h0.00 static-med 0.759(+0.24)h0.00 static-high 0.261(+0.85)h0.59 greedy 0.539(+0.54)h0.52 ladder-as-evaluated 0.723(+0.30)h0.45 v2-board 0.719(+0.30)h0.43 sipp 0.721(+0.30)h0.44 sipp-noET 0.719(+0.30)h0.43 sipp+E1 0.814(+0.17)h0.43
+dd3.5  Du=20 Dr= 1800: static-low 0.789(+0.19)h0.00 static-med 0.894(+0.03)h0.00 static-high 0.340(+0.84)h0.66 greedy 0.658(+0.47)h0.66 ladder-as-evaluated 0.764(+0.36)h0.64 v2-board 0.881(+0.08)h0.48 sipp 0.908(+0.06)h0.52 sipp-noET 0.886(+0.08)h0.47 sipp+E1 0.885(+0.08)h0.46
+dd3.5  Du=20 Dr= 3600: static-low 0.789(+0.19)h0.00 static-med 0.924(+0.03)h0.00 static-high 0.507(+0.75)h0.75 greedy 0.739(+0.51)h0.75 ladder-as-evaluated 0.768(+0.39)h0.74 v2-board 0.881(+0.10)h0.48 sipp 0.918(+0.07)h0.55 sipp-noET 0.886(+0.08)h0.47 sipp+E1 0.885(+0.09)h0.46
+dd3.5  Du=20 Dr=21600: static-low 0.789(+0.19)h0.00 static-med 0.924(+0.03)h0.00 static-high 0.861(+0.24)h0.94 greedy 0.913(+0.15)h0.89 ladder-as-evaluated 0.913(+0.15)h0.89 v2-board 0.881(+0.10)h0.48 sipp 0.920(+0.08)h0.56 sipp-noET 0.886(+0.08)h0.47 sipp+E1 0.885(+0.09)h0.46
+dd3.5  Du=60 Dr=  300: static-low 0.789(+0.16)h0.00 static-med 0.767(+0.25)h0.00 static-high 0.267(+0.85)h0.59 greedy 0.536(+0.55)h0.53 ladder-as-evaluated 0.731(+0.28)h0.45 v2-board 0.727(+0.28)h0.43 sipp 0.728(+0.28)h0.44 sipp-noET 0.727(+0.28)h0.43 sipp+E1 0.822(+0.15)h0.43
+dd3.5  Du=60 Dr= 1800: static-low 0.791(+0.21)h0.00 static-med 0.907(+0.05)h0.00 static-high 0.346(+0.87)h0.66 greedy 0.655(+0.49)h0.67 ladder-as-evaluated 0.776(+0.36)h0.65 v2-board 0.896(+0.08)h0.48 sipp 0.922(+0.05)h0.51 sipp-noET 0.900(+0.08)h0.46 sipp+E1 0.896(+0.08)h0.46
+dd3.5  Du=60 Dr= 3600: static-low 0.791(+0.21)h0.00 static-med 0.938(+0.05)h0.00 static-high 0.513(+0.78)h0.75 greedy 0.738(+0.54)h0.77 ladder-as-evaluated 0.770(+0.41)h0.77 v2-board 0.896(+0.10)h0.48 sipp 0.934(+0.07)h0.55 sipp-noET 0.900(+0.09)h0.46 sipp+E1 0.896(+0.10)h0.46
+dd3.5  Du=60 Dr=21600: static-low 0.791(+0.21)h0.00 static-med 0.938(+0.05)h0.00 static-high 0.870(+0.26)h0.94 greedy 0.917(+0.18)h0.92 ladder-as-evaluated 0.917(+0.18)h0.92 v2-board 0.896(+0.10)h0.48 sipp 0.942(+0.08)h0.57 sipp-noET 0.900(+0.09)h0.46 sipp+E1 0.896(+0.10)h0.46
+dd3.7  Du=20 Dr=   30: static-low 0.791(+0.21)h0.00 static-med 0.633(+0.58)h0.00 static-high 0.351(+0.78)h0.86 greedy 0.680(+0.64)h0.50 ladder-as-evaluated 0.909(+0.05)h0.00 v2-board 0.910(+0.05)h0.00 sipp 0.910(+0.05)h0.00 sipp-noET 0.910(+0.05)h0.00 sipp+E1 0.910(+0.05)h0.00
+dd3.7  Du=20 Dr=  300: static-low 0.791(+0.21)h0.00 static-med 0.891(+0.08)h0.00 static-high 0.486(+0.73)h0.88 greedy 0.729(+0.51)h0.70 ladder-as-evaluated 0.935(+0.04)h0.54 v2-board 0.928(+0.05)h0.52 sipp 0.934(+0.04)h0.54 sipp-noET 0.928(+0.05)h0.52 sipp+E1 0.928(+0.05)h0.55
+dd3.7  Du=20 Dr= 1800: static-low 0.791(+0.21)h0.00 static-med 0.944(+0.05)h0.00 static-high 0.694(+0.69)h0.94 greedy 0.885(+0.22)h0.90 ladder-as-evaluated 0.956(+0.05)h0.86 v2-board 0.934(+0.05)h0.64 sipp 0.959(+0.04)h0.68 sipp-noET 0.930(+0.06)h0.58 sipp+E1 0.934(+0.06)h0.61
+dd3.7  Du=20 Dr= 3600: static-low 0.791(+0.21)h0.00 static-med 0.944(+0.05)h0.00 static-high 0.853(+0.41)h0.98 greedy 0.986(+0.00)h0.97 ladder-as-evaluated 0.985(+0.00)h0.96 v2-board 0.934(+0.05)h0.64 sipp 0.965(+0.04)h0.70 sipp-noET 0.930(+0.06)h0.58 sipp+E1 0.934(+0.06)h0.61
+dd3.7  Du=20 Dr=21600: static-low 0.791(+0.21)h0.00 static-med 0.944(+0.05)h0.00 static-high 0.938(+0.08)h1.00 greedy 0.990(+0.00)h0.98 ladder-as-evaluated 0.990(+0.00)h0.98 v2-board 0.934(+0.05)h0.64 sipp 0.965(+0.04)h0.70 sipp-noET 0.930(+0.06)h0.58 sipp+E1 0.934(+0.06)h0.61
+dd3.7  Du=60 Dr=  300: static-low 0.791(+0.21)h0.00 static-med 0.897(+0.06)h0.00 static-high 0.491(+0.73)h0.88 greedy 0.723(+0.51)h0.71 ladder-as-evaluated 0.935(+0.04)h0.54 v2-board 0.928(+0.05)h0.51 sipp 0.934(+0.04)h0.53 sipp-noET 0.928(+0.05)h0.51 sipp+E1 0.928(+0.05)h0.55
+dd3.7  Du=60 Dr= 1800: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.702(+0.71)h0.94 greedy 0.883(+0.27)h0.91 ladder-as-evaluated 0.959(+0.04)h0.85 v2-board 0.936(+0.06)h0.64 sipp 0.961(+0.05)h0.68 sipp-noET 0.932(+0.07)h0.59 sipp+E1 0.935(+0.08)h0.61
+dd3.7  Du=60 Dr= 3600: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.860(+0.43)h0.98 greedy 0.987(+0.00)h0.98 ladder-as-evaluated 0.988(+0.00)h0.96 v2-board 0.937(+0.06)h0.65 sipp 0.968(+0.05)h0.71 sipp-noET 0.932(+0.07)h0.59 sipp+E1 0.935(+0.08)h0.61
+dd3.7  Du=60 Dr=21600: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.947(+0.08)h1.00 greedy 0.994(+0.00)h0.99 ladder-as-evaluated 0.994(+0.00)h0.99 v2-board 0.937(+0.06)h0.65 sipp 0.968(+0.05)h0.71 sipp-noET 0.932(+0.07)h0.59 sipp+E1 0.935(+0.08)h0.61
+dd3.9  Du=20 Dr=   30: static-low 0.791(+0.21)h0.00 static-med 0.654(+0.50)h0.00 static-high 0.365(+0.75)h0.91 greedy 0.722(+0.62)h0.56 ladder-as-evaluated 0.909(+0.05)h0.00 v2-board 0.910(+0.05)h0.00 sipp 0.910(+0.05)h0.00 sipp-noET 0.910(+0.05)h0.00 sipp+E1 0.910(+0.05)h0.00
+dd3.9  Du=20 Dr=  300: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.561(+0.67)h0.96 greedy 0.878(+0.32)h0.80 ladder-as-evaluated 0.958(+0.06)h0.62 v2-board 0.953(+0.06)h0.60 sipp 0.956(+0.06)h0.62 sipp-noET 0.953(+0.06)h0.60 sipp+E1 0.948(+0.07)h0.60
+dd3.9  Du=20 Dr= 1800: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.880(+0.31)h1.00 greedy 0.992(+0.00)h0.96 ladder-as-evaluated 0.983(+0.00)h0.91 v2-board 0.956(+0.04)h0.73 sipp 0.973(+0.03)h0.76 sipp-noET 0.955(+0.04)h0.67 sipp+E1 0.954(+0.06)h0.67
+dd3.9  Du=20 Dr= 3600: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.954(+0.04)h1.00 greedy 0.996(+0.00)h0.99 ladder-as-evaluated 0.993(+0.00)h0.97 v2-board 0.956(+0.04)h0.74 sipp 0.974(+0.03)h0.76 sipp-noET 0.955(+0.04)h0.67 sipp+E1 0.954(+0.06)h0.67
+dd3.9  Du=20 Dr=21600: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.954(+0.04)h1.00 greedy 0.996(+0.00)h0.99 ladder-as-evaluated 0.996(+0.00)h0.99 v2-board 0.956(+0.04)h0.74 sipp 0.974(+0.03)h0.76 sipp-noET 0.955(+0.04)h0.67 sipp+E1 0.954(+0.06)h0.67
+dd3.9  Du=60 Dr=  300: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.575(+0.66)h0.96 greedy 0.878(+0.31)h0.80 ladder-as-evaluated 0.958(+0.06)h0.62 v2-board 0.954(+0.05)h0.60 sipp 0.956(+0.06)h0.62 sipp-noET 0.954(+0.05)h0.60 sipp+E1 0.948(+0.07)h0.60
+dd3.9  Du=60 Dr= 1800: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.904(+0.29)h1.00 greedy 0.995(+0.00)h0.96 ladder-as-evaluated 0.985(+0.00)h0.91 v2-board 0.958(+0.04)h0.73 sipp 0.976(+0.03)h0.76 sipp-noET 0.957(+0.04)h0.67 sipp+E1 0.955(+0.06)h0.67
+dd3.9  Du=60 Dr= 3600: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.978(+0.00)h1.00 greedy 1.000(+0.00)h1.00 ladder-as-evaluated 0.996(+0.00)h0.98 v2-board 0.958(+0.06)h0.74 sipp 0.976(+0.05)h0.76 sipp-noET 0.957(+0.07)h0.67 sipp+E1 0.955(+0.08)h0.67
+dd3.9  Du=60 Dr=21600: static-low 0.791(+0.21)h0.00 static-med 0.949(+0.05)h0.00 static-high 0.978(+0.00)h1.00 greedy 1.000(+0.00)h1.00 ladder-as-evaluated 1.000(+0.00)h1.00 v2-board 0.958(+0.06)h0.74 sipp 0.976(+0.05)h0.76 sipp-noET 0.957(+0.07)h0.67 sipp+E1 0.955(+0.08)h0.67
+disco  Du=20 Dr=   30: static-low 0.673(+0.21)h0.00 static-med 0.567(+0.50)h0.00 static-high 0.353(+0.75)h0.90 greedy 0.615(+0.62)h0.52 ladder-as-evaluated 0.774(+0.05)h0.00 v2-board 0.774(+0.05)h0.00 sipp 0.774(+0.05)h0.00 sipp-noET 0.774(+0.05)h0.00 sipp+E1 0.774(+0.05)h0.00
+disco  Du=20 Dr=  300: static-low 0.673(+0.21)h0.00 static-med 0.803(+0.05)h0.00 static-high 0.601(+0.66)h0.94 greedy 0.767(+0.19)h0.72 ladder-as-evaluated 0.815(+0.04)h0.57 v2-board 0.812(+0.05)h0.58 sipp 0.812(+0.05)h0.58 sipp-noET 0.812(+0.05)h0.58 sipp+E1 0.813(+0.05)h0.58
+disco  Du=20 Dr= 1800: static-low 0.677(+0.21)h0.00 static-med 0.804(+0.05)h0.00 static-high 0.816(+0.05)h0.99 greedy 0.837(+0.03)h0.84 ladder-as-evaluated 0.836(+0.03)h0.80 v2-board 0.831(+0.05)h0.78 sipp 0.826(+0.04)h0.70 sipp-noET 0.826(+0.04)h0.70 sipp+E1 0.826(+0.04)h0.70
+disco  Du=20 Dr= 3600: static-low 0.777(+0.21)h0.00 static-med 0.930(+0.05)h0.00 static-high 0.957(+0.03)h0.99 greedy 0.973(+0.00)h0.97 ladder-as-evaluated 0.972(+0.01)h0.97 v2-board 0.944(+0.09)h0.83 sipp 0.936(+0.10)h0.71 sipp-noET 0.936(+0.10)h0.71 sipp+E1 0.935(+0.10)h0.71
+disco  Du=20 Dr=21600: static-low 0.777(+0.21)h0.00 static-med 0.930(+0.05)h0.00 static-high 0.957(+0.03)h0.99 greedy 0.973(+0.00)h0.97 ladder-as-evaluated 0.973(+0.00)h0.97 v2-board 0.972(+0.01)h0.96 sipp 0.945(+0.08)h0.74 sipp-noET 0.945(+0.08)h0.74 sipp+E1 0.945(+0.08)h0.73
+disco  Du=60 Dr=  300: static-low 0.673(+0.21)h0.00 static-med 0.803(+0.05)h0.00 static-high 0.617(+0.63)h0.94 greedy 0.762(+0.20)h0.73 ladder-as-evaluated 0.815(+0.04)h0.57 v2-board 0.813(+0.04)h0.57 sipp 0.813(+0.04)h0.57 sipp-noET 0.813(+0.04)h0.57 sipp+E1 0.813(+0.04)h0.57
+disco  Du=60 Dr= 1800: static-low 0.677(+0.21)h0.00 static-med 0.804(+0.05)h0.00 static-high 0.833(+0.04)h0.99 greedy 0.838(+0.02)h0.84 ladder-as-evaluated 0.838(+0.03)h0.80 v2-board 0.834(+0.05)h0.78 sipp 0.828(+0.04)h0.70 sipp-noET 0.828(+0.04)h0.70 sipp+E1 0.828(+0.04)h0.70
+disco  Du=60 Dr= 3600: static-low 0.777(+0.21)h0.00 static-med 0.930(+0.05)h0.00 static-high 0.974(+0.01)h0.99 greedy 0.974(+0.00)h0.97 ladder-as-evaluated 0.973(+0.01)h0.97 v2-board 0.946(+0.09)h0.84 sipp 0.938(+0.10)h0.71 sipp-noET 0.938(+0.10)h0.71 sipp+E1 0.937(+0.10)h0.71
+disco  Du=60 Dr=21600: static-low 0.777(+0.21)h0.00 static-med 0.930(+0.05)h0.00 static-high 0.974(+0.01)h0.99 greedy 0.974(+0.00)h0.97 ladder-as-evaluated 0.974(+0.00)h0.97 v2-board 0.974(+0.00)h0.97 sipp 0.948(+0.08)h0.74 sipp-noET 0.948(+0.08)h0.74 sipp+E1 0.947(+0.08)h0.74
+ALLDONE

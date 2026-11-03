@@ -1,0 +1,33 @@
+  200/1500  7 s
+  400/1500  13 s
+  600/1500  19 s
+  800/1500  25 s
+  1000/1500  32 s
+  1200/1500  39 s
+  1400/1500  45 s
+wrote analysis/lab/sens_window_4.csv (1500 scenarios, 48 s)
+  200/1500  7 s
+  400/1500  14 s
+  600/1500  22 s
+  800/1500  28 s
+  1000/1500  36 s
+  1200/1500  43 s
+  1400/1500  50 s
+wrote analysis/lab/sens_window_16.csv (1500 scenarios, 53 s)
+  200/1500  7 s
+  400/1500  14 s
+  600/1500  21 s
+  800/1500  28 s
+  1000/1500  35 s
+  1200/1500  42 s
+  1400/1500  49 s
+wrote analysis/lab/sens_over_err_0.5.csv (1500 scenarios, 52 s)
+  200/1500  7 s
+  400/1500  13 s
+  600/1500  20 s
+  800/1500  27 s
+  1000/1500  34 s
+  1200/1500  41 s
+  1400/1500  47 s
+wrote analysis/lab/sens_over_err_1.5.csv (1500 scenarios, 50 s)
+ALLDONE

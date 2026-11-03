@@ -1,0 +1,5 @@
+=== size sweep: 1 of 68 runs to do -> analysis/size-sweep ===
+[1/1] p2-low-val06-k1: pipeline 2 k=1 n=6 cs12_validation_06.bayerRG
+  ok: 30 executions, 106 s, 84.20 mWh, floors 2.696/2.697 W
+
+=== 1 ok, 0 invalid, 0 failed ===

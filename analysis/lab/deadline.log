@@ -1,0 +1,137 @@
+1602 jobs on 7 processes
+  100/1602
+  200/1602
+  300/1602
+  400/1602
+  500/1602
+  600/1602
+  700/1602
+  800/1602
+  900/1602
+  1000/1602
+  1100/1602
+  1200/1602
+  1300/1602
+  1400/1602
+  1500/1602
+  1600/1602
+wrote analysis/lab/deadline.csv
+per (urgent, routine, cap, cond): best static per cell (seed 1), worst/mean regret, v2 urgent min, cap drops
+err03 Du=  10 Dr=   30 cap=100 best[C1:high C2:med C3:low C4:low C5:low] v2:0.209/+0.031 v1:0.209/+0.029 greedy:0.641/+0.213 v2-k1.5:0.158/-0.002 v2-k3:0.209/+0.067 | v2 urg min 0.07 lowurg 0.07 | capdrop v2 0 high 84
+err03 Du=  10 Dr=  300 cap=100 best[C1:high C2:med C3:med C4:med C5:low] v2:0.073/-0.010 v1:0.084/+0.010 greedy:0.623/+0.166 v2-k1.5:0.058/-0.015 v2-k3:0.105/-0.001 | v2 urg min 0.64 lowurg 0.48 | capdrop v2 0 high 84
+err03 Du=  10 Dr= 1800 cap=100 best[C1:high C2:med C3:high C4:med C5:med] v2:0.045/-0.027 v1:0.012/-0.014 greedy:0.075/-0.000 v2-k1.5:0.042/-0.030 v2-k3:0.048/-0.016 | v2 urg min 0.52 lowurg 0.48 | capdrop v2 0 high 84
+err03 Du=  10 Dr= 1800 cap=200 best[C1:high C2:med C3:high C4:med C5:med] v2:0.045/-0.023 v1:0.000/-0.019 greedy:0.000/-0.017 v2-k1.5:0.042/-0.029 v2-k3:0.048/-0.012 | v2 urg min 0.52 lowurg 0.48 | capdrop v2 0 high 0
+err03 Du=  10 Dr= 1800 cap=300 best[C1:high C2:med C3:high C4:med C5:med] v2:0.045/-0.023 v1:0.000/-0.019 greedy:0.000/-0.017 v2-k1.5:0.042/-0.029 v2-k3:0.048/-0.012 | v2 urg min 0.52 lowurg 0.48 | capdrop v2 0 high 0
+err03 Du=  10 Dr= 3600 cap=100 best[C1:high C2:med C3:high C4:med C5:med] v2:0.045/-0.029 v1:0.075/-0.000 greedy:0.075/-0.000 v2-k1.5:0.042/-0.030 v2-k3:0.048/-0.025 | v2 urg min 0.48 lowurg 0.48 | capdrop v2 14 high 84
+err03 Du=  10 Dr= 3600 cap=200 best[C1:high C2:med C3:high C4:med C5:high] v2:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 v2-k1.5:0.042/-0.023 v2-k3:0.048/-0.017 | v2 urg min 0.48 lowurg 0.48 | capdrop v2 0 high 0
+err03 Du=  10 Dr= 3600 cap=300 best[C1:high C2:med C3:high C4:med C5:high] v2:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 v2-k1.5:0.042/-0.023 v2-k3:0.048/-0.017 | v2 urg min 0.48 lowurg 0.48 | capdrop v2 0 high 0
+err03 Du=  10 Dr=21600 cap=100 best[C1:high C2:med C3:high C4:med C5:med] v2:0.045/-0.029 v1:0.075/-0.000 greedy:0.075/-0.000 v2-k1.5:0.042/-0.030 v2-k3:0.048/-0.025 | v2 urg min 0.48 lowurg 0.48 | capdrop v2 14 high 84
+err03 Du=  10 Dr=21600 cap=200 best[C1:high C2:med C3:high C4:med C5:high] v2:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 v2-k1.5:0.042/-0.023 v2-k3:0.048/-0.018 | v2 urg min 0.48 lowurg 0.48 | capdrop v2 0 high 0
+err03 Du=  10 Dr=21600 cap=300 best[C1:high C2:med C3:high C4:med C5:high] v2:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 v2-k1.5:0.042/-0.023 v2-k3:0.048/-0.018 | v2 urg min 0.48 lowurg 0.48 | capdrop v2 0 high 0
+err03 Du=  10 Dr=40320 cap=100 best[C1:high C2:med C3:high C4:med C5:med] v2:0.045/-0.029 v1:0.075/-0.000 greedy:0.075/-0.000 v2-k1.5:0.042/-0.030 v2-k3:0.048/-0.025 | v2 urg min 0.48 lowurg 0.48 | capdrop v2 14 high 84
+err03 Du=  10 Dr=40320 cap=200 best[C1:high C2:med C3:high C4:med C5:high] v2:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 v2-k1.5:0.042/-0.023 v2-k3:0.048/-0.018 | v2 urg min 0.48 lowurg 0.48 | capdrop v2 0 high 0
+err03 Du=  10 Dr=40320 cap=300 best[C1:high C2:med C3:high C4:med C5:high] v2:0.045/-0.021 v1:0.000/-0.015 greedy:0.000/-0.015 v2-k1.5:0.042/-0.023 v2-k3:0.048/-0.018 | v2 urg min 0.48 lowurg 0.48 | capdrop v2 0 high 0
+err03 Du=  20 Dr=   30 cap=100 best[C1:high C2:med C3:low C4:low C5:low] v2:0.209/+0.031 v1:0.209/+0.027 greedy:0.627/+0.206 v2-k1.5:0.158/-0.004 v2-k3:0.209/+0.067 | v2 urg min 0.05 lowurg 0.05 | capdrop v2 0 high 84
+err03 Du=  20 Dr=  300 cap=100 best[C1:high C2:high C3:med C4:med C5:low] v2:0.074/+0.011 v1:0.084/+0.022 greedy:0.650/+0.203 v2-k1.5:0.059/+0.005 v2-k3:0.108/+0.019 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 84
+err03 Du=  20 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.067/-0.006 v1:0.049/-0.002 greedy:0.125/+0.014 v2-k1.5:0.064/-0.010 v2-k3:0.070/+0.007 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 1 high 84
+err03 Du=  20 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.074/-0.000 v1:0.014/-0.007 greedy:0.033/-0.004 v2-k1.5:0.071/-0.007 v2-k3:0.077/+0.013 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  20 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.074/-0.000 v1:0.014/-0.007 greedy:0.033/-0.004 v2-k1.5:0.071/-0.007 v2-k3:0.077/+0.013 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  20 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.067/-0.009 v1:0.125/+0.014 greedy:0.125/+0.014 v2-k1.5:0.064/-0.010 v2-k3:0.070/-0.005 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 15 high 84
+err03 Du=  20 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 v2-k1.5:0.071/-0.009 v2-k3:0.077/-0.001 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  20 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 v2-k1.5:0.071/-0.009 v2-k3:0.077/-0.001 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  20 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.067/-0.009 v1:0.125/+0.014 greedy:0.125/+0.014 v2-k1.5:0.064/-0.010 v2-k3:0.070/-0.005 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 15 high 84
+err03 Du=  20 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 v2-k1.5:0.071/-0.009 v2-k3:0.077/-0.003 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  20 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 v2-k1.5:0.071/-0.009 v2-k3:0.077/-0.003 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  20 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.067/-0.009 v1:0.125/+0.014 greedy:0.125/+0.014 v2-k1.5:0.064/-0.010 v2-k3:0.070/-0.005 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 15 high 84
+err03 Du=  20 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 v2-k1.5:0.071/-0.009 v2-k3:0.077/-0.003 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  20 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.074/-0.007 v1:0.000/-0.012 greedy:0.000/-0.012 v2-k1.5:0.071/-0.009 v2-k3:0.077/-0.003 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  60 Dr=  300 cap=100 best[C1:high C2:high C3:med C4:med C5:low] v2:0.073/+0.009 v1:0.084/+0.019 greedy:0.634/+0.198 v2-k1.5:0.058/+0.005 v2-k3:0.108/+0.017 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 84
+err03 Du=  60 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.076/+0.013 v1:0.051/+0.007 greedy:0.128/+0.026 v2-k1.5:0.076/+0.012 v2-k3:0.077/+0.023 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 8 high 84
+err03 Du=  60 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.088/+0.019 v1:0.014/+0.002 greedy:0.032/+0.005 v2-k1.5:0.088/+0.013 v2-k3:0.097/+0.030 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  60 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.088/+0.019 v1:0.014/+0.002 greedy:0.032/+0.005 v2-k1.5:0.088/+0.013 v2-k3:0.097/+0.030 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  60 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.076/+0.013 v1:0.128/+0.026 greedy:0.128/+0.026 v2-k1.5:0.076/+0.013 v2-k3:0.077/+0.011 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 17 high 84
+err03 Du=  60 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.019 v1:0.003/-0.000 greedy:0.000/-0.001 v2-k1.5:0.088/+0.019 v2-k3:0.088/+0.022 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  60 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.019 v1:0.003/-0.000 greedy:0.000/-0.001 v2-k1.5:0.088/+0.019 v2-k3:0.088/+0.022 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  60 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.076/+0.013 v1:0.128/+0.026 greedy:0.128/+0.026 v2-k1.5:0.076/+0.013 v2-k3:0.077/+0.012 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 17 high 84
+err03 Du=  60 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.019 v1:0.000/-0.001 greedy:0.000/-0.001 v2-k1.5:0.088/+0.019 v2-k3:0.088/+0.020 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  60 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.019 v1:0.000/-0.001 greedy:0.000/-0.001 v2-k1.5:0.088/+0.019 v2-k3:0.088/+0.020 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  60 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.076/+0.013 v1:0.128/+0.026 greedy:0.128/+0.026 v2-k1.5:0.076/+0.013 v2-k3:0.077/+0.012 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 17 high 84
+err03 Du=  60 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.019 v1:0.000/-0.001 greedy:0.000/-0.001 v2-k1.5:0.088/+0.019 v2-k3:0.088/+0.020 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=  60 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.019 v1:0.000/-0.001 greedy:0.000/-0.001 v2-k1.5:0.088/+0.019 v2-k3:0.088/+0.020 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du= 300 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.076/+0.013 v1:0.049/+0.007 greedy:0.124/+0.025 v2-k1.5:0.076/+0.012 v2-k3:0.077/+0.022 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 12 high 84
+err03 Du= 300 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.088/+0.019 v1:0.014/+0.001 greedy:0.023/+0.004 v2-k1.5:0.088/+0.013 v2-k3:0.097/+0.030 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du= 300 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.088/+0.019 v1:0.014/+0.001 greedy:0.023/+0.004 v2-k1.5:0.088/+0.013 v2-k3:0.097/+0.030 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du= 300 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.076/+0.014 v1:0.124/+0.025 greedy:0.124/+0.025 v2-k1.5:0.076/+0.014 v2-k3:0.076/+0.012 | v2 urg min 0.96 lowurg 1.00 | capdrop v2 20 high 84
+err03 Du= 300 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.020 v1:0.003/+0.000 greedy:0.000/+0.000 v2-k1.5:0.088/+0.020 v2-k3:0.088/+0.023 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du= 300 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.020 v1:0.003/+0.000 greedy:0.000/+0.000 v2-k1.5:0.088/+0.020 v2-k3:0.088/+0.023 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du= 300 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.076/+0.014 v1:0.124/+0.025 greedy:0.124/+0.025 v2-k1.5:0.076/+0.014 v2-k3:0.076/+0.014 | v2 urg min 0.96 lowurg 1.00 | capdrop v2 20 high 84
+err03 Du= 300 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.020 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.088/+0.020 v2-k3:0.088/+0.020 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du= 300 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.020 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.088/+0.020 v2-k3:0.088/+0.020 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du= 300 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.076/+0.014 v1:0.124/+0.025 greedy:0.124/+0.025 v2-k1.5:0.076/+0.014 v2-k3:0.076/+0.014 | v2 urg min 0.96 lowurg 1.00 | capdrop v2 20 high 84
+err03 Du= 300 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.020 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.088/+0.020 v2-k3:0.088/+0.020 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du= 300 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.088/+0.020 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.088/+0.020 v2-k3:0.088/+0.020 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=none Dr=21600 cap=100 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=none Dr=21600 cap=200 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=none Dr=21600 cap=300 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=none Dr=40320 cap=100 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=none Dr=40320 cap=200 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+err03 Du=none Dr=40320 cap=300 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  10 Dr=   30 cap=100 best[C1:high C2:med C3:low C4:low C5:low] v2:0.051/-0.020 v1:0.051/-0.018 greedy:0.612/+0.163 v2-k1.5:0.051/-0.021 v2-k3:0.209/+0.073 | v2 urg min 0.07 lowurg 0.07 | capdrop v2 0 high 84
+exact Du=  10 Dr=  300 cap=100 best[C1:high C2:med C3:med C4:med C5:low] v2:0.042/-0.019 v1:0.101/+0.002 greedy:0.605/+0.132 v2-k1.5:0.026/-0.023 v2-k3:0.059/-0.010 | v2 urg min 0.68 lowurg 0.48 | capdrop v2 0 high 84
+exact Du=  10 Dr= 1800 cap=100 best[C1:high C2:med C3:high C4:med C5:med] v2:0.000/-0.036 v1:0.011/-0.021 greedy:0.086/-0.008 v2-k1.5:0.000/-0.040 v2-k3:0.011/-0.024 | v2 urg min 0.59 lowurg 0.48 | capdrop v2 1 high 84
+exact Du=  10 Dr= 1800 cap=200 best[C1:high C2:med C3:high C4:med C5:med] v2:0.000/-0.032 v1:0.000/-0.027 greedy:0.000/-0.026 v2-k1.5:0.000/-0.038 v2-k3:0.030/-0.020 | v2 urg min 0.59 lowurg 0.48 | capdrop v2 0 high 0
+exact Du=  10 Dr= 1800 cap=300 best[C1:high C2:med C3:high C4:med C5:med] v2:0.000/-0.032 v1:0.000/-0.027 greedy:0.000/-0.026 v2-k1.5:0.000/-0.038 v2-k3:0.030/-0.020 | v2 urg min 0.59 lowurg 0.48 | capdrop v2 0 high 0
+exact Du=  10 Dr= 3600 cap=100 best[C1:high C2:med C3:high C4:med C5:med] v2:0.000/-0.037 v1:0.086/-0.008 greedy:0.086/-0.008 v2-k1.5:0.000/-0.039 v2-k3:0.004/-0.035 | v2 urg min 0.57 lowurg 0.48 | capdrop v2 14 high 84
+exact Du=  10 Dr= 3600 cap=200 best[C1:high C2:med C3:high C4:med C5:high] v2:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 v2-k1.5:0.011/-0.032 v2-k3:0.016/-0.026 | v2 urg min 0.57 lowurg 0.48 | capdrop v2 0 high 0
+exact Du=  10 Dr= 3600 cap=300 best[C1:high C2:med C3:high C4:med C5:high] v2:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 v2-k1.5:0.011/-0.032 v2-k3:0.016/-0.026 | v2 urg min 0.57 lowurg 0.48 | capdrop v2 0 high 0
+exact Du=  10 Dr=21600 cap=100 best[C1:high C2:med C3:high C4:med C5:med] v2:0.000/-0.037 v1:0.086/-0.008 greedy:0.086/-0.008 v2-k1.5:0.000/-0.039 v2-k3:0.004/-0.034 | v2 urg min 0.57 lowurg 0.48 | capdrop v2 14 high 84
+exact Du=  10 Dr=21600 cap=200 best[C1:high C2:med C3:high C4:med C5:high] v2:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 v2-k1.5:0.011/-0.032 v2-k3:0.010/-0.027 | v2 urg min 0.57 lowurg 0.48 | capdrop v2 0 high 0
+exact Du=  10 Dr=21600 cap=300 best[C1:high C2:med C3:high C4:med C5:high] v2:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 v2-k1.5:0.011/-0.032 v2-k3:0.010/-0.027 | v2 urg min 0.57 lowurg 0.48 | capdrop v2 0 high 0
+exact Du=  10 Dr=40320 cap=100 best[C1:high C2:med C3:high C4:med C5:med] v2:0.000/-0.037 v1:0.086/-0.008 greedy:0.086/-0.008 v2-k1.5:0.000/-0.039 v2-k3:0.004/-0.034 | v2 urg min 0.57 lowurg 0.48 | capdrop v2 14 high 84
+exact Du=  10 Dr=40320 cap=200 best[C1:high C2:med C3:high C4:med C5:high] v2:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 v2-k1.5:0.011/-0.032 v2-k3:0.010/-0.027 | v2 urg min 0.57 lowurg 0.48 | capdrop v2 0 high 0
+exact Du=  10 Dr=40320 cap=300 best[C1:high C2:med C3:high C4:med C5:high] v2:0.010/-0.030 v1:0.000/-0.024 greedy:0.000/-0.024 v2-k1.5:0.011/-0.032 v2-k3:0.010/-0.027 | v2 urg min 0.57 lowurg 0.48 | capdrop v2 0 high 0
+exact Du=  20 Dr=   30 cap=100 best[C1:high C2:med C3:low C4:low C5:low] v2:0.051/-0.021 v1:0.051/-0.019 greedy:0.617/+0.144 v2-k1.5:0.051/-0.021 v2-k3:0.209/+0.073 | v2 urg min 0.05 lowurg 0.05 | capdrop v2 0 high 84
+exact Du=  20 Dr=  300 cap=100 best[C1:high C2:high C3:med C4:med C5:low] v2:0.045/+0.007 v1:0.109/+0.025 greedy:0.643/+0.172 v2-k1.5:0.029/+0.003 v2-k3:0.061/+0.016 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 84
+exact Du=  20 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.012/-0.010 v1:0.043/-0.005 greedy:0.134/+0.012 v2-k1.5:0.006/-0.014 v2-k3:0.053/+0.003 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 1 high 84
+exact Du=  20 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.034/-0.004 v1:0.001/-0.012 greedy:0.042/-0.006 v2-k1.5:0.018/-0.010 v2-k3:0.078/+0.010 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  20 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.034/-0.004 v1:0.001/-0.012 greedy:0.042/-0.006 v2-k1.5:0.018/-0.010 v2-k3:0.078/+0.010 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  20 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.010/-0.012 v1:0.134/+0.012 greedy:0.134/+0.012 v2-k1.5:0.012/-0.013 v2-k3:0.008/-0.009 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 14 high 84
+exact Du=  20 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.014/-0.009 v1:0.000/-0.015 greedy:0.000/-0.014 v2-k1.5:0.013/-0.011 v2-k3:0.020/-0.004 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  20 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.014/-0.009 v1:0.000/-0.015 greedy:0.000/-0.014 v2-k1.5:0.013/-0.011 v2-k3:0.020/-0.004 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  20 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.010/-0.012 v1:0.134/+0.012 greedy:0.134/+0.012 v2-k1.5:0.012/-0.013 v2-k3:0.010/-0.008 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 14 high 84
+exact Du=  20 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.014/-0.009 v1:0.000/-0.014 greedy:0.000/-0.014 v2-k1.5:0.013/-0.011 v2-k3:0.016/-0.005 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  20 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.014/-0.009 v1:0.000/-0.014 greedy:0.000/-0.014 v2-k1.5:0.013/-0.011 v2-k3:0.016/-0.005 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  20 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.010/-0.012 v1:0.134/+0.012 greedy:0.134/+0.012 v2-k1.5:0.012/-0.013 v2-k3:0.010/-0.008 | v2 urg min 0.98 lowurg 1.00 | capdrop v2 14 high 84
+exact Du=  20 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.014/-0.009 v1:0.000/-0.014 greedy:0.000/-0.014 v2-k1.5:0.013/-0.011 v2-k3:0.016/-0.005 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  20 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.014/-0.009 v1:0.000/-0.014 greedy:0.000/-0.014 v2-k1.5:0.013/-0.011 v2-k3:0.016/-0.005 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  60 Dr=  300 cap=100 best[C1:high C2:high C3:med C4:med C5:low] v2:0.044/+0.007 v1:0.107/+0.024 greedy:0.631/+0.172 v2-k1.5:0.029/+0.003 v2-k3:0.061/+0.014 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 84
+exact Du=  60 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.031/+0.006 v1:0.041/+0.007 greedy:0.126/+0.025 v2-k1.5:0.032/+0.005 v2-k3:0.069/+0.016 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 2 high 84
+exact Du=  60 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.052/+0.012 v1:0.010/-0.002 greedy:0.027/+0.005 v2-k1.5:0.033/+0.007 v2-k3:0.093/+0.023 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  60 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.052/+0.012 v1:0.010/-0.002 greedy:0.027/+0.005 v2-k1.5:0.033/+0.007 v2-k3:0.093/+0.023 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  60 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.040/+0.008 v1:0.126/+0.025 greedy:0.126/+0.025 v2-k1.5:0.041/+0.008 v2-k3:0.029/+0.004 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 18 high 84
+exact Du=  60 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.074/+0.013 v1:0.004/-0.000 greedy:0.000/-0.001 v2-k1.5:0.073/+0.013 v2-k3:0.084/+0.016 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  60 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.074/+0.013 v1:0.004/-0.000 greedy:0.000/-0.001 v2-k1.5:0.073/+0.013 v2-k3:0.084/+0.016 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  60 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.040/+0.008 v1:0.126/+0.025 greedy:0.126/+0.025 v2-k1.5:0.041/+0.008 v2-k3:0.036/+0.007 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 18 high 84
+exact Du=  60 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.074/+0.013 v1:0.000/-0.001 greedy:0.000/-0.001 v2-k1.5:0.073/+0.013 v2-k3:0.077/+0.014 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  60 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.074/+0.013 v1:0.000/-0.001 greedy:0.000/-0.001 v2-k1.5:0.073/+0.013 v2-k3:0.077/+0.014 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  60 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.040/+0.008 v1:0.126/+0.025 greedy:0.126/+0.025 v2-k1.5:0.041/+0.008 v2-k3:0.036/+0.007 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 18 high 84
+exact Du=  60 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.074/+0.013 v1:0.000/-0.001 greedy:0.000/-0.001 v2-k1.5:0.073/+0.013 v2-k3:0.077/+0.014 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=  60 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.074/+0.013 v1:0.000/-0.001 greedy:0.000/-0.001 v2-k1.5:0.073/+0.013 v2-k3:0.077/+0.014 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du= 300 Dr= 1800 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.032/+0.006 v1:0.036/+0.007 greedy:0.124/+0.025 v2-k1.5:0.034/+0.005 v2-k3:0.069/+0.016 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 2 high 84
+exact Du= 300 Dr= 1800 cap=200 best[C1:high C2:high C3:high C4:high C5:med] v2:0.052/+0.012 v1:0.010/-0.002 greedy:0.023/+0.004 v2-k1.5:0.032/+0.007 v2-k3:0.093/+0.023 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du= 300 Dr= 1800 cap=300 best[C1:high C2:high C3:high C4:high C5:med] v2:0.052/+0.012 v1:0.010/-0.002 greedy:0.023/+0.004 v2-k1.5:0.032/+0.007 v2-k3:0.093/+0.023 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du= 300 Dr= 3600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.044/+0.009 v1:0.124/+0.025 greedy:0.124/+0.025 v2-k1.5:0.044/+0.009 v2-k3:0.034/+0.005 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 20 high 84
+exact Du= 300 Dr= 3600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.073/+0.014 v1:0.004/+0.001 greedy:0.000/+0.000 v2-k1.5:0.073/+0.014 v2-k3:0.083/+0.017 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du= 300 Dr= 3600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.073/+0.014 v1:0.004/+0.001 greedy:0.000/+0.000 v2-k1.5:0.073/+0.014 v2-k3:0.083/+0.017 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du= 300 Dr=21600 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.044/+0.009 v1:0.124/+0.025 greedy:0.124/+0.025 v2-k1.5:0.044/+0.009 v2-k3:0.044/+0.009 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 20 high 84
+exact Du= 300 Dr=21600 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.073/+0.014 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.073/+0.014 v2-k3:0.073/+0.014 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du= 300 Dr=21600 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.073/+0.014 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.073/+0.014 v2-k3:0.073/+0.014 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du= 300 Dr=40320 cap=100 best[C1:high C2:high C3:high C4:high C5:med] v2:0.044/+0.009 v1:0.124/+0.025 greedy:0.124/+0.025 v2-k1.5:0.044/+0.009 v2-k3:0.044/+0.009 | v2 urg min 0.95 lowurg 1.00 | capdrop v2 20 high 84
+exact Du= 300 Dr=40320 cap=200 best[C1:high C2:high C3:high C4:high C5:high] v2:0.073/+0.014 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.073/+0.014 v2-k3:0.073/+0.014 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du= 300 Dr=40320 cap=300 best[C1:high C2:high C3:high C4:high C5:high] v2:0.073/+0.014 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.073/+0.014 v2-k3:0.073/+0.014 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=none Dr=21600 cap=100 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=none Dr=21600 cap=200 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=none Dr=21600 cap=300 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=none Dr=40320 cap=100 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=none Dr=40320 cap=200 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0
+exact Du=none Dr=40320 cap=300 best[C2u0:high] v2:0.000/+0.000 v1:0.000/+0.000 greedy:0.000/+0.000 v2-k1.5:0.000/+0.000 v2-k3:0.000/+0.000 | v2 urg min 1.00 lowurg 1.00 | capdrop v2 0 high 0

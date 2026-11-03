@@ -1,0 +1,284 @@
+{
+ "label": "p3-high-val01-k2",
+ "spec": {
+  "label": "p3-high-val01-k2",
+  "pipeline": 3,
+  "image": "cs12_validation_01.bayerRG",
+  "images": 2,
+  "n": 5
+ },
+ "settings": {
+  "storage": "HYBRID",
+  "idle_s": 60,
+  "min_drain": 30
+ },
+ "status": "done",
+ "wall_s": 139.3,
+ "energy": {
+  "avg_current_a": 0.6253740024889157,
+  "avg_power_w": 3.1268700124445785,
+  "energy_wh": 0.1209412520563321,
+  "measured_s": 139.241
+ },
+ "floor_before_w": 2.7184687282720517,
+ "floor_after_w": 2.7183236664839434,
+ "execs": [
+  {
+   "ts_us": 1029773237962,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 467689,
+   "energy_debited_uwh": 41.0,
+   "uuid": "8ed95c27-fd3a-4e77-bcfb-41e59e1bbb6a"
+  },
+  {
+   "ts_us": 1029773471948,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 224001,
+   "energy_debited_uwh": 17.0,
+   "uuid": "8ed95c27-fd3a-4e77-bcfb-41e59e1bbb6a"
+  },
+  {
+   "ts_us": 1029776978414,
+   "module": "libtflite_classification",
+   "param_id": 4,
+   "num_images": 198,
+   "n_input": 198,
+   "latency_us": 3497359,
+   "energy_debited_uwh": 849.0,
+   "uuid": "8ed95c27-fd3a-4e77-bcfb-41e59e1bbb6a"
+  },
+  {
+   "ts_us": 1029778695962,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 6,
+   "num_images": 38,
+   "n_input": 38,
+   "latency_us": 1709028,
+   "energy_debited_uwh": 2486.0,
+   "uuid": "8ed95c27-fd3a-4e77-bcfb-41e59e1bbb6a"
+  },
+  {
+   "ts_us": 1029780245614,
+   "module": "libjpeg2000_module",
+   "param_id": 17,
+   "num_images": 24,
+   "n_input": 24,
+   "latency_us": 1540785,
+   "energy_debited_uwh": 894.0,
+   "uuid": "8ed95c27-fd3a-4e77-bcfb-41e59e1bbb6a"
+  },
+  {
+   "ts_us": 1029780886427,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 477144,
+   "energy_debited_uwh": 41.0,
+   "uuid": "dac91daf-ab29-4a6e-b371-fb94697cf799"
+  },
+  {
+   "ts_us": 1029781123024,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 228876,
+   "energy_debited_uwh": 17.0,
+   "uuid": "dac91daf-ab29-4a6e-b371-fb94697cf799"
+  },
+  {
+   "ts_us": 1029784625976,
+   "module": "libtflite_classification",
+   "param_id": 4,
+   "num_images": 198,
+   "n_input": 198,
+   "latency_us": 3494725,
+   "energy_debited_uwh": 849.0,
+   "uuid": "dac91daf-ab29-4a6e-b371-fb94697cf799"
+  },
+  {
+   "ts_us": 1029786339831,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 6,
+   "num_images": 38,
+   "n_input": 38,
+   "latency_us": 1706232,
+   "energy_debited_uwh": 2486.0,
+   "uuid": "dac91daf-ab29-4a6e-b371-fb94697cf799"
+  },
+  {
+   "ts_us": 1029787891452,
+   "module": "libjpeg2000_module",
+   "param_id": 17,
+   "num_images": 24,
+   "n_input": 24,
+   "latency_us": 1544000,
+   "energy_debited_uwh": 894.0,
+   "uuid": "dac91daf-ab29-4a6e-b371-fb94697cf799"
+  },
+  {
+   "ts_us": 1029788535521,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 478494,
+   "energy_debited_uwh": 41.0,
+   "uuid": "d3c0c6b9-104b-4dbc-bab1-59a156bbf7d7"
+  },
+  {
+   "ts_us": 1029788776669,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 233537,
+   "energy_debited_uwh": 17.0,
+   "uuid": "d3c0c6b9-104b-4dbc-bab1-59a156bbf7d7"
+  },
+  {
+   "ts_us": 1029792286590,
+   "module": "libtflite_classification",
+   "param_id": 4,
+   "num_images": 198,
+   "n_input": 198,
+   "latency_us": 3502286,
+   "energy_debited_uwh": 849.0,
+   "uuid": "d3c0c6b9-104b-4dbc-bab1-59a156bbf7d7"
+  },
+  {
+   "ts_us": 1029793995032,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 6,
+   "num_images": 38,
+   "n_input": 38,
+   "latency_us": 1706766,
+   "energy_debited_uwh": 2486.0,
+   "uuid": "d3c0c6b9-104b-4dbc-bab1-59a156bbf7d7"
+  },
+  {
+   "ts_us": 1029795543842,
+   "module": "libjpeg2000_module",
+   "param_id": 17,
+   "num_images": 24,
+   "n_input": 24,
+   "latency_us": 1541197,
+   "energy_debited_uwh": 894.0,
+   "uuid": "d3c0c6b9-104b-4dbc-bab1-59a156bbf7d7"
+  },
+  {
+   "ts_us": 1029796203336,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 480589,
+   "energy_debited_uwh": 41.0,
+   "uuid": "11fea29f-22bd-4c1b-a6e0-85b2912b434f"
+  },
+  {
+   "ts_us": 1029796442383,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 230736,
+   "energy_debited_uwh": 17.0,
+   "uuid": "11fea29f-22bd-4c1b-a6e0-85b2912b434f"
+  },
+  {
+   "ts_us": 1029799949210,
+   "module": "libtflite_classification",
+   "param_id": 4,
+   "num_images": 198,
+   "n_input": 198,
+   "latency_us": 3498350,
+   "energy_debited_uwh": 849.0,
+   "uuid": "11fea29f-22bd-4c1b-a6e0-85b2912b434f"
+  },
+  {
+   "ts_us": 1029801664948,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 6,
+   "num_images": 38,
+   "n_input": 38,
+   "latency_us": 1707684,
+   "energy_debited_uwh": 2486.0,
+   "uuid": "11fea29f-22bd-4c1b-a6e0-85b2912b434f"
+  },
+  {
+   "ts_us": 1029803217463,
+   "module": "libjpeg2000_module",
+   "param_id": 17,
+   "num_images": 24,
+   "n_input": 24,
+   "latency_us": 1544903,
+   "energy_debited_uwh": 894.0,
+   "uuid": "11fea29f-22bd-4c1b-a6e0-85b2912b434f"
+  },
+  {
+   "ts_us": 1029803865107,
+   "module": "libdemosaic",
+   "param_id": 0,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 479019,
+   "energy_debited_uwh": 41.0,
+   "uuid": "c3cc2626-9bd1-45f4-a451-56f30702f296"
+  },
+  {
+   "ts_us": 1029804105756,
+   "module": "libtile",
+   "param_id": 1,
+   "num_images": 2,
+   "n_input": 2,
+   "latency_us": 232878,
+   "energy_debited_uwh": 17.0,
+   "uuid": "c3cc2626-9bd1-45f4-a451-56f30702f296"
+  },
+  {
+   "ts_us": 1029807616725,
+   "module": "libtflite_classification",
+   "param_id": 4,
+   "num_images": 198,
+   "n_input": 198,
+   "latency_us": 3502518,
+   "energy_debited_uwh": 849.0,
+   "uuid": "c3cc2626-9bd1-45f4-a451-56f30702f296"
+  },
+  {
+   "ts_us": 1029809331652,
+   "module": "libtflite_binary_segmentation",
+   "param_id": 6,
+   "num_images": 38,
+   "n_input": 38,
+   "latency_us": 1707260,
+   "energy_debited_uwh": 2486.0,
+   "uuid": "c3cc2626-9bd1-45f4-a451-56f30702f296"
+  },
+  {
+   "ts_us": 1029810883146,
+   "module": "libjpeg2000_module",
+   "param_id": 17,
+   "num_images": 24,
+   "n_input": 24,
+   "latency_us": 1543043,
+   "energy_debited_uwh": 894.0,
+   "uuid": "c3cc2626-9bd1-45f4-a451-56f30702f296"
+  }
+ ],
+ "n_executions": "25",
+ "n_completed": "5",
+ "build_id": "paper-experiments-86-gd403ed8 [lib/csp=8cc13c66 lib/dtp=504e2cd3 lib/libdtp=504e2cd3 lib/param=768970c6]",
+ "duration_s": "75",
+ "complete": true,
+ "valid": true,
+ "floor_shift_w": -0.0001
+}

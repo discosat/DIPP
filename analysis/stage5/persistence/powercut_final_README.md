@@ -11,6 +11,7 @@ pipeline 1; clear-sky frames (`cs12_test_matchedkeep_00`). Driver
 |---|---|---|---|---|---|---|---|---|
 | A, yields | `powercut_final_yield.txt` | disco2-bol, 2× load, every 3rd frame urgent | 60 | 12 | 5 (ingest held 17/13/9/5/1 at start-up) | 0 | 0 | 0 |
 | B, intended energy halts | `powercut_final_halt.txt` | dawndusk-3w7, start 0.05 Wh above floor | 30 | 12 | 2 (ingest held 7/3) | 0 | 0 | 0 |
+| C, energy halts (2026-11-05) | `powercut_final_energy.txt` | dawndusk-3w7, start ~3 mWh above floor (soc0 0.45194) | 40 | 12 | 6 (partial queue held 12/10/8/6/4/2 halted batches at start-up) | 0 | 0 | 0 |
 
 - **Loss is counted from the durable completion record** (`/usr/share/dipp/completed.log`),
   which the host snapshots before every cut. The "board-side" `IN_SCOPE_LOST` (A: 4, B: 2)
@@ -24,7 +25,25 @@ pipeline 1; clear-sky frames (`cs12_test_matchedkeep_00`). Driver
   retry cut (stopped in U-Boot).
 - Yields to urgent frames: 6 (A) and 10 (B), each with a checkpoint.
 
-**Not exercised:**
+**Session C closes the two gaps A and B left** (driver `runs/powercut-final-c.sh`; board files
+`powercut_final_board/pc_final_energy.tgz`, md5-verified):
+- **Energy halts:** 708 `SCHED_ENERGY_WAIT` lines and 67 halts; every cut that hit work found
+  halted batches in the partially processed queue.
+- **Resume from a checkpoint after a cut:** 17 resumes (progress 1 or 2) across 12 distinct
+  batches, 2–3 per boot over boots 2–7; each of the 40 frames completed exactly once.
+- Board-side `IN_SCOPE_LOST=3` are again log lines lost in a cut: all 40 frames are in
+  `completed.log` (missing from `pc.log` only: `10dae43d…`, `228ff133…`, `83237339…`).
+- Recovery: login 26–37 s after power; first frame selected 51–62 s after power. One boot
+  needed the 60 s retry cut.
+
+**Totals on the final build: 36 cuts, 130 frames, 0 lost, 0 duplicated, 0 corrupt queues;
+13 cuts hit queued work (yields in A/B, halted batches in C).**
+
+The drain step now counts the durable completion record (`tools/c3_powercut.py`); session C
+counted the daemon log, which stopped at 37 of 40, so its drain waited the full 900 s idle window
+before tallying. No result is affected: the tally reads `completed.log`.
+
+**Sessions A and B alone did not exercise** (kept for the record):
 - **Energy halts:** session B logged 0 `SCHED_ENERGY_WAIT` and 0 halts. Each boot resets
   the simulated battery to 41.625 Wh (floor 41.58 Wh). 30 frames at about 2 mWh each,
   recharged between frames, never reached the floor.

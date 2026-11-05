@@ -330,10 +330,13 @@ def main():
         # Stop once every fed frame has completed, or after --drain-idle s without a
         # new completion. Batches waiting for energy can go minutes between
         # completions, so a fixed short idle window would score them as lost.
+        # Completions are counted in the durable completion record, not in the
+        # daemon log, which loses lines in a cut (2026-11-05: the log reached 37
+        # of 40 and the drain sat out the whole idle window).
         last, idle_since = -1, time.time()
         while True:
             time.sleep(10)
-            out = con.cmd(f"cd {DIR} && grep -c 'Pipeline fully executed' {LOG}", 5)
+            out = con.cmd("sed 's/ .*//' /usr/share/dipp/completed.log | sort -u | wc -l", 5)
             m = re.findall(r"(?<![\w=])(\d+)\s*$", out.replace("\r", ""), re.M)
             now = int(m[-1]) if m else last
             if now != last:

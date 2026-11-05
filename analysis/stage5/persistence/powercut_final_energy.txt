@@ -1,0 +1,207 @@
+=== platform dawndusk-3w7.env soc0 0.45194 phase0 0.1202; DIPP_SCHED_Q_MED=auto DIPP_SCHED_Q_LOW=auto DIPP_SCHED_GRANULARITY=stage DIPP_SCHED_GATE_MED_MS=5000 DIPP_SCHED_GATE_LOW_MS=3000 DIPP_SCHED_WINDOW=8 DIPP_SCHED_FRAME_OVERHEAD_MS=780 DIPP_SCHED_GUARD=on DIPP_SCHED_ACCEPT=feas DIPP_SCHED_K_X10=20 DIPP_SCHED_SMAX_HIGH_MS=12150 DIPP_SCHED_SMAX_MED_MS=7330 DIPP_SCHED_ENERGY=on; SLO pattern [300, 300, 20]; feed gap 6.68 s; image /mnt/flash/cs12-frames/cs12_test_matchedkeep_00.bayerRG ===
+=== ensuring power on and board booted ===
+=== clearing state ===
+
+export DIPP_BATT_SOC0=0.45194 DIPP_BATT_PHASE0=0.1202
+export STORAGE_MODE=HYBRID
+export DIPP_SCHED_Q_MED=auto
+export DIPP_SCHED_Q_LOW=auto
+export DIPP_SCHED_GRANULARITY=stage
+export DIPP_SCHED_GATE_MED_MS=5000
+export DIPP_SCHED_GATE_LOW_MS=3000
+export DIPP_SCHED_WINDOW=8
+export DIPP_SCHED_FRAME_OVERHEAD_MS=780
+export DIPP_SCHED_GUARD=on
+export DIPP_SCHED_ACCEPT=feas
+export DIPP_SCHED_K_X10=20
+export DIPP_SCHED_SMAX_HIGH_MS=12150
+export DIPP_SCHED_SMAX_MED_MS=7330
+export DIPP_SCHED_ENERGY=on
+setsid ./dipp -i CAN -p can0 -a 5423 >> pc.log 2>&1 &
+root@fsimx8mp:~/tmp-experiments# 
+root/tmp-experiments/pc.log | cut -c1-160
+BATTERY_CONFIG capacity_wh=92.00 soc0=0.452 wh0=41.578 bus_w=13.07 gen_avg_w=16.770 orbit_min=95.430 eclipse_min=0.00 phase0=0.120 orbit_surplus_wh=5.885 margin
+SCHED_CONFIG q_med=auto q_med_src=env q_low=auto q_low_src=env gate_med_ms=5000 gate_med_src=env gate_low_ms=3000 gate_low_src=env granularity=stage granularity
+root@fsimx8mp:~/tmp-experiments# 
+=== feeding 40 batches ===
+--- cycle 1/12: cutting power (fed 40, completed 25) ---
+RECOVERY cycle=1 login_s=26.2 daemon_s=40.5 first_select_s=50.7 first_exec_s=50.7
+--- cycle 2/12: cutting power (fed 40, completed 30) ---
+RECOVERY cycle=2 login_s=37.2 daemon_s=51.5 first_select_s=61.7 first_exec_s=61.7
+--- cycle 3/12: cutting power (fed 40, completed 32) ---
+  cycle 3: no shell after the cut; 60 s cut and retry
+RECOVERY cycle=3 login_s=26.2 daemon_s=40.5 first_select_s=50.7 first_exec_s=50.7
+--- cycle 4/12: cutting power (fed 40, completed 34) ---
+RECOVERY cycle=4 login_s=37.1 daemon_s=51.4 first_select_s=61.6 first_exec_s=61.6
+--- cycle 5/12: cutting power (fed 40, completed 36) ---
+RECOVERY cycle=5 login_s=37.1 daemon_s=51.4 first_select_s=61.7 first_exec_s=61.7
+--- cycle 6/12: cutting power (fed 40, completed 38) ---
+RECOVERY cycle=6 login_s=37.3 daemon_s=51.6 first_select_s=61.9 first_exec_s=61.9
+--- cycle 7/12: cutting power (fed 40, completed 40) ---
+RECOVERY cycle=7 login_s=37.2 daemon_s=51.5 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 8/12: cutting power (fed 40, completed 40) ---
+RECOVERY cycle=8 login_s=26.4 daemon_s=40.7 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 9/12: cutting power (fed 40, completed 40) ---
+RECOVERY cycle=9 login_s=37.1 daemon_s=51.4 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 10/12: cutting power (fed 40, completed 40) ---
+RECOVERY cycle=10 login_s=37.1 daemon_s=51.4 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 11/12: cutting power (fed 40, completed 40) ---
+RECOVERY cycle=11 login_s=26.3 daemon_s=40.6 first_select_s=none first_exec_s=none (idle or no work within timeout)
+--- cycle 12/12: cutting power (fed 40, completed 40) ---
+RECOVERY cycle=12 login_s=26.2 daemon_s=40.5 first_select_s=none first_exec_s=none (idle or no work within timeout)
+=== draining ===
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+  completions=37
+=== RESULT, host-side tally (daemon-start failures: 0) ===
+fed=40 completed=40 lost=0 duplicates=0 checkpoints=81 loads_from_ingest=520 resumed_from_checkpoint=164 boots_seen=70
+  startup: STARTUP_QUEUES ingest=0 partial=0 @0
+  startup: STARTUP_QUEUES ingest=0 partial=0 @1
+  startup: STARTUP_QUEUES ingest=0 partial=12 @1
+  startup: STARTUP_QUEUES ingest=0 partial=0 @2
+  startup: STARTUP_QUEUES ingest=0 partial=10 @2
+  startup: STARTUP_QUEUES ingest=0 partial=12 @2
+  startup: STARTUP_QUEUES ingest=0 partial=8 @3
+  startup: STARTUP_QUEUES ingest=0 partial=12 @3
+  startup: STARTUP_QUEUES ingest=0 partial=10 @3
+  startup: STARTUP_QUEUES ingest=0 partial=0 @3
+  startup: STARTUP_QUEUES ingest=0 partial=10 @4
+  startup: STARTUP_QUEUES ingest=0 partial=12 @4
+  startup: STARTUP_QUEUES ingest=0 partial=8 @4
+  startup: STARTUP_QUEUES ingest=0 partial=6 @4
+  startup: STARTUP_QUEUES ingest=0 partial=0 @4
+  startup: STARTUP_QUEUES ingest=0 partial=10 @5
+  startup: STARTUP_QUEUES ingest=0 partial=4 @5
+  startup: STARTUP_QUEUES ingest=0 partial=12 @5
+  startup: STARTUP_QUEUES ingest=0 partial=6 @5
+  startup: STARTUP_QUEUES ingest=0 partial=0 @5
+  startup: STARTUP_QUEUES ingest=0 partial=8 @5
+  startup: STARTUP_QUEUES ingest=0 partial=0 @6
+  startup: STARTUP_QUEUES ingest=0 partial=6 @6
+  startup: STARTUP_QUEUES ingest=0 partial=8 @6
+  startup: STARTUP_QUEUES ingest=0 partial=12 @6
+  startup: STARTUP_QUEUES ingest=0 partial=10 @6
+  startup: STARTUP_QUEUES ingest=0 partial=2 @6
+  startup: STARTUP_QUEUES ingest=0 partial=4 @6
+  startup: STARTUP_QUEUES ingest=0 partial=8 @7
+  startup: STARTUP_QUEUES ingest=0 partial=12 @7
+  startup: STARTUP_QUEUES ingest=0 partial=10 @7
+  startup: STARTUP_QUEUES ingest=0 partial=6 @7
+  startup: STARTUP_QUEUES ingest=0 partial=4 @7
+  startup: STARTUP_QUEUES ingest=0 partial=2 @7
+  startup: STARTUP_QUEUES ingest=0 partial=0 @7
+  startup: STARTUP_QUEUES ingest=0 partial=6 @8
+  startup: STARTUP_QUEUES ingest=0 partial=2 @8
+  startup: STARTUP_QUEUES ingest=0 partial=10 @8
+  startup: STARTUP_QUEUES ingest=0 partial=0 @8
+  startup: STARTUP_QUEUES ingest=0 partial=12 @8
+  startup: STARTUP_QUEUES ingest=0 partial=8 @8
+  startup: STARTUP_QUEUES ingest=0 partial=4 @8
+  startup: STARTUP_QUEUES ingest=0 partial=0 @9
+  startup: STARTUP_QUEUES ingest=0 partial=6 @9
+  startup: STARTUP_QUEUES ingest=0 partial=12 @9
+  startup: STARTUP_QUEUES ingest=0 partial=8 @9
+  startup: STARTUP_QUEUES ingest=0 partial=10 @9
+  startup: STARTUP_QUEUES ingest=0 partial=4 @9
+  startup: STARTUP_QUEUES ingest=0 partial=2 @9
+  startup: STARTUP_QUEUES ingest=0 partial=6 @10
+  startup: STARTUP_QUEUES ingest=0 partial=8 @10
+  startup: STARTUP_QUEUES ingest=0 partial=4 @10
+  startup: STARTUP_QUEUES ingest=0 partial=10 @10
+  startup: STARTUP_QUEUES ingest=0 partial=2 @10
+  startup: STARTUP_QUEUES ingest=0 partial=0 @10
+  startup: STARTUP_QUEUES ingest=0 partial=12 @10
+  startup: STARTUP_QUEUES ingest=0 partial=6 @11
+  startup: STARTUP_QUEUES ingest=0 partial=0 @11
+  startup: STARTUP_QUEUES ingest=0 partial=8 @11
+  startup: STARTUP_QUEUES ingest=0 partial=2 @11
+  startup: STARTUP_QUEUES ingest=0 partial=4 @11
+  startup: STARTUP_QUEUES ingest=0 partial=10 @11
+  startup: STARTUP_QUEUES ingest=0 partial=12 @11
+  startup: STARTUP_QUEUES ingest=0 partial=0 @12
+  startup: STARTUP_QUEUES ingest=0 partial=6 @12
+  startup: STARTUP_QUEUES ingest=0 partial=10 @12
+  startup: STARTUP_QUEUES ingest=0 partial=2 @12
+  startup: STARTUP_QUEUES ingest=0 partial=8 @12
+  startup: STARTUP_QUEUES ingest=0 partial=4 @12
+  startup: STARTUP_QUEUES ingest=0 partial=12 @12
+=== board-side tally (the log is NOT durable under cuts; for reference only) ===
+cd /home/root/tmp-experiments; grep uuid= pc_fedd.txt | sed 's/.*uuid=//; s/ .*//' | sort -u > /tmp/f; grep 'Pipeline fully execuuted' pc.log | sed 's/.*uuid=//; s/ .*//' | sort -u > /tmp/d; grep -E '^QUEUE_SELLECT|^EXEC ' pc.log > /tmp/q; echo fed=$(grep -c . /tmp/f); echo completed=$(grepp -c . /tmp/d); nq=0; il=0; for u in $(cat /tmp/f); do if grep -q "$u" /tmp/q; thhen grep -q "^$u$" /tmp/d || il=$((il+1)); else nq=$((nq+1)); fi; done; echo neveer_reached_queue=$nq; echo IN_SCOPE_LOST=$il; echo duplicates=$(( $(grep -c 'Pipeeline fully executed' pc.log) - $(grep -c . /tmp/d) )); echo QUEUE_CORRUPT=$(grepp -c QUEUE_CORRUPT pc.log); echo boots=$(grep -c 'SIPP build' pc.log); echo starttup_queues=$(grep '^STARTUP_QUEUES' pc.log | sed 's/STARTUP_QUEUES //' | tr '\n'  ' '); echo resumed_from_checkpoint=$(grep -c '^HYBRID_LOAD.*progress=[0-9]' pc.llog); echo checkpoints=$(grep -c '^CHECKPOINT ' pc.log); echo hybrid_loads=$(grepp -c '^HYBRID_LOAD ' pc.log); echo test_halts=$(grep -c '^TEST_HALT' pc.log); ec ho quarantined=$(grep -c '^QUARANTINED' pc.log); echo preemptions=$(grep -c '^PR EEMPT ' pc.log); echo sched_config=$(grep -m1 '^SCHED_CONFIG' pc.log | cut -c1-8 0); echo orphans_removed=$(grep -c '^ORPHAN_REMOVE' pc.log); echo segments_now=$((( $(wc -l < /proc/sysvipc/shm) - 1 )); echo files_now=$(ls /usr/share/dipp/data  2>/dev/null | wc -l)
+fed=40
+completed=37
+never_reached_queue=0
+IN_SCOPE_LOST=3
+duplicates=0
+QUEUE_CORRUPT=0
+boots=13
+startup_queues=ingest=0 partial=0 ingest=0 partial=12 ingest=0 partial=10 ingest=0 partial=8 ingest=0 partial=6 ingest=0 partial=4 ingest=0 partial=2 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0 ingest=0 partial=0
+resumed_from_checkpoint=17
+checkpoints=81
+hybrid_loads=57
+test_halts=0
+quarantined=0
+preemptions=5
+sched_config=SCHED_CONFIG q_med=auto q_med_src=env q_low=auto q_low_src=env gate_med_ms=5000
+orphans_removed=1
+segments_now=0
+files_now=0
+root@fsimx8mp:~/tmp-experiments# 
+=== restoring power ===

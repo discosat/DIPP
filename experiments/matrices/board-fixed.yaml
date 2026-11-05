@@ -75,3 +75,15 @@ runs:
   phase0: 0.1202
   soc0: 0.9338
   pipeline: 5
+- label: P2C1-avg-s1
+  arrivals: experiments/traces/main-s1.trace
+  image_prefix: cs12_test_[0-9]
+  phase0: 0.1202
+  soc0: 0.9338
+  pipeline: 4
+- label: P2C1-worst-s1
+  arrivals: experiments/traces/main-s1.trace
+  image_prefix: cs12_test_[0-9]
+  phase0: 0.1202
+  soc0: 0.9338
+  pipeline: 5

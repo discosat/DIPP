@@ -53,10 +53,17 @@ def frames_of(sc):
     return out
 
 
+# Per-frame fixed time (s) replacing the simulator's ingest_s + over (--fixed-s). The
+# simulator's 0.71 s exceeds what the board spends between back-to-back frames (median
+# 0.37 s, minimum 0.13 s), so a bound using it can be below a board result.
+FIXED_S = None
+
+
 def costs(sc, n):
     """Durations (ms, rounded down) and module energies (mJ, rounded down) of one frame."""
     c = sc["cost"]
-    fixed_d = ms_down(sc["ingest_s"] + sc["over"] + c.lat(1, 1) + c.lat(2, 1))
+    over = FIXED_S if FIXED_S is not None else sc["ingest_s"] + sc["over"]
+    fixed_d = ms_down(over + c.lat(1, 1) + c.lat(2, 1))
     fixed_e = int((c.en(1, 1) + c.en(2, 1)) * 3.6)                 # 1 uWh = 3.6 mJ
     d = {s: {e: ms_down(c.lat(L.SLOT[s][e], n[s])) for e in EFF} for s in STAGES}
     en = {s: {e: int(c.en(L.SLOT[s][e], n[s]) * 3.6) for e in EFF} for s in STAGES}
@@ -598,6 +605,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("run")
+    p.add_argument("--fixed-s", type=float, default=None, help="per-frame fixed time, s (default: the simulator's)")
     p.add_argument("-o", required=True)
     p.add_argument("--seeds", type=int, nargs="+", default=[1, 2, 3])
     p.add_argument("--cells", nargs="*", default=[])
@@ -614,6 +622,7 @@ def main():
     sf.add_argument("--procs", type=int, default=7)
     sf.add_argument("--tag", default="")
     q = sub.add_parser("lp")
+    q.add_argument("--fixed-s", type=float, default=None, help="per-frame fixed time, s (default: the simulator's)")
     q.add_argument("-o", required=True)
     q.add_argument("--seeds", type=int, nargs="+", default=[1, 2, 3])
     q.add_argument("--cells", nargs="*", default=[])
@@ -626,6 +635,8 @@ def main():
     c.add_argument("--time", type=float, default=120.0)
     c.add_argument("--workers", type=int, default=8)
     a = ap.parse_args()
+    global FIXED_S
+    FIXED_S = getattr(a, "fixed_s", None)
     {"run": cmd_run, "lp": cmd_lp, "soft": cmd_soft, "summary": cmd_summary, "check": cmd_check}[a.cmd](a)
 
 

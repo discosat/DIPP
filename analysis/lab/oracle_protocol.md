@@ -184,3 +184,18 @@ UB (upper bound) and best27 (best single combination in hindsight, reachable, so
 lower bound on the true optimum under the simulator's rules, which lies between the
 two). U_replay stays in oracle_results.csv; oracle_summary.md no longer has the
 "achievable" column. No result changes.
+
+## Addendum 2026-11-05 — bound with the board's minimum per-frame overhead
+
+The bound was computed under the simulator's fixed per-frame time (ingest 0.41 s + over
+0.30 s = 0.71 s), which exceeds what the board spends between back-to-back frames
+(median 0.37 s, mean 0.40 s, minimum 0.13 s; P1C2-high, P1C2-greedy, P1C4-med; module
+latencies themselves match the model to within about 5 ms). It was therefore valid only
+under the simulator's cost model, and one board result lay above it: P1C2 deadline-only
+0.999 against UB 0.9972.
+
+`oracle.py lp --fixed-s 0.13 --tag fixed013` (all 51 solves converged) re-solves the LP
+with the observed minimum: lab/oracle_lp_fixed013.csv. No board value exceeds this bound.
+The earlier oracle_lp.csv / oracle_results.csv stay as they are. SIPP on the board reaches
+89.1–99.9 % of this bound (seed 1) in every cell except P1C5 (18.6 %, infeasible for every
+policy). The bound is deliberately generous: 0.13 s is the smallest gap seen, not typical.

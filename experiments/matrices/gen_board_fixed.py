@@ -25,7 +25,9 @@ import gen_board_grid as B  # noqa: E402
 DESIGNS = {"avg": 4, "worst": 5}
 RUNS = [("P1", "C3", "avg", False), ("P1", "C4", "avg", False), ("P2", "C5", "avg", False),
         ("P2", "C3", "avg", True), ("P2", "C4", "avg", False),
-        ("P1", "C4", "worst", False), ("P2", "C5", "worst", False), ("P3", "C5", "worst", False)]
+        ("P1", "C4", "worst", False), ("P2", "C5", "worst", False), ("P3", "C5", "worst", False),
+        # 2026-11-05: frame times on cloudy content for the frame-time figure (F5)
+        ("P2", "C1", "avg", False), ("P2", "C1", "worst", False)]
 
 
 def run(pair, cell, design, deficit):

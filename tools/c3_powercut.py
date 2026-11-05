@@ -239,6 +239,9 @@ def main():
                     help="after each boot, poll the console until processing resumes and print a "
                          "RECOVERY line (s from power restored to login, daemon up, first queue "
                          "selection, first module completed); adds polling time to every cycle")
+    ap.add_argument("--drain-idle", type=float, default=50.0,
+                    help="after the last cut, stop draining after this many seconds without a new "
+                         "completion (raise it when batches wait for energy)")
     a = ap.parse_args()
     IMG = a.image
     DAEMON_ENV = f"STORAGE_MODE={a.storage} {a.sched} {a.env} ".rstrip() + " "
@@ -324,15 +327,21 @@ def main():
                 time_recovery(con, t, t_on, times)
 
         print("=== draining ===", flush=True)
-        last, stable = -1, 0
-        while stable < 5:
+        # Stop once every fed frame has completed, or after --drain-idle s without a
+        # new completion. Batches waiting for energy can go minutes between
+        # completions, so a fixed short idle window would score them as lost.
+        last, idle_since = -1, time.time()
+        while True:
             time.sleep(10)
             out = con.cmd(f"cd {DIR} && grep -c 'Pipeline fully executed' {LOG}", 5)
             m = re.findall(r"(?<![\w=])(\d+)\s*$", out.replace("\r", ""), re.M)
             now = int(m[-1]) if m else last
-            stable = stable + 1 if now == last else 0
+            if now != last:
+                idle_since = time.time()
             last = now
             print(f"  completions={now}", flush=True)
+            if now >= a.batches or time.time() - idle_since >= a.drain_idle:
+                break
 
         acc["boot_tag"] = a.trials
         snapshot(con, acc)
